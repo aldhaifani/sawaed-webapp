@@ -92,9 +92,7 @@
         "details": "Configure Next.js internationalization with Arabic (RTL) and English (LTR) support. Create translation files for all UI text and system messages. Implement language switcher component with persistent user preference storage in Convex. Setup RTL CSS framework and test Arabic text rendering. Create utility functions for bilingual content handling and ensure proper font loading for Arabic text. Implement language preference in user schema and Convex functions.",
         "testStrategy": "Test language switching persists across sessions, RTL layout renders correctly, all UI elements display properly in both languages, and Arabic text input/display works correctly",
         "priority": "high",
-        "dependencies": [
-          1
-        ],
+        "dependencies": [1],
         "status": "pending",
         "subtasks": [
           {
@@ -160,10 +158,7 @@
         "details": "Implement Convex Auth email OTP flow with login/signup pages. Create role-based middleware for youth, admin, and superadmin access levels. Build authentication components: login form, OTP verification, logout functionality. Implement session management and protected route guards. Create user onboarding flow that captures language preference and basic profile info. Add PostHog events for auth tracking (sign_up_started, sign_up_completed, sign_in_completed).",
         "testStrategy": "Test OTP email delivery, verification process, role-based access restrictions, session persistence, and proper redirect flows for different user types",
         "priority": "high",
-        "dependencies": [
-          1,
-          2
-        ],
+        "dependencies": [1, 2],
         "status": "pending",
         "subtasks": [
           {
@@ -238,11 +233,7 @@
         "details": "Create comprehensive skills taxonomy with categories (technical, soft skills, languages, etc.) in both Arabic and English. Build admin interface for managing skills (add, edit, categorize). Implement skills search and filtering functionality. Create Convex functions for skills CRUD operations with proper validation. Seed database with initial skills relevant to Omani youth. Ensure skills can be tagged and associated with user profiles efficiently.",
         "testStrategy": "Verify skills display correctly in both languages, admin can manage skills effectively, search/filter works properly, and skills association with profiles functions correctly",
         "priority": "medium",
-        "dependencies": [
-          1,
-          2,
-          3
-        ],
+        "dependencies": [1, 2, 3],
         "status": "pending",
         "subtasks": [
           {
@@ -299,10 +290,7 @@
         "details": "Build profile creation and editing interface with: bio (bilingual), profile photo upload using Convex file storage, contact information, and skills selection from master taxonomy. Implement profile completion percentage calculation. Create profile view components with proper Arabic/English text rendering. Add PostHog events for profile tracking (created, bio_updated, skills_added, picture_uploaded). Implement profile validation and ensure minimum 2 skills requirement. Create responsive profile cards and detail views.",
         "testStrategy": "Test profile creation flow, photo upload functionality, bilingual text input/display, skills selection interface, completion percentage accuracy, and profile data persistence",
         "priority": "high",
-        "dependencies": [
-          3,
-          4
-        ],
+        "dependencies": [3, 4],
         "status": "pending",
         "subtasks": [
           {
@@ -368,9 +356,7 @@
         "details": "Create opportunities listing page with search and filter capabilities. Build opportunity detail view showing bilingual descriptions, dates, location, and registration button. Implement one-click registration that auto-fills from user profile data. Create registration management (view registered events, cancel registration). Add PostHog events (viewed_list, viewed_detail, registration_clicked, registration_completed). Implement responsive design for mobile and desktop. Create registration confirmation and email notifications if needed.",
         "testStrategy": "Test opportunity browsing, search/filter functionality, registration process, data auto-fill accuracy, registration status tracking, and bilingual content display",
         "priority": "high",
-        "dependencies": [
-          5
-        ],
+        "dependencies": [5],
         "status": "pending",
         "subtasks": [
           {
@@ -436,10 +422,7 @@
         "details": "Build admin dashboard for opportunity management with create, edit, publish, and delete functionality. Implement bilingual content forms for title and description in Arabic and English. Add event status management (draft, published). Create bulk operations and event analytics for admins. Implement proper RBAC to restrict access to admin and superadmin roles only. Add PostHog events (event_created, event_published). Include event scheduling, location management, and participant tracking features.",
         "testStrategy": "Verify admin access restrictions, bilingual content creation, event publishing workflow, status management, and admin analytics accuracy",
         "priority": "medium",
-        "dependencies": [
-          3,
-          6
-        ],
+        "dependencies": [3, 6],
         "status": "pending",
         "subtasks": [
           {
@@ -496,11 +479,7 @@
         "details": "Create ministry dashboard with role-based access for ministry personnel only. Implement aggregated analytics: youth distribution by governorate chart, top skills chart, registration trends, and profile completion rates. Ensure strict anonymization - no PII exposure, only group-by queries. Optimize for ≤5 second load times with proper caching. Add PostHog event (dashboard_viewed) and performance metrics (dashboard_loaded_under_5s). Create bilingual dashboard interface with export capabilities for charts.",
         "testStrategy": "Verify no PII exposure, dashboard loads under 5 seconds, charts display accurate aggregated data, role-based access works, and bilingual interface functions properly",
         "priority": "medium",
-        "dependencies": [
-          3,
-          5,
-          6
-        ],
+        "dependencies": [3, 5, 6],
         "status": "pending",
         "subtasks": [
           {
@@ -566,9 +545,7 @@
         "details": "Design multi-step onboarding flow: welcome screen, language preference selection, basic profile setup (bio, photo), skills selection with minimum 2 skills requirement, and completion confirmation. Implement progress indicators and skip/save for later options. Create onboarding-specific UI components with clear CTAs and helpful tooltips. Add gamification elements like progress bars and completion rewards. Ensure mobile-responsive design and accessibility compliance. Track onboarding completion rates and drop-off points.",
         "testStrategy": "Test complete onboarding flow, progress tracking, minimum requirements enforcement, mobile responsiveness, and user experience quality across different devices",
         "priority": "medium",
-        "dependencies": [
-          5
-        ],
+        "dependencies": [5],
         "status": "pending",
         "subtasks": [
           {
@@ -616,11 +593,7 @@
         "details": "Implement TLS for all communications, secure session management, and input validation/sanitization. Configure Sentry PII scrubbing for error payloads. Add rate limiting for authentication and API endpoints. Implement CSRF protection and secure headers. Create privacy policy and data retention/deletion pathways. Add audit logging for sensitive operations. Implement proper error handling without information leakage. Configure security headers and Content Security Policy. Add data export functionality for user privacy rights.",
         "testStrategy": "Conduct security audit, test rate limiting, verify PII scrubbing in error logs, validate CSRF protection, and ensure privacy policy compliance",
         "priority": "high",
-        "dependencies": [
-          1,
-          3,
-          8
-        ],
+        "dependencies": [1, 3, 8],
         "status": "pending",
         "subtasks": [
           {
@@ -695,12 +668,7 @@
         "details": "Implement performance optimizations: code splitting, lazy loading, image optimization, and caching strategies. Optimize Convex queries with proper indexing and pagination. Add accessibility features: ARIA labels, keyboard navigation, screen reader support, and color contrast compliance. Implement responsive design for mobile, tablet, and desktop. Add loading states, error boundaries, and offline handling. Optimize bundle size and implement service worker for caching. Ensure RTL layout accessibility for Arabic users.",
         "testStrategy": "Run Lighthouse audits, test with screen readers, verify keyboard navigation, check color contrast ratios, and validate responsive design across devices",
         "priority": "medium",
-        "dependencies": [
-          2,
-          5,
-          6,
-          8
-        ],
+        "dependencies": [2, 5, 6, 8],
         "status": "pending",
         "subtasks": [
           {
@@ -766,13 +734,7 @@
         "details": "Seed database with initial skills taxonomy, sample opportunities, and test user accounts. Configure production Convex environment with proper scaling and monitoring. Setup production Sentry and PostHog configurations with appropriate sampling rates. Create deployment scripts and database migration procedures. Implement feature flags for gradual rollout. Setup monitoring dashboards and alerting for critical metrics. Create admin user accounts for Youth Centers and Ministry personnel. Conduct final security review and performance testing in production environment.",
         "testStrategy": "Verify production deployment works correctly, all integrations function properly, monitoring captures appropriate metrics, and initial content displays correctly in both languages",
         "priority": "medium",
-        "dependencies": [
-          4,
-          7,
-          8,
-          10,
-          11
-        ],
+        "dependencies": [4, 7, 8, 10, 11],
         "status": "pending",
         "subtasks": [
           {

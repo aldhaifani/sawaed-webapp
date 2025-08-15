@@ -5,6 +5,7 @@ globs: .windsurf/rules/*.md
 ---
 
 - **Required Rule Structure:**
+
   ```markdown
   ---
   description: Clear, one-line description of what the rule enforces
@@ -24,10 +25,11 @@ globs: .windsurf/rules/*.md
 
 - **Code Examples:**
   - Use language-specific code blocks
+
   ```typescript
   // ✅ DO: Show good examples
   const goodExample = true;
-  
+
   // ❌ DON'T: Show anti-patterns
   const badExample = false;
   ```
