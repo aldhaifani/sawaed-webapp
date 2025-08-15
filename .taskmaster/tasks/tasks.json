@@ -1,0 +1,832 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Setup Project Foundation and Technical Prerequisites",
+        "description": "Initialize Next.js 15 project with TypeScript, configure Convex backend with authentication, database schema, and integrate monitoring tools",
+        "details": "Create Next.js 15 project with App Router and TypeScript. Setup Convex with: 1) Convex Auth for passwordless email OTP, 2) Database schema for User, Profile, Skill, User_Skills, Event, Registration, AuditLog models with proper indexes, 3) Role-based access control scaffolding. Integrate Sentry for error monitoring with PII scrubbing and PostHog for product analytics with event schema. Configure Vercel deployment pipeline with preview environments. Setup staging environment and verify all integrations work properly.",
+        "testStrategy": "Verify Convex Auth OTP flow works, database operations succeed, Sentry captures errors without PII, PostHog tracks events, and deployment pipeline functions correctly",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Implement User Database Schema",
+            "description": "Create the necessary database tables to store user information, including credentials and profile data, using a migration script.",
+            "dependencies": [],
+            "details": "Define a 'users' table with columns: id (PK, auto-increment), email (VARCHAR, UNIQUE, NOT NULL), password_hash (VARCHAR, NOT NULL), created_at (TIMESTAMP), updated_at (TIMESTAMP). Use a database migration tool like Alembic or Flyway to generate and apply the schema.",
+            "status": "pending",
+            "testStrategy": "Run the migration against a test database and verify its successful application. Inspect the resulting table schema to confirm all columns, types, and constraints (UNIQUE, NOT NULL) are correctly defined."
+          },
+          {
+            "id": 2,
+            "title": "Implement Secure Password Hashing Service",
+            "description": "Create a self-contained service or module for securely hashing and verifying user passwords to prevent plaintext storage.",
+            "dependencies": [],
+            "details": "Use a strong, adaptive hashing algorithm like bcrypt. The service should expose two functions: `hashPassword(plainTextPassword)` which returns a hash, and `verifyPassword(plainTextPassword, hash)` which returns a boolean. Isolate this logic in a dedicated `PasswordService` or utility file.",
+            "status": "pending",
+            "testStrategy": "Write unit tests for the service. Assert that `hashPassword` produces a valid hash string. Test `verifyPassword` to ensure it returns true for a correct password and false for an incorrect one."
+          },
+          {
+            "id": 3,
+            "title": "Implement JWT Generation and Validation Service",
+            "description": "Create a reusable service for generating and validating JSON Web Tokens (JWTs) for stateless authentication.",
+            "dependencies": [],
+            "details": "Use a standard JWT library. Create a service with `generateToken(payload)` and `validateToken(token)`. The payload should include the user ID. Store the JWT secret key securely in an environment variable, not in the code.",
+            "status": "pending",
+            "testStrategy": "Write unit tests to confirm that a generated token can be successfully validated. Test for failure cases, such as an expired token, a token signed with a different secret, or a malformed token."
+          },
+          {
+            "id": 4,
+            "title": "Develop API Endpoint for User Registration",
+            "description": "Create a public API endpoint that allows new users to create an account.",
+            "dependencies": [],
+            "details": "Implement a `POST /api/auth/register` endpoint. It should accept email and password. Validate the input (e.g., valid email format, minimum password length). Use the Password Hashing Service to hash the password before saving the new user record to the database.",
+            "status": "pending",
+            "testStrategy": "Write integration tests for the endpoint. Test the success case (201 Created), and failure cases like submitting a duplicate email (409 Conflict) or providing invalid input data (400 Bad Request)."
+          },
+          {
+            "id": 5,
+            "title": "Develop API Endpoint for User Login",
+            "description": "Create a public API endpoint for existing users to authenticate and receive a JWT.",
+            "dependencies": [],
+            "details": "Implement a `POST /api/auth/login` endpoint. It should accept email and password. Retrieve the user from the database, use the Password Hashing Service to verify the password, and if successful, use the JWT Service to generate and return a token.",
+            "status": "pending",
+            "testStrategy": "Write integration tests for successful login (returns a JWT), login with an incorrect password, and login for a non-existent user. Ensure appropriate HTTP status codes are returned for each case."
+          },
+          {
+            "id": 6,
+            "title": "Build Frontend Registration Form UI",
+            "description": "Create the user interface component for the registration page, including form fields and submission logic.",
+            "dependencies": [],
+            "details": "Develop a form with input fields for email and password. Implement client-side validation for immediate user feedback. On submission, send a request to the `POST /api/auth/register` endpoint. Handle success by redirecting to the login page and display errors clearly to the user.",
+            "status": "pending",
+            "testStrategy": "Use component tests to verify form rendering and validation logic. Use end-to-end tests (e.g., Cypress) to simulate a user filling out and submitting the form, mocking the API response to test both success and error handling."
+          },
+          {
+            "id": 7,
+            "title": "Build Frontend Login Form UI",
+            "description": "Create the user interface component for the login page and manage the authentication token.",
+            "dependencies": [],
+            "details": "Develop a form with email and password fields. On submission, call the `POST /api/auth/login` endpoint. On a successful response, securely store the JWT (e.g., in an HttpOnly cookie or application state management) and redirect the user to a protected dashboard page.",
+            "status": "pending",
+            "testStrategy": "Use component tests for form UI and state. Use end-to-end tests to simulate a full login flow: user enters credentials, submits, receives a token, token is stored, and user is redirected to the correct page."
+          },
+          {
+            "id": 8,
+            "title": "Implement Protected Route Middleware",
+            "description": "Create backend middleware to protect specific API routes, ensuring they are only accessible by authenticated users.",
+            "dependencies": [],
+            "details": "Create middleware that extracts the JWT from the `Authorization: Bearer <token>` header of incoming requests. Use the JWT Service to validate the token. If valid, attach the user's identity to the request object and pass it to the next handler. If invalid or missing, respond with a `401 Unauthorized` error.",
+            "status": "pending",
+            "testStrategy": "Write integration tests for a protected endpoint. Test scenarios: request with a valid token (should succeed), request with an invalid/expired token (should fail with 401), and request with no token (should fail with 401)."
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Implement Internationalization Framework",
+        "description": "Setup complete bilingual support (Arabic/English) with RTL layout, persistent language preferences, and translation infrastructure",
+        "details": "Configure Next.js internationalization with Arabic (RTL) and English (LTR) support. Create translation files for all UI text and system messages. Implement language switcher component with persistent user preference storage in Convex. Setup RTL CSS framework and test Arabic text rendering. Create utility functions for bilingual content handling and ensure proper font loading for Arabic text. Implement language preference in user schema and Convex functions.",
+        "testStrategy": "Test language switching persists across sessions, RTL layout renders correctly, all UI elements display properly in both languages, and Arabic text input/display works correctly",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Implement User Authentication Database Schema",
+            "description": "Create the necessary database tables to store user information, including credentials, profiles, and session tokens.",
+            "dependencies": [],
+            "details": "Define a 'users' table with columns for id, username (unique), email (unique), password_hash, created_at, and updated_at. Use a database migration tool like Alembic or Flyway to version control the schema. Consider a separate table for refresh tokens if implementing a refresh token strategy.",
+            "status": "pending",
+            "testStrategy": "Write unit tests for the User model to ensure constraints (e.g., uniqueness) are enforced. Run migrations up and down to verify schema integrity. Manually inspect the database schema after migration to confirm all columns and types are correct."
+          },
+          {
+            "id": 2,
+            "title": "Develop User Registration API Endpoint",
+            "description": "Create a public API endpoint (e.g., POST /api/auth/register) that allows new users to create an account.",
+            "dependencies": [],
+            "details": "The endpoint should accept username, email, and password. Implement server-side validation for input data (e.g., password complexity, valid email format). Hash the password using a strong, salted algorithm like bcrypt before storing it in the database. Return a 201 Created status on success and appropriate error codes (e.g., 409 Conflict for duplicates).",
+            "status": "pending",
+            "testStrategy": "Write integration tests for: successful registration, registration with a duplicate email, registration with a duplicate username, and registration with invalid input (e.g., weak password). Verify that the password stored in the database is a hash and not plaintext."
+          },
+          {
+            "id": 3,
+            "title": "Develop User Login API Endpoint",
+            "description": "Create an API endpoint (e.g., POST /api/auth/login) for users to authenticate and receive an access token.",
+            "dependencies": [],
+            "details": "The endpoint should accept user credentials (email or username and password). Verify the provided password against the stored hash. Upon successful authentication, generate a JSON Web Token (JWT) containing the user ID and an expiration claim. Return the JWT to the client.",
+            "status": "pending",
+            "testStrategy": "Write integration tests for: successful login with correct credentials, failed login with an incorrect password, and failed login for a non-existent user. Unit test the JWT generation logic to ensure the payload and expiration are set correctly."
+          },
+          {
+            "id": 4,
+            "title": "Implement Authentication Middleware for Protected Routes",
+            "description": "Create middleware to verify the JWT on incoming requests to protected API endpoints, ensuring only authenticated users can access them.",
+            "dependencies": [],
+            "details": "The middleware should extract the JWT from the 'Authorization: Bearer <token>' header. It must validate the token's signature and check for expiration. If valid, decode the payload, retrieve the user from the database, and attach the user object to the request context. If invalid, return a 401 Unauthorized response.",
+            "status": "pending",
+            "testStrategy": "Create a sample protected endpoint. Write integration tests that attempt to access it with: a valid token, an expired token, an invalid/malformed token, and no token. Verify that only the request with the valid token succeeds and receives a 200 OK status."
+          },
+          {
+            "id": 5,
+            "title": "Implement Password Reset Functionality",
+            "description": "Develop a secure workflow for users to reset a forgotten password.",
+            "dependencies": [],
+            "details": "Create two endpoints. 1) 'POST /api/auth/forgot-password': takes an email, generates a unique, single-use, time-limited reset token, stores its hash against the user record, and triggers an email to the user with a reset link. 2) 'POST /api/auth/reset-password': takes the reset token and a new password, validates the token, and updates the user's password hash.",
+            "status": "pending",
+            "testStrategy": "Mock the email sending service. Test the 'forgot-password' endpoint with both existing and non-existing emails. Test the 'reset-password' endpoint with a valid token, an expired token, and an invalid token. Perform an end-to-end test of the full flow."
+          },
+          {
+            "id": 6,
+            "title": "Develop User Logout Endpoint",
+            "description": "Create an API endpoint (e.g., POST /api/auth/logout) to invalidate a user's session.",
+            "dependencies": [],
+            "details": "Since JWTs are stateless, true server-side invalidation requires a blocklist. Implement a cache (e.g., Redis) to store token identifiers (jti claim) of logged-out tokens until they expire. The logout endpoint, protected by the auth middleware, will add the current token's 'jti' to this blocklist. The auth middleware must be updated to check this blocklist.",
+            "status": "pending",
+            "testStrategy": "Write an integration test where a user logs in, receives a token, calls the logout endpoint, and then attempts to use the same token to access a protected route. The final attempt should fail with a 401 Unauthorized error."
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Build Authentication System",
+        "description": "Implement passwordless email OTP authentication using Convex Auth with role-based access control",
+        "details": "Implement Convex Auth email OTP flow with login/signup pages. Create role-based middleware for youth, admin, and superadmin access levels. Build authentication components: login form, OTP verification, logout functionality. Implement session management and protected route guards. Create user onboarding flow that captures language preference and basic profile info. Add PostHog events for auth tracking (sign_up_started, sign_up_completed, sign_in_completed).",
+        "testStrategy": "Test OTP email delivery, verification process, role-based access restrictions, session persistence, and proper redirect flows for different user types",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Implement User Database Schema",
+            "description": "Create the necessary database table(s) to store user information, including a unique identifier, email, and hashed password.",
+            "dependencies": [],
+            "details": "Use a migration tool to create a 'users' table. Key columns: 'id' (UUID, primary key), 'email' (varchar, unique), 'password_hash' (varchar), 'created_at' (timestamp), 'updated_at' (timestamp). Index the 'email' column for fast lookups.",
+            "status": "pending",
+            "testStrategy": "Verify the schema by running migrations against a test database. Write a unit test to confirm the User model can be instantiated and saved."
+          },
+          {
+            "id": 2,
+            "title": "Implement Password Hashing and Security Module",
+            "description": "Create a reusable module for securely hashing and verifying passwords using a strong algorithm like bcrypt or Argon2.",
+            "dependencies": [],
+            "details": "The module should expose two functions: `hashPassword(plainTextPassword)` and `verifyPassword(plainTextPassword, hash)`. Use a library like 'bcrypt' and configure an appropriate salt round count (e.g., 12).",
+            "status": "pending",
+            "testStrategy": "Write unit tests for the module. Test that a password can be hashed, and that the `verifyPassword` function returns true for the correct password and false for an incorrect one."
+          },
+          {
+            "id": 3,
+            "title": "Develop User Registration API Endpoint",
+            "description": "Create a public API endpoint (e.g., POST /api/auth/register) for new user sign-ups. It should validate input and store the new user.",
+            "dependencies": [],
+            "details": "The endpoint should accept 'email' and 'password'. Validate that the email is a valid format and not already in use. Use the Password Hashing Module to hash the password before saving the new user record to the database.",
+            "status": "pending",
+            "testStrategy": "Write integration tests. Test the happy path (successful registration), and error cases like duplicate email, invalid email format, and missing password."
+          },
+          {
+            "id": 4,
+            "title": "Develop User Login API Endpoint & JWT Generation",
+            "description": "Create an endpoint (e.g., POST /api/auth/login) to authenticate users and issue a JSON Web Token (JWT) upon success.",
+            "dependencies": [],
+            "details": "The endpoint accepts 'email' and 'password'. Find the user by email. Use the Password Hashing Module to verify the password. If valid, generate a signed JWT containing the user's ID. The JWT secret key should be stored securely as an environment variable.",
+            "status": "pending",
+            "testStrategy": "Integration tests: Test successful login with correct credentials (should return a JWT), and failed login with incorrect password or non-existent email."
+          },
+          {
+            "id": 5,
+            "title": "Implement JWT Validation Middleware",
+            "description": "Create server middleware to protect routes by validating the JWT from the 'Authorization' header.",
+            "dependencies": [],
+            "details": "The middleware should extract the token from the 'Authorization: Bearer <token>' header. It will verify the token's signature using the secret key. If valid, it should decode the payload and attach the user information (e.g., user ID) to the request object.",
+            "status": "pending",
+            "testStrategy": "Unit test the middleware. Mock requests with a valid token, an invalid/expired token, and no token, and assert that it calls the next function or returns a 401 error appropriately."
+          },
+          {
+            "id": 6,
+            "title": "Create a Protected 'Get Profile' API Route",
+            "description": "Implement a sample protected route (e.g., GET /api/users/me) that uses the JWT middleware to return the current user's profile data.",
+            "dependencies": [],
+            "details": "Create a new route that is protected by the JWT validation middleware. The route handler should use the user ID attached to the request by the middleware to fetch the user's data (excluding the password hash) from the database and return it.",
+            "status": "pending",
+            "testStrategy": "Integration test: Make a request to the protected route with a valid JWT and assert the correct user data is returned. Make another request without a JWT and assert a 401 Unauthorized error is returned."
+          },
+          {
+            "id": 7,
+            "title": "Frontend Integration for Auth Forms",
+            "description": "Build and connect the frontend registration and login forms to the newly created backend API endpoints.",
+            "dependencies": [],
+            "details": "Create UI components for Login and Registration. On form submission, make API calls to the `/register` and `/login` endpoints. On successful login, store the received JWT in a secure client-side storage and redirect the user to a protected area.",
+            "status": "pending",
+            "testStrategy": "End-to-end (E2E) tests using a tool like Cypress or Playwright. Script a user journey: register, log in, and verify access to a protected page."
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Create Master Skills Taxonomy and Management",
+        "description": "Build standardized skills database with bilingual support and admin management interface",
+        "details": "Create comprehensive skills taxonomy with categories (technical, soft skills, languages, etc.) in both Arabic and English. Build admin interface for managing skills (add, edit, categorize). Implement skills search and filtering functionality. Create Convex functions for skills CRUD operations with proper validation. Seed database with initial skills relevant to Omani youth. Ensure skills can be tagged and associated with user profiles efficiently.",
+        "testStrategy": "Verify skills display correctly in both languages, admin can manage skills effectively, search/filter works properly, and skills association with profiles functions correctly",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Implement User Database Schema",
+            "description": "Create the necessary database table to store user account information, including credentials and profile data.",
+            "dependencies": [],
+            "details": "Create a 'users' table with columns: 'id' (primary key, auto-increment), 'email' (unique, indexed), 'username' (unique, indexed), 'password_hash' (string), 'created_at' (timestamp), and 'updated_at' (timestamp). Use a database migration tool like Alembic or Flyway to manage schema changes.",
+            "status": "pending",
+            "testStrategy": "Verify the migration runs successfully against a test database. Manually inspect the created table schema to ensure all columns, types, and constraints are correct. Write a unit test to insert and retrieve a dummy user record."
+          },
+          {
+            "id": 2,
+            "title": "Implement User Registration API Endpoint",
+            "description": "Develop a public API endpoint for new users to create an account. The endpoint should accept user details, validate them, hash the password, and store the new user in the database.",
+            "dependencies": [],
+            "details": "Create a `POST /api/auth/register` endpoint. It should accept `email`, `username`, and `password` in the request body. Implement input validation (e.g., valid email format, password complexity rules). Use a strong hashing algorithm like bcrypt to hash the password before saving. Return a success message or the created user object (excluding the password hash).",
+            "status": "pending",
+            "testStrategy": "Write integration tests for successful registration, registration with a duplicate email/username, registration with an invalid email format, and registration with a weak password. Verify the user is correctly stored in the test database with a properly hashed password."
+          },
+          {
+            "id": 3,
+            "title": "Implement User Login API Endpoint",
+            "description": "Develop a public API endpoint for existing users to log in. It should authenticate users based on their credentials and prepare for issuing an access token upon success.",
+            "dependencies": [],
+            "details": "Create a `POST /api/auth/login` endpoint. It should accept `email` and `password`. Find the user by email in the database. Use bcrypt's compare function to verify the provided password against the stored hash. If credentials are valid, proceed to generate a token (handled in subtask 4). If invalid, return a 401 Unauthorized error with a generic message.",
+            "status": "pending",
+            "testStrategy": "Write integration tests for a successful login, a login attempt with a non-existent email, and a login attempt with an incorrect password. Verify that a successful login returns the expected payload (e.g., a token placeholder)."
+          },
+          {
+            "id": 4,
+            "title": "Implement JWT Generation and Validation Middleware",
+            "description": "Create services for generating JSON Web Tokens (JWT) on successful login and a middleware to protect routes by validating incoming JWTs.",
+            "dependencies": [],
+            "details": "Create a `JwtService`. The token generation function should take a user ID as payload and sign it with a secret key stored in environment variables. The token should have an expiration time. Create an `authMiddleware` that extracts the token from the 'Authorization' header (Bearer scheme), verifies its signature and expiration, and attaches the user's ID to the request object.",
+            "status": "pending",
+            "testStrategy": "Write unit tests for the `JwtService` to test token generation and decoding. Test the `authMiddleware` with various scenarios: valid token, expired token, invalid token, and no token provided. Mock request and response objects to isolate the middleware logic."
+          },
+          {
+            "id": 5,
+            "title": "Create Protected User Profile Endpoint",
+            "description": "Implement an example API endpoint that is protected and can only be accessed by authenticated users. This endpoint will fetch and return the logged-in user's profile data.",
+            "dependencies": [],
+            "details": "Create a `GET /api/users/me` endpoint. Apply the `authMiddleware` (from subtask 4) to this route. Inside the route handler, use the user ID attached to the request by the middleware to fetch the corresponding user's data (e.g., id, username, email) from the database. Ensure the password hash is never returned in the response.",
+            "status": "pending",
+            "testStrategy": "Write an integration test. Make a request to the endpoint without an authentication token and assert a 401 Unauthorized error. Make a request with a valid token, and assert that the correct user's profile data is returned and the status code is 200. Verify that sensitive information like the password hash is excluded."
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Build Dynamic Profile Management System",
+        "description": "Create skills-first user profiles with bilingual support, photo upload, and profile completion tracking",
+        "details": "Build profile creation and editing interface with: bio (bilingual), profile photo upload using Convex file storage, contact information, and skills selection from master taxonomy. Implement profile completion percentage calculation. Create profile view components with proper Arabic/English text rendering. Add PostHog events for profile tracking (created, bio_updated, skills_added, picture_uploaded). Implement profile validation and ensure minimum 2 skills requirement. Create responsive profile cards and detail views.",
+        "testStrategy": "Test profile creation flow, photo upload functionality, bilingual text input/display, skills selection interface, completion percentage accuracy, and profile data persistence",
+        "priority": "high",
+        "dependencies": [
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Implement User Database Schema",
+            "description": "Create the database table structure required for storing user information, including credentials and profile data.",
+            "dependencies": [],
+            "details": "Define a 'users' table with columns: 'id' (UUID, primary key), 'email' (varchar, unique, not null), 'hashed_password' (varchar, not null), 'created_at' (timestamp), and 'updated_at' (timestamp). Use a database migration tool like Alembic or Flyway to script and apply this change.",
+            "status": "pending",
+            "testStrategy": "Run the migration and verify its successful application. Manually inspect the database to confirm the 'users' table and its columns, types, and constraints are created as specified."
+          },
+          {
+            "id": 2,
+            "title": "Implement Secure Password Hashing Utility",
+            "description": "Develop a module with functions for securely hashing new passwords and verifying existing password hashes.",
+            "dependencies": [],
+            "details": "Use a strong, adaptive hashing algorithm like Argon2 or bcrypt. Create a 'hash_password' function that takes a plaintext password and returns a secure hash. Create a 'verify_password' function that compares a plaintext password against a stored hash. This module will be a dependency for registration and login.",
+            "status": "pending",
+            "testStrategy": "Write unit tests for the utility functions. Assert that 'verify_password(plain_text, hash_password(plain_text))' returns true. Test with both correct and incorrect passwords to ensure verification logic is sound."
+          },
+          {
+            "id": 3,
+            "title": "Develop User Registration Endpoint",
+            "description": "Create a public API endpoint (e.g., POST /api/v1/auth/register) to allow new users to sign up.",
+            "dependencies": [],
+            "details": "The endpoint should accept an email and password. It must validate the input, ensuring the email is not already in use and the password meets complexity requirements. On successful validation, use the password utility (Task 2) to hash the password and store the new user record in the database (Task 1).",
+            "status": "pending",
+            "testStrategy": "Write integration tests to cover successful registration (201 Created), registration with a duplicate email (409 Conflict), and registration with invalid input like a malformed email or weak password (400 Bad Request)."
+          },
+          {
+            "id": 4,
+            "title": "Develop User Login Endpoint and JWT Generation",
+            "description": "Create an endpoint (e.g., POST /api/v1/auth/login) for users to authenticate and receive a JSON Web Token (JWT).",
+            "dependencies": [],
+            "details": "The endpoint will accept an email and password. It will retrieve the user from the database by email and use the password utility (Task 2) to verify the password. On success, generate a signed JWT containing the user's ID and an expiration claim. The JWT secret key must be loaded from environment variables.",
+            "status": "pending",
+            "testStrategy": "Write integration tests for successful login (returns a JWT), login with incorrect credentials (401 Unauthorized), and login for a non-existent user (401 Unauthorized). Verify the returned JWT can be decoded with the correct secret key."
+          },
+          {
+            "id": 5,
+            "title": "Create Authentication Middleware for Protected Routes",
+            "description": "Implement middleware to verify the JWT from the request's Authorization header and protect specific API routes.",
+            "dependencies": [],
+            "details": "The middleware should extract the token from the 'Authorization: Bearer <token>' header. It must validate the token's signature and check for expiration. If valid, attach the user's ID from the token payload to the request context for use by downstream handlers. If invalid, it must immediately respond with a 401 Unauthorized error.",
+            "status": "pending",
+            "testStrategy": "Create a test-only protected route. Write tests that attempt to access it with a valid token (expect 200 OK), an invalid or expired token (expect 401 Unauthorized), and no token at all (expect 401 Unauthorized)."
+          },
+          {
+            "id": 6,
+            "title": "Implement a Protected 'Get Current User' Endpoint",
+            "description": "Create a protected endpoint (e.g., GET /api/v1/users/me) that uses the authentication middleware to return the current user's data.",
+            "dependencies": [],
+            "details": "This endpoint will be placed behind the authentication middleware created in Task 5. It will use the user ID attached to the request by the middleware to fetch the corresponding user's non-sensitive data (e.g., ID, email, created_at) from the database and return it.",
+            "status": "pending",
+            "testStrategy": "In an integration test, first log in a user to obtain a valid JWT. Then, use that JWT to make a request to the /users/me endpoint and assert that the returned user data is correct and matches the logged-in user."
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Develop Opportunities Portal - Youth Interface",
+        "description": "Build opportunities browsing, searching, and one-click registration system for youth users",
+        "details": "Create opportunities listing page with search and filter capabilities. Build opportunity detail view showing bilingual descriptions, dates, location, and registration button. Implement one-click registration that auto-fills from user profile data. Create registration management (view registered events, cancel registration). Add PostHog events (viewed_list, viewed_detail, registration_clicked, registration_completed). Implement responsive design for mobile and desktop. Create registration confirmation and email notifications if needed.",
+        "testStrategy": "Test opportunity browsing, search/filter functionality, registration process, data auto-fill accuracy, registration status tracking, and bilingual content display",
+        "priority": "high",
+        "dependencies": [
+          5
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Implement User Database Schema",
+            "description": "Create the necessary database table(s) to store user information, including credentials and profile data.",
+            "dependencies": [],
+            "details": "Define a 'users' table with columns: id (primary key, UUID), email (unique, indexed), password_hash (string), created_at (timestamp), and updated_at (timestamp). Use a database migration tool like Alembic or Flyway to manage and apply the schema changes.",
+            "status": "pending",
+            "testStrategy": "Verify schema creation by connecting to the development database and inspecting the 'users' table structure using a DB client. Run the migration up and down to ensure it's reversible and idempotent."
+          },
+          {
+            "id": 2,
+            "title": "Implement Secure Password Hashing Service",
+            "description": "Create a self-contained utility module for securely hashing and verifying user passwords to prevent storing them in plaintext.",
+            "dependencies": [],
+            "details": "Use a strong, salted, and computationally intensive hashing algorithm like Argon2 or bcrypt. The service should expose two primary functions: `hashPassword(plainTextPassword)` and `verifyPassword(plainTextPassword, storedHash)`. Ensure proper salt generation for each new hash.",
+            "status": "pending",
+            "testStrategy": "Write unit tests for the service. Confirm that `verifyPassword` returns true for the correct password and false for an incorrect one. Assert that hashing the same password twice produces two different hash strings due to salting."
+          },
+          {
+            "id": 3,
+            "title": "Create JWT Service for Token Management",
+            "description": "Implement a service to generate and validate JSON Web Tokens (JWTs) for managing authenticated sessions.",
+            "dependencies": [],
+            "details": "The service should have a `generateToken` function that accepts a user identifier and creates a signed JWT with a reasonable expiration time (e.g., 15 minutes for an access token). It must also have a `validateToken` function that verifies the token's signature and expiration. The JWT secret key must be loaded from environment variables, not hardcoded.",
+            "status": "pending",
+            "testStrategy": "Unit test the service. Test token generation for correct structure and payload. Test validation logic with a valid token, an expired token, a token with an invalid signature, and a malformed token, ensuring each case is handled correctly."
+          },
+          {
+            "id": 4,
+            "title": "Develop User Registration API Endpoint",
+            "description": "Create the public API endpoint (e.g., POST /api/auth/register) for new users to create an account.",
+            "dependencies": [],
+            "details": "This endpoint should accept user data (e.g., email, password). It must perform input validation (e.g., valid email format, strong password policy). It will use the Password Hashing Service to hash the password before creating a new user record in the database. Return a 201 Created status on success. Handle errors like duplicate email addresses gracefully.",
+            "status": "pending",
+            "testStrategy": "Write integration tests. Test the success case with valid data, verifying a new user is created in the database with a hashed password. Test failure cases: submitting an invalid email, a weak password, or an email that already exists."
+          },
+          {
+            "id": 5,
+            "title": "Develop User Login API Endpoint",
+            "description": "Create the public API endpoint (e.g., POST /api/auth/login) for existing users to authenticate and receive a token.",
+            "dependencies": [],
+            "details": "The endpoint accepts an email and password. It will look up the user by email in the database. If the user exists, it will use the Password Hashing Service to compare the provided password with the stored hash. On successful verification, it will use the JWT Service to generate and return an access token.",
+            "status": "pending",
+            "testStrategy": "Write integration tests. Test a successful login with correct credentials, expecting a 200 OK response with a JWT. Test failure cases like a non-existent user or an incorrect password, ensuring a generic 'Invalid credentials' error is returned to prevent user enumeration."
+          },
+          {
+            "id": 6,
+            "title": "Implement Authentication Middleware for Protected Routes",
+            "description": "Create middleware to secure specific API routes, ensuring only requests with a valid JWT can access them.",
+            "dependencies": [],
+            "details": "The middleware will inspect incoming requests for an 'Authorization' header with a 'Bearer' token. It will extract the token and use the JWT Service to validate it. If the token is valid, the middleware will attach user information (e.g., user ID from the token payload) to the request object and pass control to the route handler. If the token is missing or invalid, it must immediately respond with a 401 Unauthorized error.",
+            "status": "pending",
+            "testStrategy": "Create a sample protected endpoint. Write integration tests to verify that a request with a valid JWT receives a 200 OK response, while requests with no token, an invalid token, or an expired token all receive a 401 Unauthorized response."
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Build Opportunities Portal - Admin Interface",
+        "description": "Create secure admin interface for posting and managing opportunities with bilingual content support",
+        "details": "Build admin dashboard for opportunity management with create, edit, publish, and delete functionality. Implement bilingual content forms for title and description in Arabic and English. Add event status management (draft, published). Create bulk operations and event analytics for admins. Implement proper RBAC to restrict access to admin and superadmin roles only. Add PostHog events (event_created, event_published). Include event scheduling, location management, and participant tracking features.",
+        "testStrategy": "Verify admin access restrictions, bilingual content creation, event publishing workflow, status management, and admin analytics accuracy",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          6
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Implement User Database Schema",
+            "description": "Create the necessary database table(s) to store user information, including an identifier, email, and a hashed password.",
+            "dependencies": [],
+            "details": "Define a 'users' table with columns: 'id' (primary key, auto-increment), 'email' (unique, indexed), 'password_hash' (string), 'created_at' (timestamp), 'updated_at' (timestamp). Use a migration tool like Alembic or Knex.js to apply the schema.",
+            "status": "pending",
+            "testStrategy": "Verify the migration runs successfully against a test database. Manually inspect the schema to confirm all columns, types, and constraints are correct. Write a unit test to create and retrieve a dummy user record using the defined data model."
+          },
+          {
+            "id": 2,
+            "title": "Implement Secure Password Hashing and Verification Logic",
+            "description": "Create utility functions for securely hashing new passwords and verifying submitted passwords against their stored hashes.",
+            "dependencies": [],
+            "details": "Use a strong, standard hashing algorithm like bcrypt or Argon2. Create two functions: `hash_password(plain_password)` which returns a hash, and `verify_password(plain_password, hashed_password)` which returns a boolean. Isolate this logic in a 'security' or 'utils' module.",
+            "status": "pending",
+            "testStrategy": "Write unit tests for the hashing and verification functions. Test that `verify_password` returns true for a correct password and false for an incorrect one. Assert that hashing the same password twice produces two different hashes due to salting."
+          },
+          {
+            "id": 3,
+            "title": "Develop User Registration API Endpoint",
+            "description": "Build the API endpoint (e.g., POST /api/auth/register) that allows a new user to create an account.",
+            "dependencies": [],
+            "details": "The endpoint must accept user data (e.g., email, password) in the request body. It must validate the input (e.g., check for valid email format, password complexity). Use the password hashing utility from task #2 to hash the password before saving the new user record to the database from task #1. Return a success message or the created user object (without the password hash).",
+            "status": "pending",
+            "testStrategy": "Write integration tests. Test the happy path with valid data, ensuring a 201 Created response and a new user in the DB. Test failure cases: duplicate email, invalid email format, missing password, weak password."
+          },
+          {
+            "id": 4,
+            "title": "Develop User Login API Endpoint and JWT Generation",
+            "description": "Build the API endpoint (e.g., POST /api/auth/login) for user authentication and issue a JSON Web Token (JWT) upon success.",
+            "dependencies": [],
+            "details": "The endpoint should accept user credentials (email, password). It will find the user by email in the database and use the password verification utility to check the password. If credentials are valid, generate a signed JWT containing user identifiers (e.g., user ID) and an expiration time. Return the JWT to the client.",
+            "status": "pending",
+            "testStrategy": "Write integration tests. Test successful login with correct credentials, ensuring a 200 OK response with a valid JWT. Test failed login attempts with an incorrect password or non-existent email, ensuring appropriate 401 Unauthorized responses."
+          },
+          {
+            "id": 5,
+            "title": "Implement Authentication Middleware for Protected Routes",
+            "description": "Create middleware to protect certain API routes, requiring a valid JWT for access.",
+            "dependencies": [],
+            "details": "The middleware should extract the JWT from the 'Authorization' header (e.g., 'Bearer <token>'). It must verify the token's signature and expiration. If valid, it should decode the payload and attach the user's information to the request object for use by subsequent handlers. If the token is invalid or missing, it should return a 401 or 403 error.",
+            "status": "pending",
+            "testStrategy": "Create a dummy protected endpoint (e.g., GET /api/profile). Write integration tests to verify that a request with a valid JWT gets a 200 OK response, while requests with no token, an invalid token, or an expired token receive a 401/403 error."
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Implement Ministry Admin Portal with Analytics Dashboard",
+        "description": "Build read-only analytics dashboard with aggregated, anonymous data for ministry personnel",
+        "details": "Create ministry dashboard with role-based access for ministry personnel only. Implement aggregated analytics: youth distribution by governorate chart, top skills chart, registration trends, and profile completion rates. Ensure strict anonymization - no PII exposure, only group-by queries. Optimize for ≤5 second load times with proper caching. Add PostHog event (dashboard_viewed) and performance metrics (dashboard_loaded_under_5s). Create bilingual dashboard interface with export capabilities for charts.",
+        "testStrategy": "Verify no PII exposure, dashboard loads under 5 seconds, charts display accurate aggregated data, role-based access works, and bilingual interface functions properly",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          5,
+          6
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Implement User Database Schema",
+            "description": "Create the necessary database table(s) to store user information, including credentials and profile data.",
+            "dependencies": [],
+            "details": "Create a 'users' table with columns: id (primary key, auto-increment), email (unique, indexed), password_hash (string), created_at (timestamp), updated_at (timestamp). Use a migration tool like Alembic or Flyway to manage schema changes.",
+            "status": "pending",
+            "testStrategy": "Verify the table and columns are created correctly in the development database. Write a script to connect and describe the table structure to confirm it matches the specification."
+          },
+          {
+            "id": 2,
+            "title": "Develop User Registration API Endpoint",
+            "description": "Create a backend endpoint (e.g., POST /api/auth/register) that allows new users to sign up.",
+            "dependencies": [],
+            "details": "The endpoint must accept email and password. It should validate the input, check for an existing email, hash the password using bcrypt, and store the new user record. Return a success message or appropriate error codes (e.g., 409 Conflict).",
+            "status": "pending",
+            "testStrategy": "Write unit tests for input validation and password hashing. Write integration tests to call the endpoint and verify that a new user is correctly created in the database and that appropriate errors are returned for duplicate emails."
+          },
+          {
+            "id": 3,
+            "title": "Develop User Login API Endpoint with JWT",
+            "description": "Create a backend endpoint (e.g., POST /api/auth/login) for authenticating users and issuing a JSON Web Token (JWT).",
+            "dependencies": [],
+            "details": "The endpoint should accept email and password. It will find the user, compare the provided password with the stored hash, and if they match, generate a signed JWT containing the user ID and an expiration date. Return the JWT to the client.",
+            "status": "pending",
+            "testStrategy": "Write integration tests to simulate login attempts with correct and incorrect credentials. Verify that a valid JWT is returned upon success and a 401 Unauthorized error is returned on failure."
+          },
+          {
+            "id": 4,
+            "title": "Implement API Authentication Middleware",
+            "description": "Create middleware to protect specific API routes, requiring a valid JWT for access.",
+            "dependencies": [],
+            "details": "The middleware will extract the JWT from the 'Authorization: Bearer <token>' header. It will verify the token's signature and expiration. If valid, it will decode the payload and attach the user's identity to the request context. If invalid, it will return a 401 or 403 error.",
+            "status": "pending",
+            "testStrategy": "Create a test-only protected endpoint. Write integration tests that attempt to access this endpoint with no token, an invalid/expired token, and a valid token. Verify the correct HTTP status codes are returned in each case."
+          },
+          {
+            "id": 5,
+            "title": "Build Frontend Registration Form Component",
+            "description": "Create the user interface for the registration page, including input fields and submission logic.",
+            "dependencies": [],
+            "details": "Develop a UI component with a form for email and password. Implement client-side validation. On submission, make an API call to the registration endpoint. Handle success (e.g., redirect to login) and error (e.g., display 'email already exists') responses.",
+            "status": "pending",
+            "testStrategy": "Use a component testing library (e.g., Jest/RTL) to verify form rendering and validation. Use an E2E tool (e.g., Cypress) to test the full user flow of filling out the form and successfully registering."
+          },
+          {
+            "id": 6,
+            "title": "Build Frontend Login Form and Protected Route Handling",
+            "description": "Create the UI for logging in and implement client-side logic to manage authenticated sessions and restrict access.",
+            "dependencies": [],
+            "details": "Develop a login form component that calls the login API. On success, store the JWT securely (e.g., in an HttpOnly cookie or local storage). Implement a routing guard that checks for a valid token before allowing access to protected routes (e.g., /dashboard).",
+            "status": "pending",
+            "testStrategy": "E2E tests: 1) Test successful login and redirection to a protected page. 2) Test failed login. 3) Test that navigating directly to a protected route without a token redirects to the login page. 4) Test logout functionality."
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Create User Onboarding Flow",
+        "description": "Build streamlined onboarding experience for new youth users with profile setup and skills selection",
+        "details": "Design multi-step onboarding flow: welcome screen, language preference selection, basic profile setup (bio, photo), skills selection with minimum 2 skills requirement, and completion confirmation. Implement progress indicators and skip/save for later options. Create onboarding-specific UI components with clear CTAs and helpful tooltips. Add gamification elements like progress bars and completion rewards. Ensure mobile-responsive design and accessibility compliance. Track onboarding completion rates and drop-off points.",
+        "testStrategy": "Test complete onboarding flow, progress tracking, minimum requirements enforcement, mobile responsiveness, and user experience quality across different devices",
+        "priority": "medium",
+        "dependencies": [
+          5
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Implement User Database Schema",
+            "description": "Create the necessary database table to store user information, including credentials and profile data.",
+            "dependencies": [],
+            "details": "Create a 'users' table with columns: 'id' (primary key, UUID), 'email' (unique, indexed), 'password_hash' (string), 'created_at' (timestamp), and 'updated_at' (timestamp). Use a database migration tool like Alembic or Flyway to manage schema changes.",
+            "status": "pending",
+            "testStrategy": "Verify the migration runs successfully against a test database. Manually inspect the schema to confirm all columns, types, and constraints are correct. Write a unit test to ensure the User model can be created and persisted."
+          },
+          {
+            "id": 2,
+            "title": "Develop User Registration API Endpoint",
+            "description": "Create a public API endpoint that allows new users to register for an account by providing their email and password.",
+            "dependencies": [],
+            "details": "Implement a POST /api/auth/register endpoint. It must validate input (e.g., valid email format, password complexity), check if the email is already in use, hash the password using bcrypt, and save the new user to the database. On success, return a 201 Created status. On failure, return appropriate error codes (e.g., 400 for bad input, 409 for conflict).",
+            "status": "pending",
+            "testStrategy": "Write integration tests for the endpoint. Test the success case with valid data. Test failure cases: duplicate email, invalid email format, weak password, missing fields. Verify that the password stored in the database is a hash and not plaintext."
+          },
+          {
+            "id": 3,
+            "title": "Develop User Login API Endpoint with JWT Generation",
+            "description": "Create a public API endpoint for users to log in and receive a JSON Web Token (JWT) for session management.",
+            "dependencies": [],
+            "details": "Implement a POST /api/auth/login endpoint. It should accept 'email' and 'password'. Find the user by email, then use bcrypt to compare the provided password with the stored hash. If credentials are valid, generate a JWT containing the user's ID and an expiration claim (e.g., 1 hour). Return the JWT in the response body.",
+            "status": "pending",
+            "testStrategy": "Integration tests: Test successful login with correct credentials, ensuring a valid JWT is returned. Test failed login with an incorrect password and with a non-existent email. Decode a valid token in a test to verify its payload and expiration."
+          },
+          {
+            "id": 4,
+            "title": "Create Authentication Middleware for Protected Routes",
+            "description": "Develop middleware to verify the JWT on incoming requests to secure specific API endpoints, ensuring only authenticated users can access them.",
+            "dependencies": [],
+            "details": "Create a middleware function that extracts the JWT from the 'Authorization: Bearer <token>' header. It must verify the token's signature and check for expiration. If the token is valid, decode the payload and attach the user's ID to the request object for use in protected route handlers. If the token is missing, invalid, or expired, the middleware must return a 401 Unauthorized response.",
+            "status": "pending",
+            "testStrategy": "Create a sample protected endpoint and apply the middleware. Write integration tests: a request with a valid token should receive a 200 OK. Requests with an invalid token, an expired token, or no token should all receive a 401 Unauthorized."
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Implement Security Hardening and Privacy Controls",
+        "description": "Apply comprehensive security measures, privacy controls, and compliance features",
+        "details": "Implement TLS for all communications, secure session management, and input validation/sanitization. Configure Sentry PII scrubbing for error payloads. Add rate limiting for authentication and API endpoints. Implement CSRF protection and secure headers. Create privacy policy and data retention/deletion pathways. Add audit logging for sensitive operations. Implement proper error handling without information leakage. Configure security headers and Content Security Policy. Add data export functionality for user privacy rights.",
+        "testStrategy": "Conduct security audit, test rate limiting, verify PII scrubbing in error logs, validate CSRF protection, and ensure privacy policy compliance",
+        "priority": "high",
+        "dependencies": [
+          1,
+          3,
+          8
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Implement User Database Schema",
+            "description": "Create the necessary database table(s) to store user information, including identifiers (e.g., email) and a hashed password.",
+            "dependencies": [],
+            "details": "Define a 'users' table with columns like 'id' (primary key), 'email' (unique, indexed), 'password_hash' (string), 'created_at', and 'updated_at'. Use a database migration tool (e.g., Alembic, Flyway, Knex.js migrations) to version and apply the schema.",
+            "status": "pending",
+            "testStrategy": "Verify the migration runs successfully against a test database. Manually inspect the schema to confirm all columns, types, and constraints (unique, not null) are correctly created. Write a unit test for the User model to ensure an object can be created and saved."
+          },
+          {
+            "id": 2,
+            "title": "Implement Secure Password Hashing and Verification Logic",
+            "description": "Create utility functions to securely hash passwords upon user registration and verify them during login.",
+            "dependencies": [],
+            "details": "Use a strong, adaptive, and salted hashing algorithm like Argon2 or bcrypt. Create two core functions: `hashPassword(plainTextPassword)` which returns a hash, and `verifyPassword(plainTextPassword, hash)` which returns a boolean. Isolate this logic in a dedicated module.",
+            "status": "pending",
+            "testStrategy": "Write unit tests for the hashing utility. Test that `verifyPassword` returns true for the correct password and false for an incorrect one. Assert that calling `hashPassword` on the same input twice produces two different hashes (due to salting)."
+          },
+          {
+            "id": 3,
+            "title": "Develop User Registration API Endpoint",
+            "description": "Create a public API endpoint (e.g., POST /api/auth/register) that allows new users to create an account.",
+            "dependencies": [],
+            "details": "The endpoint should accept user data (e.g., email, password) in the request body. It must validate the input (e.g., check for existing email, password strength), use the password hashing utility to hash the password, and save the new user record to the database. Return a success status or appropriate error codes.",
+            "status": "pending",
+            "testStrategy": "Write integration tests. Test successful registration with valid data. Test failure cases: duplicate email, invalid email format, weak password. Verify the password stored in the database is a hash, not plaintext."
+          },
+          {
+            "id": 4,
+            "title": "Develop User Login API Endpoint and Token Generation",
+            "description": "Create an API endpoint (e.g., POST /api/auth/login) for users to authenticate and receive an access token.",
+            "dependencies": [],
+            "details": "The endpoint will accept user credentials. It will find the user in the database, use the password verification utility to check the password. If successful, generate a JSON Web Token (JWT) containing user identifiers (e.g., user ID, roles) and an expiration time. Return the JWT to the client.",
+            "status": "pending",
+            "testStrategy": "Write integration tests. Test successful login with correct credentials, ensuring a valid JWT is returned. Test login failure with an incorrect password or non-existent user. Test that the returned JWT can be decoded and contains the correct payload and expiration claim."
+          },
+          {
+            "id": 5,
+            "title": "Implement Backend Protected Route Middleware",
+            "description": "Create server-side middleware to protect specific API routes, requiring a valid JWT for access.",
+            "dependencies": [],
+            "details": "The middleware should extract the JWT from the 'Authorization: Bearer <token>' header. It must verify the token's signature and check its expiration. If valid, it should attach the user's information (decoded from the token) to the request object and pass control to the next handler. If invalid, it must return a 401 Unauthorized error.",
+            "status": "pending",
+            "testStrategy": "Create a dummy protected endpoint. Write integration tests to access it with a valid token (should succeed), with an expired token (should fail with 401), with a malformed token (should fail with 401), and with no token (should fail with 401)."
+          },
+          {
+            "id": 6,
+            "title": "Create Frontend Registration and Login UI Components",
+            "description": "Build the user interface forms for registration and login using a frontend framework (e.g., React, Vue, Svelte).",
+            "dependencies": [],
+            "details": "Create two separate pages/components for registration and login. Each form should include input fields, client-side validation, and user-friendly error message displays. On form submission, call the respective backend API endpoints. On successful login, store the received JWT securely (e.g., in an HttpOnly cookie or local storage).",
+            "status": "pending",
+            "testStrategy": "Use component tests (e.g., with Vitest, Jest) to check form rendering and validation logic. Conduct end-to-end (E2E) tests using a tool like Cypress or Playwright to simulate a user filling out the forms, submitting, and verifying the correct API calls are made and application state changes."
+          },
+          {
+            "id": 7,
+            "title": "Implement Frontend Protected Routing and State Management",
+            "description": "Manage authentication state globally in the frontend and create protected routes that are only accessible to logged-in users.",
+            "dependencies": [],
+            "details": "Use a state management solution (e.g., Redux, Zustand, Pinia, or React Context) to store the user's authentication status. Create a route guard or higher-order component that checks for a valid auth token before rendering a protected page. If no token is present, redirect the user to the login page. Implement a 'logout' function that clears the token and auth state.",
+            "status": "pending",
+            "testStrategy": "E2E tests: Attempt to access a protected route while logged out and verify redirection to the login page. Log in, then access the protected route and verify it loads correctly. Test the logout functionality and ensure the user is redirected and can no longer access protected routes."
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Performance Optimization and Accessibility Implementation",
+        "description": "Optimize application performance and ensure full accessibility compliance for all users",
+        "details": "Implement performance optimizations: code splitting, lazy loading, image optimization, and caching strategies. Optimize Convex queries with proper indexing and pagination. Add accessibility features: ARIA labels, keyboard navigation, screen reader support, and color contrast compliance. Implement responsive design for mobile, tablet, and desktop. Add loading states, error boundaries, and offline handling. Optimize bundle size and implement service worker for caching. Ensure RTL layout accessibility for Arabic users.",
+        "testStrategy": "Run Lighthouse audits, test with screen readers, verify keyboard navigation, check color contrast ratios, and validate responsive design across devices",
+        "priority": "medium",
+        "dependencies": [
+          2,
+          5,
+          6,
+          8
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Implement User Database Schema",
+            "description": "Create the necessary database tables to store user information, including credentials and profile data, using a migration script.",
+            "dependencies": [],
+            "details": "Define a 'users' table with columns: id (PK, auto-increment), email (UNIQUE, string), password_hash (string), created_at (timestamp), updated_at (timestamp). Use a database migration tool like Alembic or Flyway to generate and apply the schema.",
+            "status": "pending",
+            "testStrategy": "Run the migration against a test database and verify its successful application. Manually inspect the resulting table schema to confirm all columns, types, and constraints (e.g., UNIQUE) are correctly defined."
+          },
+          {
+            "id": 2,
+            "title": "Implement Password Hashing and Verification Service",
+            "description": "Create a reusable module for securely hashing new passwords and verifying submitted passwords against their stored hashes.",
+            "dependencies": [],
+            "details": "Use a strong, adaptive hashing algorithm like bcrypt. Create two core functions: `hashPassword(plainTextPassword)` which returns a salted hash, and `verifyPassword(plainTextPassword, hash)` which returns a boolean. Encapsulate this logic in a dedicated 'security' or 'crypto' service.",
+            "status": "pending",
+            "testStrategy": "Write unit tests for the service. Assert that `verifyPassword` returns true for a correct password and false for an incorrect one. Assert that `hashPassword` produces a different hash for the same input on subsequent calls due to salting."
+          },
+          {
+            "id": 3,
+            "title": "Develop User Registration API Endpoint",
+            "description": "Create the `POST /api/auth/register` endpoint to allow new users to sign up for the service.",
+            "dependencies": [],
+            "details": "The endpoint must accept 'email' and 'password' in the request body. It should validate the input (e.g., valid email format, password complexity). Use the Password Hashing Service to hash the password before storing the new user record in the database. Return a 201 Created status on success.",
+            "status": "pending",
+            "testStrategy": "Write integration tests covering the happy path (successful registration) and failure cases (duplicate email, invalid email format, weak password, missing fields). Verify that the password stored in the test database is a hash, not plaintext."
+          },
+          {
+            "id": 4,
+            "title": "Develop User Login API Endpoint and JWT Generation",
+            "description": "Create the `POST /api/auth/login` endpoint to authenticate users and issue a JSON Web Token (JWT).",
+            "dependencies": [],
+            "details": "The endpoint accepts 'email' and 'password'. It will find the user by email, then use the Password Verification Service to check the password. If credentials are valid, generate a signed JWT containing the user ID and an expiration claim. Return the JWT in the response body.",
+            "status": "pending",
+            "testStrategy": "Write integration tests for successful login with correct credentials, asserting a valid JWT is returned. Test failed login attempts with an incorrect password or a non-existent email, asserting the correct HTTP error status (e.g., 401 Unauthorized)."
+          },
+          {
+            "id": 5,
+            "title": "Implement JWT Authentication Middleware",
+            "description": "Create a middleware to protect routes by verifying the JWT provided in the request's Authorization header.",
+            "dependencies": [],
+            "details": "The middleware will extract the token from the 'Authorization: Bearer <token>' header. It must verify the token's signature using the secret key and check for expiration. If valid, attach the user's ID from the token payload to the request object. If invalid, respond with a 401 Unauthorized error.",
+            "status": "pending",
+            "testStrategy": "Unit test the middleware logic by mocking requests. Test scenarios with a valid token, an expired token, a malformed token, an invalid signature, and no token, asserting the correct outcome for each case (i.e., `next()` is called or a 401 error is returned)."
+          },
+          {
+            "id": 6,
+            "title": "Create Protected 'Get User Profile' Endpoint",
+            "description": "Implement a sample protected route, `GET /api/users/me`, that requires authentication and returns the current user's data.",
+            "dependencies": [],
+            "details": "Create the `GET /api/users/me` route and apply the JWT Authentication Middleware. The route handler will use the user ID attached to the request by the middleware to fetch the user's profile (excluding sensitive data like the password hash) from the database and return it as JSON.",
+            "status": "pending",
+            "testStrategy": "Write an integration test. First, make a request to the endpoint without a token and assert a 401 Unauthorized response. Second, perform a login to get a valid token, then use that token to access the endpoint and assert a 200 OK response with the correct user's profile data."
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Content Seeding and Production Deployment",
+        "description": "Seed initial content, configure production environment, and prepare for launch",
+        "details": "Seed database with initial skills taxonomy, sample opportunities, and test user accounts. Configure production Convex environment with proper scaling and monitoring. Setup production Sentry and PostHog configurations with appropriate sampling rates. Create deployment scripts and database migration procedures. Implement feature flags for gradual rollout. Setup monitoring dashboards and alerting for critical metrics. Create admin user accounts for Youth Centers and Ministry personnel. Conduct final security review and performance testing in production environment.",
+        "testStrategy": "Verify production deployment works correctly, all integrations function properly, monitoring captures appropriate metrics, and initial content displays correctly in both languages",
+        "priority": "medium",
+        "dependencies": [
+          4,
+          7,
+          8,
+          10,
+          11
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Set Up User Database Schema",
+            "description": "Create the necessary database tables to store user information, including credentials and profile data, using a migration script.",
+            "dependencies": [],
+            "details": "The 'users' table should include columns for 'id' (primary key), 'email' (unique), 'password_hash' (string), 'created_at', and 'updated_at'. Use a database migration tool like Alembic or Flyway to manage schema changes.",
+            "status": "pending",
+            "testStrategy": "Verify the migration script runs successfully both up and down. Manually inspect the database schema to confirm table and column creation with correct constraints. Write a unit test for the migration logic."
+          },
+          {
+            "id": 2,
+            "title": "Implement User Registration API Endpoint",
+            "description": "Create a public API endpoint (e.g., POST /api/register) that allows new users to create an account.",
+            "dependencies": [],
+            "details": "The endpoint must validate input (e.g., password strength, valid email format), check for existing email, hash the password using bcrypt, and save the new user record to the database. Return a success message or user object, excluding the password hash.",
+            "status": "pending",
+            "testStrategy": "Write integration tests for: successful registration, registration with a duplicate email, registration with invalid input (e.g., weak password), and verify the password stored in the database is correctly hashed."
+          },
+          {
+            "id": 3,
+            "title": "Implement User Login and JWT Generation",
+            "description": "Create an API endpoint (e.g., POST /api/login) for users to authenticate and receive a JSON Web Token (JWT).",
+            "dependencies": [],
+            "details": "The endpoint should accept email and password. It will find the user in the database and compare the provided password with the stored hash. On success, generate a signed JWT containing the user ID and an expiration date. Return the JWT to the client.",
+            "status": "pending",
+            "testStrategy": "Write integration tests for successful login (verifying the JWT payload), login with incorrect credentials, and login for a non-existent user. Unit test the JWT generation and verification logic in isolation."
+          },
+          {
+            "id": 4,
+            "title": "Develop Authentication Middleware for Protected Routes",
+            "description": "Implement middleware that intercepts requests to protected endpoints, validates the JWT from the Authorization header, and attaches user context to the request.",
+            "dependencies": [],
+            "details": "The middleware should extract the 'Bearer' token, verify its signature and expiration. If valid, decode the payload and attach the user ID to the request object for use by route handlers. If invalid, it must return a 401 Unauthorized error.",
+            "status": "pending",
+            "testStrategy": "Create a test protected endpoint. Write integration tests to verify that access is granted with a valid token, denied with an invalid/expired token, and denied when no token is provided."
+          },
+          {
+            "id": 5,
+            "title": "Implement Protected 'Get User Profile' Endpoint",
+            "description": "Create a protected API endpoint (e.g., GET /api/users/me) that returns the profile information for the currently authenticated user.",
+            "dependencies": [],
+            "details": "This endpoint must use the authentication middleware. It should retrieve the user ID from the request context provided by the middleware, fetch the user's data from the database, and return it. Ensure sensitive fields like 'password_hash' are omitted from the response.",
+            "status": "pending",
+            "testStrategy": "Write an integration test to ensure an authenticated user can fetch their own profile. Verify the response contains the correct data and excludes sensitive fields. Confirm that an unauthenticated request results in a 401 error."
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-15T17:11:22.444Z",
+      "updated": "2025-08-15T17:11:22.444Z",
+      "description": "Tasks for master context"
+    }
+  }
+}
