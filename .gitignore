@@ -64,3 +64,6 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/ 
+
+# Sentry Config File
+.env.sentry-build-plugin
