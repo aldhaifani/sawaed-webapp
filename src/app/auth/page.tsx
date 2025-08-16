@@ -9,6 +9,9 @@ import {
 } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import { getDashboardPathForRole } from "@/lib/rbac";
 
 import { LogoIcon } from "@/components/logo";
 import { Button } from "@/components/ui/button";
@@ -24,7 +27,7 @@ import {
 type Step = "email" | { email: string };
 
 export default function LoginPage(): ReactElement {
-  const { signIn } = useAuthActions();
+  const { signIn, signOut } = useAuthActions();
   const router = useRouter();
   const [step, setStep] = useState<Step>("email");
   const [loading, setLoading] = useState<boolean>(false);
@@ -34,6 +37,7 @@ export default function LoginPage(): ReactElement {
   const [info, setInfo] = useState<string>("");
   const codeFormRef = useRef<HTMLFormElement | null>(null);
   const lastAutoSubmittedCodeRef = useRef<string | null>(null);
+  const me = useQuery(api.rbac.currentUser);
 
   // Normalize any locale-specific digits (e.g., Arabic-Indic) to ASCII 0-9
   const toAsciiDigits = (value: string): string => {
@@ -54,6 +58,17 @@ export default function LoginPage(): ReactElement {
     // Reset auto-submit tracker when switching steps
     lastAutoSubmittedCodeRef.current = null;
   }, [step]);
+
+  // If already authenticated, redirect to dashboard
+  useEffect(() => {
+    if (me === undefined) return; // loading
+    if (me === null) return; // not authenticated
+    if (me.isDeleted || me.isBlocked) {
+      void signOut();
+      return; // stay on /auth
+    }
+    router.replace(getDashboardPathForRole(me.role));
+  }, [me, router, signOut]);
 
   // Auto-submit when the 6th digit is entered (using ASCII-normalized value)
   useEffect(() => {
