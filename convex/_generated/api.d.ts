@@ -20,6 +20,7 @@ import type * as crons from "../crons.js";
 import type * as http from "../http.js";
 import type * as rbac from "../rbac.js";
 import type * as rbacHelpers from "../rbacHelpers.js";
+import type * as rbacWrappers from "../rbacWrappers.js";
 import type * as users from "../users.js";
 
 /**
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   rbac: typeof rbac;
   rbacHelpers: typeof rbacHelpers;
+  rbacWrappers: typeof rbacWrappers;
   users: typeof users;
 }>;
 export declare const api: FilterApi<

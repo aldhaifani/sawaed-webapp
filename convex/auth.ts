@@ -1,5 +1,6 @@
 import { convexAuth } from "@convex-dev/auth/server";
 import { ResendOTP } from "./ResendOTP";
+import { ROLES } from "@/shared/rbac";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 
@@ -28,7 +29,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           firstName: undefined,
           lastName: undefined,
           phone: authUser?.phone ?? undefined,
-          role: "YOUTH",
+          role: ROLES.YOUTH,
           isBlocked: false,
           isDeleted: false,
           languagePreference: "ar",
