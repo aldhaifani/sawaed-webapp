@@ -1,377 +1,239 @@
-# PRODUCT REQUIREMENTS DOCUMENT (PRD)
+<context>
 
-# SAWAED: National Youth Talent Ecosystem
+# Overview
 
-Version 1.0
-Author: Tareq Aldhaifani
+Sawaed is a national, bilingual (Arabic/English) web platform designed to be the central ecosystem for discovering, developing, and connecting the talents of Omani youth.
 
-## Executive Summary
+It solves two key problems:
 
-Sawaed is a national, bilingual (Arabic/English) web platform serving as the central ecosystem for discovering, developing, and connecting the talents of Omani youth. For MVP, the focus is on three core pillars:
+1. **For Youth**: Lack of a unified, modern platform to showcase skills, interests, and achievements, and to discover opportunities.
+2. **For Policymakers**: Lack of real-time, aggregated insights into youth skills, interests, and education to inform national strategy.
 
-- Dynamic Profile (skills-first, bilingual)
-- Opportunities Portal (curated national opportunities with one-click registration)
-- Ministry Admin Portal (anonymous, aggregated insights)
+**Target Users**:
 
-Subsequent phases will introduce AI-powered learning paths, community features, and advanced analytics. The platform aligns with Oman Vision 2040 by empowering youth growth and enabling evidence-based policymaking.
-
-## Problem Statement
-
-Oman’s youth development efforts face:
-
-- No unified, real-time view of youth skills to inform policy.
-- Youth lack a modern, structured way to showcase skills and projects.
-- Fragmented discovery of opportunities and programs.
-- Difficulty connecting with peers for collaboration.
-
-## Product Goals (MVP-first)
-
-1. Achieve a 70% average profile completion rate among active users.
-2. Increase youth engagement with national opportunities by 40%.
-3. Reduce the Ministry’s reliance on manual surveys for data collection by 90%.
-4. Ensure full accessibility and bilingual functionality (Arabic/English).
-5. Deliver an anonymous, aggregated dashboard for policymakers with fast load times.
-
-(Post-MVP)
-
-- Provide personalized learning paths to 50% of active users within 6 months.
-- Become the primary platform for youth peer-to-peer collaboration in Oman.
-
-## User Personas
-
-- Primary: Tareq (Ambitious Youth), 19, seeks to build a portfolio and find opportunities/collaborators.
-- Secondary: Ms. Fatima (Ministry Strategist), needs aggregated insights to plan and justify programs.
-- Tertiary: Khalid (Youth Center Coordinator), posts and manages youth-targeted workshops/events.
-
-## Ideal Customer Profile
-
-- Omani youth aged 15–29
+- Omani youth (15–29)
 - Ministry of Culture, Sports and Youth
 - Youth Centers and related government bodies
 - Educational institutions
 - Private sector (CSR/recruitment)
 
-## MVP Scope and Priorities
+**Value Proposition**:
 
-The MVP must deliver the following, in priority order:
+- Youth: A digital portfolio + access to curated opportunities.
+- Ministry: Anonymous, aggregated insights for evidence-based policymaking.
+- Youth Centers: A direct channel to promote events and track engagement.
 
-1. Authentication & Internationalization (Foundational)
+---
 
-- Passwordless login (OTP via email).
-- Full bilingual UI (Arabic/English) with persistent language preference.
-- Role-based access (youth, admin, superadmin).
-
-2. Dynamic Profile Management (Skills-first)
-
-- Core profile (bio, photo, contact info).
-- Standardized, tag-based skills from a master list.
-- Bilingual support for all user-generated content fields.
-
-3. Opportunities Portal
-
-- Dedicated listing page to browse/search opportunities.
-- Simple, secure interface for authorized admins to post/manage events.
-- Detailed opportunity view (description, location, dates).
-- One-click registration for logged-in youth.
-- All listings bilingual.
-
-4. Ministry Admin Portal (Read-only)
-
-- Role-based access restricted to ministry personnel.
-- Anonymous, aggregated data only (no PII).
-- At least two key charts (e.g., youth distribution by governorate, top skills).
-- Fast load (≤5 seconds).
-
-5. Onboarding (P1 within MVP)
-
-- Streamlined onboarding flow for youth profile creation and skills selection.
-
-## Post-MVP (Phase: AI-related features)
-
-- AI-Powered Learning Paths:
-  - Conversational assessment to gauge proficiency.
-  - Personalized learning path with modules/steps.
-  - Integrate relevant platform opportunities.
-  - Progress tracking and nudges.
-
-## Phase 2 (Additional features after AI)
-
-- Community & Networking:
-  - Searchable/Filterable user directory (skills, interests, location, collaboration status).
-  - Secure, real-time one-to-one messaging.
-- Enhanced Profiles:
-  - Modular sections (Projects, Talents, Hobbies).
-  - Gamified profile completion tracker.
-  - Shareable public profile link.
-- Enhanced Ministry Portal:
-  - Interactive charts, maps, filters by region/skill/interest.
-  - Export data and charts.
-- Opportunities Enhancements:
-  - AI-driven opportunity suggestions based on profile.
-- Authentication Enhancements:
-  - Phone number OTP.
-
-## Feature Specifications
+# Core Features
 
 ### 1. Authentication & Internationalization (MVP)
 
-Description: Secure, passwordless login and full bilingual UI.
+- **What it does**: Provides secure, passwordless login (email OTP) and full bilingual support.
+- **Why it’s important**: Ensures accessibility, inclusivity, and security.
+- **How it works**: Convex Auth handles OTP login; UI supports Arabic (RTL) and English (LTR).
 
-Core Requirements:
+### 2. Dynamic Profile Management (MVP → Expanded in Phases)
 
-- Email OTP-based authentication.
-- Bilingual Arabic/English across all UI and content fields.
-- Persistent language preference per user.
+- **What it does**: Lets youth create a structured, multi-dimensional digital portfolio.
+- **Why it’s important**: Provides a standardized, analyzable way to showcase talents, interests, and achievements.
+- **How it works**: Youth select skills and interests from master taxonomies, and progressively add education, certificates, projects, and awards.
 
-User Stories:
+**Profile Sections by Phase:**
 
-- As a user, I want to log in with a code sent to my email.
-- As an Arabic-speaking user, I want the entire interface in Arabic.
-
-Acceptance Criteria:
-
-- Auth is handled by Convex Auth (Convex built-in auth).
-- All UI text and system text translated and rendered RTL where appropriate.
-- Language preference saved and respected across sessions.
-
-### 2. Dynamic Profile Management (MVP)
-
-Description: A modern, skills-first digital portfolio.
-
-Core Requirements:
-
-- Profile sections: bio, photo, contact info.
-- Master skills taxonomy with standardized tags.
-- Bilingual entry and display.
-
-User Stories:
-
-- As a youth, I want to select skills from a predefined list.
-- As a user, I want to complete my profile in Arabic or English.
-
-Acceptance Criteria:
-
-- A user can create a profile, add a bio, and select at least five skills.
-- Correct display and storage of both Arabic and English text.
-
-(Post-MVP add-ons in Phase 2)
-
-- Projects, Talents, Hobbies sections.
-- Gamified completion tracker.
-- Shareable public profile URL.
+- **MVP**: Bio, photo, contact info, **skills**, **interests**
+- **Post-MVP (Phase 2)**: Education, certificates, projects, awards, gamified completion tracker, shareable public profile
 
 ### 3. Opportunities Portal (MVP)
 
-Description: Curated, centralized opportunities with one-click registration.
-
-Core Requirements:
-
-- Browse/search opportunities list.
-- Admin interface for posting/managing events.
-- Opportunity detail view.
-- One-click registration (auto-fill from profile).
-- Bilingual listings.
-
-User Stories:
-
-- As a youth, I want one place for official workshops/events.
-- As a Youth Center admin, I want to post a workshop easily.
-- As a youth, I want to register with one click.
-
-Acceptance Criteria:
-
-- All listings available in Arabic and English.
-- Admin posting interface is simple and secure.
-- Registrations recorded instantly in the central database.
-
-(Post-MVP)
-
-- AI suggestions for relevant opportunities.
+- **What it does**: Centralized listing of workshops, events, and programs.
+- **Why it’s important**: Youth gain a single trusted source for opportunities; admins can easily post and manage events.
+- **How it works**: Admins create bilingual listings; youth browse/search and register with one click.
 
 ### 4. Ministry Admin Portal (MVP)
 
-Description: Anonymous, aggregated analytics for policymakers.
-
-Core Requirements:
-
-- Role-based, restricted access.
-- No PII—aggregated only.
-- Charts: youth distribution by governorate; top skills.
-
-User Stories:
-
-- As a strategist, I want a high-level chart of youth locations.
-- As a director, I want to see the most popular skills.
-
-Acceptance Criteria:
-
-- Enforced anonymity; impossible to trace back to an individual.
-- Dashboard loads within 5 seconds.
-- Bilingual portal.
-
-(Post-MVP in Phase 2)
-
-- Interactive maps/filters, export.
+- **What it does**: Provides anonymous, aggregated insights into youth skills, interests, and distribution.
+- **Why it’s important**: Enables data-driven policymaking without manual surveys.
+- **How it works**: Convex queries aggregate data; dashboard visualizes charts (e.g., top skills, top interests, youth by governorate).
 
 ### 5. AI-Powered Learning Paths (Post-MVP)
 
-Description: Assessment-driven, personalized learning journeys.
-
-Core Requirements:
-
-- Conversational assessment.
-- Dynamic path with modules and steps.
-- Integrate opportunities into the path.
-- Progress tracking.
+- **What it does**: Personalized learning journeys based on skill and interest assessments.
+- **Why it’s important**: Helps youth know what to learn next, contextualized to Oman.
+- **How it works**: Conversational AI assessment → generates learning path → integrates opportunities.
 
 ### 6. Community & Networking (Phase 2)
 
-Description: Connect and collaborate with peers.
+- **What it does**: Connects youth with peers for collaboration.
+- **Why it’s important**: Builds a national youth innovation network.
+- **How it works**: Searchable directory + secure private messaging.
 
-Core Requirements:
+---
 
-- Directory with filters (skills, interests, location, collaboration status).
-- Secure, real-time private messaging.
+# User Experience
 
-## Technical Requirements
+### User Personas
 
-### Tech Stack (Updated)
+- **Tareq (Youth)**: Wants to showcase skills, interests, and achievements; find opportunities; and collaborate.
+- **Ms. Fatima (Ministry Strategist)**: Needs aggregated insights into youth skills, interests, and education.
+- **Khalid (Youth Center Admin)**: Wants to post events and track engagement.
 
-- Frontend: Next.js 15, React, TypeScript
-- Backend/Realtime/DB/Auth: Convex (database, auth, serverless functions, file storage)
-- Error Monitoring: Sentry
-- Product Analytics: PostHog
-- Deployment/Hosting: Vercel (frontend), Convex cloud
-- Email (if needed beyond Convex integrations): Resend (optional fallback)
+### Key User Flows
 
-### Technical Prerequisites (Before Development Sprints)
+1. **Youth Onboarding** → Sign up (OTP) → Select language → Create profile (bio, skills, interests) → Browse opportunities → Register.
+2. **Admin Posting** → Log in → Create bilingual event → Publish → Track registrations.
+3. **Ministry Strategist** → Log in → View dashboard → Explore aggregated charts (skills, interests, distribution).
 
-1. Convex setup:
-   - Convex Auth configured for passwordless email OTP
-   - Schema for DB models and indexes
-   - Role-based access control scaffolding
-2. Sentry integration:
-   - Client and server error monitoring
-   - Source maps, environment tagging, performance tracing
-3. PostHog integration:
-   - Event schema (auth success, profile updated, skill selected, opportunity viewed, registration completed, dashboard viewed)
-   - Feature flags for progressive rollout
-4. Begin feature development after the above are verified in staging.
+### UI/UX Considerations
 
-### Core Architecture
+- Bilingual (Arabic RTL + English LTR).
+- Mobile-first responsive design.
+- Simple, frictionless onboarding.
+- Accessibility (WCAG compliance).
 
-- App: Next.js 15 App Router with React Server Components where beneficial
-- API/Server: Convex functions (queries/mutations/actions) as the primary backend
-- Data: Convex as primary real-time database and file storage
-- i18n: Next.js internationalization (Arabic RTL + English LTR)
-- Auth: Convex Auth (email OTP)
-- Monitoring/Analytics: Sentry, PostHog
-- CI/CD: Vercel deployments with preview environments; type-safe checks and linting in CI
+</context>
 
-### Data Models (MVP)
+---
 
-- User: id, email, role (youth | admin | superadmin), language_preference, created_at
-- Profile: id, user_id, headline, bio, location, picture_url
-- Skill: id, name_en, name_ar, category (optional)
-- User_Skills: id, user_id, skill_id, proficiency (optional), added_at
-- Event: id, title_en, title_ar, description_en, description_ar, date_start, date_end (optional), location, created_by_admin_id, created_at, status (draft | published)
-- Registration: id, user_id, event_id, timestamp, status (registered | cancelled)
-- AuditLog (optional MVP): id, actor_id, action, target_type, target_id, timestamp
+<PRD>
 
-Indexes:
+# Technical Architecture
 
-- User.role
-- User_Skills.user_id, User_Skills.skill_id
-- Event.status, Event.date_start
-- Registration.user_id, Registration.event_id
+### System Components
 
-### Security & Privacy
+- **Frontend**: Next.js 15, React, TypeScript
+- **Backend**: Convex (DB, Auth, Functions, File Storage)
+- **Monitoring**: Sentry (error tracking)
+- **Analytics**: PostHog (event tracking, feature flags)
+- **Hosting**: Vercel (frontend), Convex Cloud (backend)
 
-- TLS for all communications
-- Convex Auth sessions and RBAC enforced in server-side functions
-- Ministry dashboard serves only aggregated results (group-by queries); no raw user rows
-- Strict separation of admin functions and youth endpoints
-- PII minimization: Admin views never receive email, names, or picture URLs
-- Sentry scrubbing of PII in error payloads
-- Compliance: Clear privacy policy; data retention and deletion pathways
+### Data Models (MVP → Expanded in Phases)
 
-## Success Metrics & KPIs (MVP)
+- **User**: id, email, role, language_preference, created_at
+- **Profile**: id, user_id, bio, location, picture_url
+- **Skill**: id, name_en, name_ar
+- **Interest**: id, name_en, name_ar
+- **User_Skills**: id, user_id, skill_id
+- **User_Interests**: id, user_id, interest_id
+- **Event**: id, title_en, title_ar, description_en, description_ar, date, location, created_by_admin_id
+- **Registration**: id, user_id, event_id, timestamp
 
-- Adoption: ≥1,000 active youth users in 3 months
-- Engagement: ≥500 event registrations within 3 months
-- Data Utility: Ministry stakeholders log in ≥1 time/week
-- Retention: Month 1 retention >20%
-- Satisfaction: Positive qualitative feedback from pilot cohorts
-- Performance: Admin dashboard TTI ≤5s on standard connections
+**Phase 2 Additions:**
 
-## Timeline & Milestones
+- **Education**: id, user_id, institution, degree, start_date, end_date
+- **Certificate**: id, user_id, title, issuer, date_awarded
+- **Project**: id, user_id, title, description, link, media_url
+- **Award**: id, user_id, title, issuer, date_awarded
 
-Phase 0: Foundations (2–3 weeks)
+### APIs & Integrations
 
-- Technical prerequisites:
-  - Convex (auth, DB schema, RBAC)
-  - Sentry integrated
-  - PostHog integrated
-- Staging environment live
+- Convex Auth (email OTP)
+- Convex Functions (queries/mutations)
+- Sentry SDK (frontend + backend)
+- PostHog SDK (frontend + backend)
 
-Phase 1: MVP Build (Up to 3 months total including Phase 0)
+### Infrastructure Requirements
 
-- P0:
-  - Authentication & i18n framework (Convex Auth + bilingual UI)
-  - Dynamic Profile (bio, photo, contact, skills)
-  - Opportunities Portal (admin post/manage; youth browse/register)
-  - Ministry Admin Portal (read-only; distribution by governorate, top skills)
-- P1:
-  - Onboarding flow for new users
-  - Performance hardening and accessibility passes
-  - Content seeding with Youth Centers
+- Convex project with schema + auth configured
+- Vercel deployment pipeline with preview environments
+- Sentry + PostHog integrated before feature development
 
-Phase: AI Features (Post-MVP)
+---
 
-- AI conversational assessment, personalized learning paths, progress tracking
-- Opportunity integration into paths
+# Development Roadmap
 
-Phase 2: Additional Features
+### MVP (Phase 1)
 
-- Community directory and private messaging
-- Enhanced profiles (projects, talents, hobbies), gamification, shareable links
-- Advanced Ministry analytics (maps, filters, export)
-- AI opportunity suggestions
-- Phone OTP
+- Authentication & Internationalization (Convex Auth, bilingual UI)
+- Dynamic Profile (bio, photo, **skills**, **interests**)
+- Opportunities Portal (admin posting, youth browsing, one-click registration)
+- Ministry Admin Portal (aggregated charts: youth by governorate, top skills, top interests)
+- Onboarding flow
 
-## Risks & Mitigations
+### Post-MVP (Phase: AI Features)
 
-- Low adoption or incomplete profiles
-  - Mitigation: Frictionless onboarding; leverage Opportunities Portal value; prompts to add skills; lightweight gamification later.
-- Scope creep
-  - Mitigation: Enforce MVP boundaries; defer AI and community features per roadmap.
-- Content scarcity for Opportunities Portal
-  - Mitigation: Early partnership and publishing workflows with Youth Centers; templates and training.
-- Privacy concerns
-  - Mitigation: Transparent policy; strict aggregation; Sentry PII scrubbing; security audit before launch.
-- Bilingual and RTL quality
-  - Mitigation: Full i18n testing; professional translations; RTL UI reviews.
+- AI-powered skill & interest assessment
+- Personalized learning paths
+- Progress tracking
+- Integration of opportunities into learning paths
 
-## Acceptance Criteria Summary (MVP)
+### Phase 2 (Additional Features)
 
-- Authentication via Convex Auth email OTP; bilingual UI; language persists.
-- User can create profile, add bio, upload photo, and select ≥2 skills from a master list.
-- Opportunities Portal supports admin posting, bilingual listings, detail pages, and one-click registrations recorded in DB.
-- Ministry dashboard shows aggregated charts (governorate distribution, top skills), loads ≤5s, reveals no PII.
-- Sentry and PostHog are integrated and capturing key events/errors.
-- Full Arabic/English coverage across UI; RTL verified.
+- Community & Networking (directory + messaging)
+- Enhanced Profiles:
+  - Education
+  - Certificates
+  - Projects
+  - Awards
+  - Gamified completion tracker
+  - Shareable public profile
+- Advanced Ministry Portal (filters, maps, export)
+- AI-driven opportunity suggestions
+- Phone OTP authentication
 
-## Analytics Events (Initial)
+---
 
-- auth: sign_up_started, sign_up_completed, sign_in_completed
-- profile: created, bio_updated, skills_added, picture_uploaded
-- opportunities: viewed_list, viewed_detail, registration_clicked, registration_completed
-- admin: event_created, event_published
-- ministry_dashboard: viewed, filter_changed (post-MVP)
-- performance: dashboard_loaded_under_5s (custom metric)
+# Logical Dependency Chain
 
-## Non-Goals (MVP)
+1. **Foundations**
+   - Convex setup (auth, DB schema, RBAC)
+   - Sentry integration
+   - PostHog integration
 
-- AI learning paths, community messaging, public profile links, advanced filters/exports, phone OTP.
-- Any PII exposure in ministry tools.
-- Native mobile apps (web-first).
+2. **Core MVP Features**
+   - Authentication & i18n
+   - Profile (bio, photo, skills, interests)
+   - Opportunities Portal
+   - Ministry Admin Portal
+
+3. **Onboarding & UX Polish**
+   - Guided onboarding flow
+   - Accessibility & performance improvements
+
+4. **AI Features (Post-MVP)**
+   - Conversational assessment
+   - Learning path generation
+
+5. **Phase 2 Features**
+   - Community networking
+   - Enhanced profiles (education, certificates, projects, awards)
+   - Advanced analytics
+
+---
+
+# Risks and Mitigations
+
+- **Risk: Low adoption / incomplete profiles**
+  - Mitigation: Frictionless onboarding, highlight Opportunities Portal value, progressive profile building.
+
+- **Risk: Scope creep**
+  - Mitigation: Strict MVP-first delivery; defer education/certificates/projects/awards to Phase 2.
+
+- **Risk: Content scarcity in Opportunities Portal**
+  - Mitigation: Early partnerships with Youth Centers; templates for event posting.
+
+- **Risk: Privacy concerns**
+  - Mitigation: Aggregated-only ministry data; strict RBAC; Sentry scrubbing PII.
+
+- **Risk: Bilingual/RTL issues**
+  - Mitigation: Professional translations; RTL UI testing.
+
+---
+
+# Appendix
+
+### Research Findings
+
+- Youth want a **portfolio beyond a CV**: skills, interests, education, certificates, projects, awards.
+- Ministry needs **aggregated insights** into both skills and interests.
+- Opportunities are scattered across multiple channels today.
+
+### Technical Specifications
+
+- Convex Auth for OTP login.
+- Convex DB schema with indexes for performance.
+- Sentry for error monitoring (scrub PII).
+- PostHog for analytics (auth, profile, opportunities, dashboard).
+- Next.js 15 App Router with React Server Components where beneficial.
+
+</PRD>
