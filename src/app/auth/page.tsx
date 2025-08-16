@@ -95,8 +95,12 @@ export default function LoginPage(): ReactElement {
       form.set("email", email);
       await signIn("resend-otp", form);
       setStep({ email });
-    } catch {
-      setError("Failed to send code. Please try again.");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to send code. Please try again.";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -120,8 +124,10 @@ export default function LoginPage(): ReactElement {
       await signIn("resend-otp", form);
       // Redirect after successful verification
       router.push("/");
-    } catch {
-      setError("Invalid code. Please try again.");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Invalid code. Please try again.";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -139,8 +145,12 @@ export default function LoginPage(): ReactElement {
       setInfo("A new code has been sent.");
       // Allow a fresh auto-submit on the next complete entry
       lastAutoSubmittedCodeRef.current = null;
-    } catch {
-      setError("Failed to resend code. Please try again.");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to resend code. Please try again.";
+      setError(message);
     } finally {
       setResending(false);
     }
