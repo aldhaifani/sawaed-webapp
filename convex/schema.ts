@@ -27,7 +27,11 @@ const schema = defineSchema({
     updatedAt: v.number(),
   })
     .index("by_auth_user", ["authUserId"]) // for quick lookups by auth user id
-    .index("by_email", ["email"]), // enforce uniqueness at write-time in code
+    .index("by_email", ["email"]) // enforce uniqueness at write-time in code
+    .index("by_role", ["role"]) // admin lists by role
+    .index("by_is_deleted", ["isDeleted"]) // audit deleted users
+    .index("by_is_blocked", ["isBlocked"]) // audit blocked users
+    .index("by_created_at", ["createdAt"]), // sort users by creation time
 
   // User Profile linked to `appUsers`
   profiles: defineTable({
@@ -69,7 +73,8 @@ const schema = defineSchema({
   })
     .index("by_user", ["userId"]) // fetch a user's skills
     .index("by_skill", ["skillId"]) // reverse lookup
-    .index("by_user_skill", ["userId", "skillId"]), // aid uniqueness checks in code
+    .index("by_user_skill", ["userId", "skillId"]) // aid uniqueness checks in code
+    .index("by_user_created", ["userId", "createdAt"]), // list in insertion order
 
   // Junction table: User ↔ Interest
   userInterests: defineTable({
@@ -79,7 +84,8 @@ const schema = defineSchema({
   })
     .index("by_user", ["userId"]) // fetch a user's interests
     .index("by_interest", ["interestId"]) // reverse lookup
-    .index("by_user_interest", ["userId", "interestId"]), // aid uniqueness checks in code
+    .index("by_user_interest", ["userId", "interestId"]) // aid uniqueness checks in code
+    .index("by_user_created", ["userId", "createdAt"]), // list in insertion order
 
   // Track onboarding progress/state per user
   userOnboarding: defineTable({
@@ -88,7 +94,9 @@ const schema = defineSchema({
     completed: v.boolean(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_user", ["userId"]),
+  })
+    .index("by_user", ["userId"]) // fetch onboarding by user
+    .index("by_completed", ["completed"]), // list users by completion state
 
   // Events posted by admins (bilingual content)
   events: defineTable({
@@ -130,7 +138,9 @@ const schema = defineSchema({
   })
     .index("by_starting_date", ["startingDate"]) // list upcoming/past events
     .index("by_creator", ["createdByAdminId"])
-    .index("by_region_city", ["region", "city"]),
+    .index("by_region_city", ["region", "city"]) // location filter
+    .index("by_published_start", ["isPublished", "startingDate"]) // published events by time
+    .index("by_region_city_start", ["region", "city", "startingDate"]), // location + time
 
   // Event registrations (User ↔ Event)
   eventRegistrations: defineTable({
@@ -151,7 +161,9 @@ const schema = defineSchema({
   })
     .index("by_user", ["userId"]) // user registration history
     .index("by_event", ["eventId"]) // attendees list
-    .index("by_event_user", ["eventId", "userId"]), // aid duplicate prevention in code
+    .index("by_event_user", ["eventId", "userId"]) // aid duplicate prevention in code
+    .index("by_event_status", ["eventId", "status"]) // filter attendees by status
+    .index("by_user_status", ["userId", "status"]), // list user's registrations by status
 });
 
 export default schema;
