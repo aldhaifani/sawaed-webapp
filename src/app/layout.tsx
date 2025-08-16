@@ -2,6 +2,7 @@ import "@/styles/globals.css";
 
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { ConvexClientProvider } from "./ConvexClientProvider";
+import { PostHogProvider } from "@/components/PostHogProvider";
 
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
@@ -24,7 +25,9 @@ export default function RootLayout({
     <ConvexAuthNextjsServerProvider>
       <html lang="en" className={`${geist.variable}`}>
         <body>
-          <ConvexClientProvider>{children}</ConvexClientProvider>
+          <PostHogProvider>
+            <ConvexClientProvider>{children}</ConvexClientProvider>
+          </PostHogProvider>
         </body>
       </html>
     </ConvexAuthNextjsServerProvider>

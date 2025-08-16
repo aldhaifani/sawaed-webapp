@@ -83,7 +83,7 @@
             "description": "Install Sentry SDK for both frontend and backend environments. Configure it to enable PII scrubbing using SDK options such as send_default_pii=false, custom denylist, and before-send callbacks to remove sensitive data before sending events.",
             "dependencies": [],
             "details": "Follow best practices for data scrubbing by configuring Sentry SDK to avoid sending PII. Use event scrubbers and server-side scrubbing settings. Validate that error events do not contain personal information.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -715,7 +715,7 @@
     ],
     "metadata": {
       "created": "2025-08-16T07:34:51.087Z",
-      "updated": "2025-08-16T13:10:59.807Z",
+      "updated": "2025-08-16T18:42:12.197Z",
       "description": "Tasks for master context"
     }
   }
