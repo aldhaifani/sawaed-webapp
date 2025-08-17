@@ -3,6 +3,7 @@ import { ResendOTP } from "./ResendOTP";
 import { ROLES } from "@/shared/rbac";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
+import { captureServerEvent } from "./posthog";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [ResendOTP],
@@ -36,6 +37,12 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           createdAt: now,
           updatedAt: now,
         });
+        // Fire analytics event for profile creation (best-effort)
+        await captureServerEvent({
+          event: "user_profile_created",
+          distinctId: String(userId),
+          properties: { email: email ?? null },
+        });
         return;
       }
       await ctx.db.patch(existing._id, {
@@ -44,6 +51,11 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         phone: authUser?.phone ?? existing.phone,
         isDeleted: false,
         updatedAt: now,
+      });
+      await captureServerEvent({
+        event: "user_profile_updated",
+        distinctId: String(userId),
+        properties: { email: email ?? existing.email },
       });
     },
   },

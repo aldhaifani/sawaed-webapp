@@ -1,6 +1,7 @@
 import { Email } from "@convex-dev/auth/providers/Email";
 import { Resend as ResendAPI } from "resend";
 import { type RandomReader, generateRandomString } from "@oslojs/crypto/random";
+import { captureServerEvent } from "./posthog";
 
 function getOtpEmailHtml(token: string): string {
   return `<!DOCTYPE html>
@@ -114,6 +115,11 @@ export const ResendOTP = Email({
       console.error(
         "ResendOTP: Missing AUTH_RESEND_KEY environment variable in Convex deployment.",
       );
+      // Analytics best-effort: missing key
+      await captureServerEvent({
+        event: "resend_otp_missing_key",
+        distinctId: String(email),
+      });
       throw new Error(
         "Resend API key is not configured. Set AUTH_RESEND_KEY in your Convex deployment environment.",
       );
@@ -136,13 +142,30 @@ export const ResendOTP = Email({
           code: (error as any).name,
           message: (error as any).message,
         });
+        await captureServerEvent({
+          event: "resend_otp_failed",
+          distinctId: String(email),
+          properties: {
+            code: (error as any).name ?? null,
+            message: (error as any).message ?? String(error),
+          },
+        });
         throw new Error(JSON.stringify(error));
       }
       console.log("ResendOTP: Email sent via Resend", { to: email });
+      await captureServerEvent({
+        event: "resend_otp_sent",
+        distinctId: String(email),
+      });
     } catch (err) {
       console.error("ResendOTP: Failed to send verification email", {
         to: email,
         err: String(err),
+      });
+      await captureServerEvent({
+        event: "resend_otp_failed",
+        distinctId: String(email),
+        properties: { err: String(err) },
       });
       throw err;
     }
