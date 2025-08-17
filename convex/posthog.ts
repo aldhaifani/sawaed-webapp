@@ -1,3 +1,4 @@
+"use node";
 import { PostHog } from "posthog-node";
 
 export type CaptureParams = Readonly<{

@@ -75,7 +75,7 @@
         "testStrategy": "Test error reporting by triggering intentional errors, verify PII is scrubbed from logs, confirm analytics events are being captured correctly, and validate feature flags functionality.",
         "priority": "high",
         "dependencies": [1],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -101,7 +101,7 @@
             "description": "Integrate both Sentry and PostHog SDKs with Convex backend functions and Next.js middleware to enable centralized error tracking and analytics across the full stack.",
             "dependencies": ["2.1", "2.2"],
             "details": "Ensure Convex functions emit relevant events and errors to Sentry and PostHog. Configure Next.js middleware to capture and forward analytics and error data appropriately.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -110,7 +110,7 @@
             "description": "Set up feature flags using PostHog or an integrated solution to enable dynamic feature toggling based on user segments or other criteria.",
             "dependencies": ["2.2", "2.3"],
             "details": "Define feature flags in PostHog dashboard. Implement client-side and server-side logic to respect feature flag states. Test feature flag evaluation and rollout.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -119,7 +119,7 @@
             "description": "Perform comprehensive testing to verify that error reporting works correctly, PII is properly scrubbed from all logs, analytics events are captured accurately, and feature flags function as expected.",
             "dependencies": ["2.1", "2.2", "2.3", "2.4"],
             "details": "Trigger intentional errors to test Sentry reporting. Inspect captured events for absence of PII. Confirm PostHog events for auth, profile, browsing, and dashboard usage are logged. Validate feature flag toggling in different environments.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -132,7 +132,7 @@
         "testStrategy": "Test complete authentication flow including OTP generation, email delivery, verification, session creation, and logout. Verify rate limiting works and error states are handled gracefully.",
         "priority": "high",
         "dependencies": [1, 2],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -140,7 +140,7 @@
             "description": "Set up backend logic for generating, sending, and verifying email OTPs using Convex Auth and Resend email provider. Configure environment variables and API keys for email delivery.",
             "dependencies": [],
             "details": "Configure Convex Auth with Resend provider for email OTP. Implement OTP generation with secure random tokens, email sending with proper templates, and OTP expiration handling. Ensure trusted account linking for email-based authentication.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -149,7 +149,7 @@
             "description": "Create frontend UI components for login and signup flows including email input forms, OTP input verification screens, and user feedback for success or errors.",
             "dependencies": ["3.1"],
             "details": "Use React with ConvexAuthProvider to build responsive login/signup pages. Include email input, OTP code input, and submit buttons. Display validation messages and loading states. Integrate with backend OTP flow for verification.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -158,7 +158,7 @@
             "description": "Handle authenticated user sessions after OTP verification and redirect users based on their roles to appropriate pages.",
             "dependencies": ["3.2"],
             "details": "Use Convex Auth session management APIs to create and maintain user sessions. Implement logic to check user roles and redirect accordingly after login. Ensure session persistence and secure token handling.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -167,7 +167,7 @@
             "description": "Add logout feature to clear user sessions and redirect to public or login pages.",
             "dependencies": ["3.3"],
             "details": "Use Convex Auth signOut method to terminate sessions. Provide logout button in UI accessible from authenticated pages. Confirm session invalidation and UI updates on logout.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -176,7 +176,7 @@
             "description": "Implement robust error handling for invalid or expired OTP entries and enforce rate limiting to prevent abuse of OTP requests.",
             "dependencies": ["3.1", "3.2"],
             "details": "Detect and display errors for invalid OTP submissions. Implement backend rate limiting on OTP generation and resend requests using Convex Auth and environment configurations. Provide user-friendly error messages and retry options.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -185,7 +185,7 @@
             "description": "Capture and persist user preferences such as language choice during signup and integrate with internationalization framework.",
             "dependencies": ["3.2"],
             "details": "Extend signup flow to include language selection input. Store preferences in user profile or database. Ensure preferences are loaded on login and used to set UI language and directionality (RTL/LTR).",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -715,7 +715,7 @@
     ],
     "metadata": {
       "created": "2025-08-16T07:34:51.087Z",
-      "updated": "2025-08-17T06:58:11.243Z",
+      "updated": "2025-08-17T07:30:46.628Z",
       "description": "Tasks for master context"
     }
   }
