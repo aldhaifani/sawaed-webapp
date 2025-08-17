@@ -21,3 +21,16 @@ export function getDashboardPathForRole(role: Role): string {
   if (role === ROLES.SUPER_ADMIN) return "/sa";
   return "/";
 }
+
+/**
+ * Return the locale-prefixed dashboard path for a given role.
+ * Example: (role=ADMIN, locale=\"en\") -> \"/en/a\"
+ */
+export function getDashboardPathForRoleLocale(
+  role: Role,
+  locale: "en" | "ar",
+): string {
+  const base = getDashboardPathForRole(role);
+  if (base === "/") return `/${locale}`;
+  return `/${locale}${base}`;
+}

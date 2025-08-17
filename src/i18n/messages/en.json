@@ -1,0 +1,21 @@
+{
+  "common": {
+    "appName": "Sawaed",
+    "welcome": "Welcome",
+    "language": "Language",
+    "arabic": "Arabic",
+    "english": "English"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "continue": "Continue",
+    "email": "Email",
+    "otp": "Verification Code"
+  },
+  "roles": {
+    "youth": "Youth",
+    "admin": "Admin",
+    "superAdmin": "Super Admin"
+  }
+}

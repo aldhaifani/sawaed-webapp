@@ -198,7 +198,7 @@
         "testStrategy": "Test language switching functionality, verify RTL layout renders correctly, confirm all text is properly translated, and validate that user language preferences are persisted.",
         "priority": "high",
         "dependencies": [1],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -206,7 +206,7 @@
             "description": "Install and configure the next-intl library in the Next.js 15 project to enable internationalization support with App Router integration.",
             "dependencies": [],
             "details": "Install next-intl package, configure locale routing, set up localization middleware, and prepare the app to load translation messages dynamically.",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": ""
           },
           {
@@ -715,7 +715,7 @@
     ],
     "metadata": {
       "created": "2025-08-16T07:34:51.087Z",
-      "updated": "2025-08-17T07:30:46.628Z",
+      "updated": "2025-08-17T12:55:13.095Z",
       "description": "Tasks for master context"
     }
   }

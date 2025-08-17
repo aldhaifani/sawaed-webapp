@@ -20,6 +20,7 @@ import type * as authz from "../authz.js";
 import type * as crons from "../crons.js";
 import type * as http from "../http.js";
 import type * as posthog from "../posthog.js";
+import type * as preferences from "../preferences.js";
 import type * as rbac from "../rbac.js";
 import type * as rbacHelpers from "../rbacHelpers.js";
 import type * as rbacWrappers from "../rbacWrappers.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   http: typeof http;
   posthog: typeof posthog;
+  preferences: typeof preferences;
   rbac: typeof rbac;
   rbacHelpers: typeof rbacHelpers;
   rbacWrappers: typeof rbacWrappers;

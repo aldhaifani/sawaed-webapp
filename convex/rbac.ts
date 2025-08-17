@@ -10,6 +10,7 @@ export interface CurrentUserResponse {
   readonly role: Role;
   readonly isBlocked: boolean;
   readonly isDeleted: boolean;
+  readonly languagePreference: "ar" | "en";
 }
 
 /**
@@ -32,6 +33,7 @@ export const currentUser = query({
       role: appUser.role as Role,
       isBlocked: appUser.isBlocked,
       isDeleted: appUser.isDeleted,
+      languagePreference: appUser.languagePreference,
     };
   },
 });

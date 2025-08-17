@@ -4,6 +4,7 @@
  */
 import "./src/env.js";
 import { withSentryConfig } from "@sentry/nextjs";
+import createNextIntlPlugin from "next-intl/plugin";
 
 /** @type {import("next").NextConfig} */
 const config = {
@@ -60,4 +61,6 @@ const sentryOptions = {
   automaticVercelMonitors: true,
 };
 
-export default withSentryConfig(config, sentryOptions);
+// Explicitly point the plugin to the i18n request config
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+export default withSentryConfig(withNextIntl(config), sentryOptions);

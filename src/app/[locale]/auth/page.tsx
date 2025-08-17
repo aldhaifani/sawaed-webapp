@@ -4,13 +4,14 @@ import {
   useState,
   useEffect,
   useRef,
+  useCallback,
   type FormEvent,
   type ReactElement,
 } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+import { api } from "../../../../convex/_generated/api";
 import { getDashboardPathForRole } from "@/lib/rbac";
 
 import { LogoIcon } from "@/components/logo";
@@ -29,6 +30,7 @@ type Step = "email" | { email: string };
 export default function LoginPage(): ReactElement {
   const { signIn, signOut } = useAuthActions();
   const router = useRouter();
+  const pathname = usePathname();
   const [step, setStep] = useState<Step>("email");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
@@ -59,7 +61,20 @@ export default function LoginPage(): ReactElement {
     lastAutoSubmittedCodeRef.current = null;
   }, [step]);
 
-  // If already authenticated, redirect to dashboard
+  // Determine active locale from pathname or cookie
+  const getActiveLocale = useCallback((): "en" | "ar" => {
+    if (typeof window !== "undefined") {
+      const path = pathname || window.location.pathname;
+      const seg = path.split("/").find((s) => s.length > 0);
+      if (seg === "en" || seg === "ar") return seg;
+      const match = /(?:^|; )locale=([^;]+)/.exec(document.cookie);
+      const raw = match?.[1] ? decodeURIComponent(match[1]) : undefined;
+      if (raw === "en" || raw === "ar") return raw;
+    }
+    return "ar";
+  }, [pathname]);
+
+  // If already authenticated, redirect to dashboard (locale-aware)
   useEffect(() => {
     if (me === undefined) return; // loading
     if (me === null) return; // not authenticated
@@ -67,8 +82,11 @@ export default function LoginPage(): ReactElement {
       void signOut();
       return; // stay on /auth
     }
-    router.replace(getDashboardPathForRole(me.role));
-  }, [me, router, signOut]);
+    const locale = getActiveLocale();
+    const base = getDashboardPathForRole(me.role);
+    const target = base === "/" ? `/${locale}` : `/${locale}${base}`;
+    router.replace(target);
+  }, [me, router, signOut, getActiveLocale]);
 
   // Auto-submit when the 6th digit is entered (using ASCII-normalized value)
   useEffect(() => {
@@ -111,10 +129,13 @@ export default function LoginPage(): ReactElement {
       await signIn("resend-otp", form);
       setStep({ email });
     } catch (err: unknown) {
+      // Surface raw error message (e.g., "Method Not Allowed") if available
       const message =
         err instanceof Error
           ? err.message
-          : "Failed to send code. Please try again.";
+          : typeof err === "string"
+            ? err
+            : "Failed to send code. Please try again.";
       setError(message);
     } finally {
       setLoading(false);
@@ -137,11 +158,16 @@ export default function LoginPage(): ReactElement {
       form.set("email", step.email.trim().toLowerCase());
       form.set("code", toAsciiDigits(code));
       await signIn("resend-otp", form);
-      // Redirect after successful verification
-      router.push("/");
+      // Redirect after successful verification (locale-aware root)
+      const locale = getActiveLocale();
+      router.push(`/${locale}`);
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : "Invalid code. Please try again.";
+        err instanceof Error
+          ? err.message
+          : typeof err === "string"
+            ? err
+            : "Invalid code. Please try again.";
       setError(message);
     } finally {
       setLoading(false);
