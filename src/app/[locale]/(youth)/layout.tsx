@@ -11,7 +11,6 @@ import {
 import { IntlProvider } from "@/components/i18n/intl-provider";
 import { Direction } from "@/components/i18n/direction";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
-import { setRequestLocale } from "next-intl/server";
 
 interface LocaleYouthLayoutProps {
   readonly children: ReactNode;
@@ -25,8 +24,6 @@ interface LocaleYouthLayoutProps {
 export default async function LocaleYouthLayout(props: LocaleYouthLayoutProps) {
   const { children } = props;
   const { locale } = await props.params;
-  // Inform next-intl of the active request locale (v3 App Router)
-  setRequestLocale(locale);
   let me: Awaited<
     ReturnType<typeof fetchQuery<typeof api.rbac.currentUser>>
   > | null = null;

@@ -1,9 +1,11 @@
+"use client";
+
 import { type ReactElement } from "react";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 
-export default async function SuperAdminPage(): Promise<ReactElement> {
-  const tRoles = await getTranslations("roles");
+export default function SuperAdminPage(): ReactElement {
+  const tRoles = useTranslations("roles");
   return (
     <main className="flex min-h-screen items-center justify-center">
       <div className="text-center">

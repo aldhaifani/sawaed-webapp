@@ -11,7 +11,6 @@ import { ROLES } from "@/shared/rbac";
 import { IntlProvider } from "@/components/i18n/intl-provider";
 import { Direction } from "@/components/i18n/direction";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
-import { setRequestLocale } from "next-intl/server";
 
 interface SuperAdminLayoutProps {
   readonly children: ReactNode;
@@ -21,8 +20,6 @@ interface SuperAdminLayoutProps {
 export default async function SuperAdminLayout(props: SuperAdminLayoutProps) {
   const { children } = props;
   const { locale: routeLocale } = await props.params;
-  // Inform next-intl of the active request locale
-  setRequestLocale(routeLocale);
   let me: Awaited<
     ReturnType<typeof fetchQuery<typeof api.rbac.currentUser>>
   > | null = null;

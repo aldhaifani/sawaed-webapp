@@ -24,7 +24,9 @@
             "id": 2,
             "title": "Initialize Convex Backend Project",
             "description": "Set up a new Convex backend project to serve as the backend for the application.",
-            "dependencies": ["1.1"],
+            "dependencies": [
+              "1.1"
+            ],
             "details": "Initialize the Convex project environment, configure deployment settings, and prepare for schema definitions and authentication setup.",
             "status": "done",
             "testStrategy": ""
@@ -33,7 +35,9 @@
             "id": 3,
             "title": "Define Database Schema in Convex",
             "description": "Create schema definitions for User, Profile, Skill, Interest, User_Skills, User_Interests, Event, and Registration tables in Convex.",
-            "dependencies": ["1.2"],
+            "dependencies": [
+              "1.2"
+            ],
             "details": "Design and implement the database schema for all required tables in Convex, ensuring relationships and data types are correctly specified.",
             "status": "done",
             "testStrategy": ""
@@ -42,7 +46,9 @@
             "id": 4,
             "title": "Configure Convex Authentication with Email OTP",
             "description": "Set up Convex Auth to enable email-based One-Time Password (OTP) authentication for users.",
-            "dependencies": ["1.2"],
+            "dependencies": [
+              "1.2"
+            ],
             "details": "Implement email OTP authentication flow using Convex Auth, including sending OTP emails and verifying user login.",
             "status": "done",
             "testStrategy": ""
@@ -51,7 +57,10 @@
             "id": 5,
             "title": "Set Up Role-Based Access Control (RBAC) in Convex",
             "description": "Configure RBAC with defined user roles: youth, admin, and ministry, to control access permissions.",
-            "dependencies": ["1.3", "1.4"],
+            "dependencies": [
+              "1.3",
+              "1.4"
+            ],
             "details": "Define roles and permissions within Convex, implement access control logic to restrict or allow actions based on user roles.",
             "status": "done",
             "testStrategy": ""
@@ -60,7 +69,9 @@
             "id": 6,
             "title": "Configure Database Indexes for Performance Optimization",
             "description": "Create indexes on frequently queried fields such as user_id, skill_id, and interest_id to improve query performance.",
-            "dependencies": ["1.3"],
+            "dependencies": [
+              "1.3"
+            ],
             "details": "Analyze query patterns and add appropriate indexes in Convex schema to optimize database performance for common queries.",
             "status": "done",
             "testStrategy": ""
@@ -74,7 +85,9 @@
         "details": "Install and configure Sentry SDK for both frontend and backend with PII scrubbing enabled. Set up PostHog SDK for event tracking including auth events, profile interactions, opportunity browsing, and dashboard usage. Configure feature flags capability. Ensure both tools are properly integrated with Convex functions and Next.js middleware.",
         "testStrategy": "Test error reporting by triggering intentional errors, verify PII is scrubbed from logs, confirm analytics events are being captured correctly, and validate feature flags functionality.",
         "priority": "high",
-        "dependencies": [1],
+        "dependencies": [
+          1
+        ],
         "status": "done",
         "subtasks": [
           {
@@ -99,7 +112,10 @@
             "id": 3,
             "title": "Integrate Sentry and PostHog with Convex Backend and Next.js Middleware",
             "description": "Integrate both Sentry and PostHog SDKs with Convex backend functions and Next.js middleware to enable centralized error tracking and analytics across the full stack.",
-            "dependencies": ["2.1", "2.2"],
+            "dependencies": [
+              "2.1",
+              "2.2"
+            ],
             "details": "Ensure Convex functions emit relevant events and errors to Sentry and PostHog. Configure Next.js middleware to capture and forward analytics and error data appropriately.",
             "status": "done",
             "testStrategy": ""
@@ -108,7 +124,10 @@
             "id": 4,
             "title": "Configure Feature Flags Capability",
             "description": "Set up feature flags using PostHog or an integrated solution to enable dynamic feature toggling based on user segments or other criteria.",
-            "dependencies": ["2.2", "2.3"],
+            "dependencies": [
+              "2.2",
+              "2.3"
+            ],
             "details": "Define feature flags in PostHog dashboard. Implement client-side and server-side logic to respect feature flag states. Test feature flag evaluation and rollout.",
             "status": "done",
             "testStrategy": ""
@@ -117,7 +136,12 @@
             "id": 5,
             "title": "Validate Error Reporting, PII Scrubbing, and Event Tracking",
             "description": "Perform comprehensive testing to verify that error reporting works correctly, PII is properly scrubbed from all logs, analytics events are captured accurately, and feature flags function as expected.",
-            "dependencies": ["2.1", "2.2", "2.3", "2.4"],
+            "dependencies": [
+              "2.1",
+              "2.2",
+              "2.3",
+              "2.4"
+            ],
             "details": "Trigger intentional errors to test Sentry reporting. Inspect captured events for absence of PII. Confirm PostHog events for auth, profile, browsing, and dashboard usage are logged. Validate feature flag toggling in different environments.",
             "status": "done",
             "testStrategy": ""
@@ -131,7 +155,10 @@
         "details": "Implement email OTP authentication flow using Convex Auth. Create login/signup pages with email input and OTP verification. Handle user session management and role-based redirects. Implement logout functionality. Add proper error handling for invalid OTPs and rate limiting. Store user preferences including language selection during signup.",
         "testStrategy": "Test complete authentication flow including OTP generation, email delivery, verification, session creation, and logout. Verify rate limiting works and error states are handled gracefully.",
         "priority": "high",
-        "dependencies": [1, 2],
+        "dependencies": [
+          1,
+          2
+        ],
         "status": "done",
         "subtasks": [
           {
@@ -147,7 +174,9 @@
             "id": 2,
             "title": "Build Login and Signup Pages with Email Input and OTP Verification",
             "description": "Create frontend UI components for login and signup flows including email input forms, OTP input verification screens, and user feedback for success or errors.",
-            "dependencies": ["3.1"],
+            "dependencies": [
+              "3.1"
+            ],
             "details": "Use React with ConvexAuthProvider to build responsive login/signup pages. Include email input, OTP code input, and submit buttons. Display validation messages and loading states. Integrate with backend OTP flow for verification.",
             "status": "done",
             "testStrategy": ""
@@ -156,7 +185,9 @@
             "id": 3,
             "title": "Manage User Sessions and Implement Role-Based Redirects",
             "description": "Handle authenticated user sessions after OTP verification and redirect users based on their roles to appropriate pages.",
-            "dependencies": ["3.2"],
+            "dependencies": [
+              "3.2"
+            ],
             "details": "Use Convex Auth session management APIs to create and maintain user sessions. Implement logic to check user roles and redirect accordingly after login. Ensure session persistence and secure token handling.",
             "status": "done",
             "testStrategy": ""
@@ -165,7 +196,9 @@
             "id": 4,
             "title": "Implement Logout Functionality",
             "description": "Add logout feature to clear user sessions and redirect to public or login pages.",
-            "dependencies": ["3.3"],
+            "dependencies": [
+              "3.3"
+            ],
             "details": "Use Convex Auth signOut method to terminate sessions. Provide logout button in UI accessible from authenticated pages. Confirm session invalidation and UI updates on logout.",
             "status": "done",
             "testStrategy": ""
@@ -174,7 +207,10 @@
             "id": 5,
             "title": "Add Error Handling for Invalid OTPs and Rate Limiting",
             "description": "Implement robust error handling for invalid or expired OTP entries and enforce rate limiting to prevent abuse of OTP requests.",
-            "dependencies": ["3.1", "3.2"],
+            "dependencies": [
+              "3.1",
+              "3.2"
+            ],
             "details": "Detect and display errors for invalid OTP submissions. Implement backend rate limiting on OTP generation and resend requests using Convex Auth and environment configurations. Provide user-friendly error messages and retry options.",
             "status": "done",
             "testStrategy": ""
@@ -183,7 +219,9 @@
             "id": 6,
             "title": "Store User Preferences Including Language Selection During Signup",
             "description": "Capture and persist user preferences such as language choice during signup and integrate with internationalization framework.",
-            "dependencies": ["3.2"],
+            "dependencies": [
+              "3.2"
+            ],
             "details": "Extend signup flow to include language selection input. Store preferences in user profile or database. Ensure preferences are loaded on login and used to set UI language and directionality (RTL/LTR).",
             "status": "done",
             "testStrategy": ""
@@ -197,7 +235,9 @@
         "details": "Set up next-intl or similar i18n library for Next.js 15. Create translation files for Arabic and English. Implement RTL/LTR layout switching with proper CSS direction handling. Create language selector component. Ensure all UI components support both directions. Set up translation keys for all static text and implement dynamic content translation for database fields (name_en, name_ar).",
         "testStrategy": "Test language switching functionality, verify RTL layout renders correctly, confirm all text is properly translated, and validate that user language preferences are persisted.",
         "priority": "high",
-        "dependencies": [1],
+        "dependencies": [
+          1
+        ],
         "status": "in-progress",
         "subtasks": [
           {
@@ -206,41 +246,55 @@
             "description": "Install and configure the next-intl library in the Next.js 15 project to enable internationalization support with App Router integration.",
             "dependencies": [],
             "details": "Install next-intl package, configure locale routing, set up localization middleware, and prepare the app to load translation messages dynamically.",
-            "status": "in-progress",
+            "status": "done",
             "testStrategy": ""
           },
           {
             "id": 2,
             "title": "Create bilingual translation files for Arabic and English",
             "description": "Develop JSON translation files containing all static text keys and their corresponding translations in Arabic (RTL) and English (LTR).",
-            "dependencies": ["4.1"],
+            "dependencies": [
+              "4.1"
+            ],
             "details": "Define translation keys for all UI static text, create separate JSON files for Arabic and English, and ensure proper structure for next-intl consumption.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
             "id": 3,
             "title": "Implement RTL/LTR layout switching with CSS direction handling",
             "description": "Develop CSS and layout logic to switch between right-to-left (Arabic) and left-to-right (English) text directions dynamically based on the selected language.",
-            "dependencies": ["4.1", "4.2"],
+            "dependencies": [
+              "4.1",
+              "4.2"
+            ],
             "details": "Use CSS direction properties and utility classes (e.g., Tailwind CSS) to handle text direction changes, ensure all UI components adapt correctly, and integrate rtl-detect if needed.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
             "id": 4,
             "title": "Build language selector component",
             "description": "Create a UI component that allows users to switch languages dynamically, triggering the appropriate locale and layout changes.",
-            "dependencies": ["4.1", "4.2", "4.3"],
+            "dependencies": [
+              "4.1",
+              "4.2",
+              "4.3"
+            ],
             "details": "Implement a dropdown or toggle UI for language selection, connect it with next-intl locale switching, and persist user language preference.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
             "id": 5,
             "title": "Implement dynamic content translation for database fields",
             "description": "Ensure that dynamic content from the database (fields like name_en and name_ar) is displayed according to the selected language and text direction.",
-            "dependencies": ["4.1", "4.2", "4.3", "4.4"],
+            "dependencies": [
+              "4.1",
+              "4.2",
+              "4.3",
+              "4.4"
+            ],
             "details": "Fetch and render database content conditionally based on current locale, integrate translation keys for dynamic fields, and verify correct display in both RTL and LTR layouts.",
             "status": "pending",
             "testStrategy": ""
@@ -254,7 +308,10 @@
         "details": "Create Convex mutations to populate Skills and Interests tables with bilingual data. Research and compile comprehensive lists of relevant skills (technical, soft skills, creative) and interests (arts, sports, technology, etc.) contextualized for Omani youth. Implement search and filtering functionality for taxonomy selection. Create admin interface for managing taxonomies.",
         "testStrategy": "Verify taxonomies are properly seeded in both languages, test search functionality works in both Arabic and English, and confirm admin can add/edit taxonomy items.",
         "priority": "medium",
-        "dependencies": [1, 4],
+        "dependencies": [
+          1,
+          4
+        ],
         "status": "pending",
         "subtasks": [
           {
@@ -270,7 +327,9 @@
             "id": 2,
             "title": "Create Convex Mutations to Populate Skills and Interests Tables",
             "description": "Develop backend Convex mutations to seed the Skills and Interests database tables with the bilingual taxonomy data compiled from research.",
-            "dependencies": ["5.1"],
+            "dependencies": [
+              "5.1"
+            ],
             "details": "Implement Convex mutation functions that insert bilingual skill and interest entries into the database. Ensure data integrity and support for both Arabic and English fields. Prepare scripts for initial seeding and future updates.",
             "status": "pending",
             "testStrategy": ""
@@ -279,7 +338,9 @@
             "id": 3,
             "title": "Implement Search and Filtering Functionality for Taxonomy Selection",
             "description": "Develop frontend search and filtering features that allow users to efficiently find and select skills and interests from the bilingual taxonomies.",
-            "dependencies": ["5.2"],
+            "dependencies": [
+              "5.2"
+            ],
             "details": "Create UI components supporting bilingual search input, autocomplete, and filters by category (e.g., technical, soft skills, arts). Ensure search works seamlessly in both Arabic and English, with responsive and accessible design.",
             "status": "pending",
             "testStrategy": ""
@@ -288,7 +349,9 @@
             "id": 4,
             "title": "Build Admin Interface for Managing Taxonomies",
             "description": "Create an administrative interface to allow authorized users to add, edit, or remove skills and interests in the bilingual taxonomies.",
-            "dependencies": ["5.2"],
+            "dependencies": [
+              "5.2"
+            ],
             "details": "Design and implement a secure admin dashboard with CRUD functionality for taxonomy items. Support bilingual data entry and validation. Include audit trails or versioning if possible to track changes.",
             "status": "pending",
             "testStrategy": ""
@@ -302,7 +365,11 @@
         "details": "Create profile forms with bio text area, photo upload using Convex file storage, location selection, and multi-select components for skills and interests. Implement profile editing functionality with real-time updates. Add profile completion progress indicator. Create profile validation and ensure data consistency between User_Skills and User_Interests junction tables.",
         "testStrategy": "Test profile creation flow, verify file uploads work correctly, confirm skills/interests are properly associated with users, and validate profile editing updates all related data correctly.",
         "priority": "high",
-        "dependencies": [3, 4, 5],
+        "dependencies": [
+          3,
+          4,
+          5
+        ],
         "status": "pending",
         "subtasks": [
           {
@@ -318,7 +385,9 @@
             "id": 2,
             "title": "Integrate Photo Upload with Convex File Storage",
             "description": "Implement photo upload functionality using Convex file storage service for storing and retrieving user profile photos.",
-            "dependencies": ["6.1"],
+            "dependencies": [
+              "6.1"
+            ],
             "details": "Set up file upload components that connect to Convex backend for secure storage. Handle file validation (size, type), upload progress, error handling, and display of uploaded photo in the profile form.",
             "status": "pending",
             "testStrategy": ""
@@ -327,7 +396,10 @@
             "id": 3,
             "title": "Implement Profile Editing with Real-Time Updates",
             "description": "Enable users to edit their profiles with immediate reflection of changes using real-time data synchronization.",
-            "dependencies": ["6.1", "6.2"],
+            "dependencies": [
+              "6.1",
+              "6.2"
+            ],
             "details": "Develop functionality to fetch existing profile data, allow edits on all fields including bio, photo, location, skills, and interests, and update the backend in real-time. Use subscriptions or websockets to reflect changes instantly in the UI.",
             "status": "pending",
             "testStrategy": ""
@@ -336,7 +408,10 @@
             "id": 4,
             "title": "Add Profile Completion Progress Indicator",
             "description": "Create a dynamic progress bar or indicator that reflects the completeness of the user profile based on filled fields.",
-            "dependencies": ["6.1", "6.3"],
+            "dependencies": [
+              "6.1",
+              "6.3"
+            ],
             "details": "Define criteria for profile completeness (e.g., bio filled, photo uploaded, at least one skill and interest selected). Implement a visual progress indicator that updates as the user completes profile sections.",
             "status": "pending",
             "testStrategy": ""
@@ -345,7 +420,9 @@
             "id": 5,
             "title": "Implement Data Validation for Profile and Junction Tables",
             "description": "Ensure profile data integrity and consistency, especially between User_Skills and User_Interests junction tables.",
-            "dependencies": ["6.3"],
+            "dependencies": [
+              "6.3"
+            ],
             "details": "Create validation logic to verify that user-selected skills and interests exist in master taxonomies, prevent duplicates, and maintain referential integrity in junction tables. Validate bio length, photo format, and location correctness.",
             "status": "pending",
             "testStrategy": ""
@@ -354,7 +431,13 @@
             "id": 6,
             "title": "Test and Verify Profile Management System",
             "description": "Conduct comprehensive testing of profile creation, editing, photo upload, progress indicator, and data validation functionalities.",
-            "dependencies": ["6.1", "6.2", "6.3", "6.4", "6.5"],
+            "dependencies": [
+              "6.1",
+              "6.2",
+              "6.3",
+              "6.4",
+              "6.5"
+            ],
             "details": "Perform unit, integration, and user acceptance testing to ensure all components work as expected. Test real-time updates, file uploads, multi-select behavior, progress tracking, and data consistency across tables. Fix bugs and optimize performance.",
             "status": "pending",
             "testStrategy": ""
@@ -368,7 +451,10 @@
         "details": "Create admin interface for posting bilingual events with title, description, date, location fields. Implement event listing page with search, filter, and pagination. Build one-click registration system using Registration table. Add event management dashboard for admins to track registrations. Implement email notifications for event updates.",
         "testStrategy": "Test admin can create/edit events, verify bilingual content displays correctly, confirm registration system works and prevents duplicate registrations, and validate email notifications are sent.",
         "priority": "high",
-        "dependencies": [3, 4],
+        "dependencies": [
+          3,
+          4
+        ],
         "status": "pending",
         "subtasks": [
           {
@@ -384,7 +470,9 @@
             "id": 2,
             "title": "Implement Event Listing Page with Search, Filter, and Pagination",
             "description": "Build a user-facing event listing page that supports searching by keywords, filtering by date/location, and paginating results for performance and usability.",
-            "dependencies": ["7.1"],
+            "dependencies": [
+              "7.1"
+            ],
             "details": "Ensure bilingual content displays correctly. Optimize queries for fast filtering and pagination. Include UI components for search input, filter selectors, and pagination controls.",
             "status": "pending",
             "testStrategy": ""
@@ -393,7 +481,9 @@
             "id": 3,
             "title": "Build One-Click Registration System with Duplicate Prevention",
             "description": "Develop a registration feature allowing youth users to register for events with one click, using the Registration table and preventing duplicate registrations.",
-            "dependencies": ["7.2"],
+            "dependencies": [
+              "7.2"
+            ],
             "details": "Implement backend logic to check for existing registrations before creating new ones. Provide user feedback on successful or duplicate registration attempts.",
             "status": "pending",
             "testStrategy": ""
@@ -402,7 +492,9 @@
             "id": 4,
             "title": "Create Admin Event Management Dashboard for Tracking Registrations",
             "description": "Develop a dashboard for admins to view and manage event registrations, including attendee lists, registration counts, and filtering capabilities.",
-            "dependencies": ["7.3"],
+            "dependencies": [
+              "7.3"
+            ],
             "details": "Include search and filter options for registrations by event, date, and user. Provide export functionality and real-time updates on registration status.",
             "status": "pending",
             "testStrategy": ""
@@ -411,7 +503,10 @@
             "id": 5,
             "title": "Implement Email Notification System for Event Updates",
             "description": "Set up automated email notifications to inform registered users about event updates, reminders, and changes.",
-            "dependencies": ["7.3", "7.4"],
+            "dependencies": [
+              "7.3",
+              "7.4"
+            ],
             "details": "Integrate email service provider, design notification templates, and trigger emails on event creation, updates, and cancellations. Ensure bilingual email content.",
             "status": "pending",
             "testStrategy": ""
@@ -420,7 +515,13 @@
             "id": 6,
             "title": "Test and Validate All Portal Features with Bilingual Support",
             "description": "Conduct comprehensive testing of the admin posting UI, event listing, registration system, dashboard, and email notifications to ensure functionality and bilingual correctness.",
-            "dependencies": ["7.1", "7.2", "7.3", "7.4", "7.5"],
+            "dependencies": [
+              "7.1",
+              "7.2",
+              "7.3",
+              "7.4",
+              "7.5"
+            ],
             "details": "Perform functional, usability, and integration tests. Verify prevention of duplicate registrations, correct bilingual display, and successful email delivery.",
             "status": "pending",
             "testStrategy": ""
@@ -434,7 +535,10 @@
         "details": "Implement Convex queries for aggregating anonymous user data including top skills, top interests, and youth distribution by governorate. Create dashboard with interactive charts using Chart.js or similar library. Ensure all data is properly anonymized and aggregated. Add filters for date ranges and demographic segments. Implement export functionality for reports.",
         "testStrategy": "Verify aggregated data is accurate and anonymous, test chart rendering with different data sets, confirm filters work correctly, and validate export functionality produces correct reports.",
         "priority": "medium",
-        "dependencies": [6, 7],
+        "dependencies": [
+          6,
+          7
+        ],
         "status": "pending",
         "subtasks": [
           {
@@ -450,7 +554,9 @@
             "id": 2,
             "title": "Build Interactive Charts Using Chart.js",
             "description": "Create interactive visualizations on the dashboard using Chart.js or a similar library to display aggregated insights on youth skills, interests, and geographic distribution.",
-            "dependencies": ["8.1"],
+            "dependencies": [
+              "8.1"
+            ],
             "details": "Design and implement charts that dynamically update based on aggregated data from Convex queries. Include charts such as bar charts for top skills and interests, and maps or heatmaps for geographic distribution. Ensure responsiveness and interactivity.",
             "status": "pending",
             "testStrategy": ""
@@ -459,7 +565,10 @@
             "id": 3,
             "title": "Add Filters for Date Ranges and Demographic Segments",
             "description": "Implement UI filters on the dashboard to allow users to refine data views by specific date ranges and demographic segments such as age groups or gender.",
-            "dependencies": ["8.1", "8.2"],
+            "dependencies": [
+              "8.1",
+              "8.2"
+            ],
             "details": "Develop filter components that interact with Convex queries to update aggregated data and charts in real-time. Ensure filters are intuitive and performant, and that they correctly update all relevant visualizations.",
             "status": "pending",
             "testStrategy": ""
@@ -468,7 +577,9 @@
             "id": 4,
             "title": "Ensure Data Anonymization and Aggregation Compliance",
             "description": "Verify and enforce that all data displayed on the dashboard is properly anonymized and aggregated to protect user privacy and comply with data protection standards.",
-            "dependencies": ["8.1"],
+            "dependencies": [
+              "8.1"
+            ],
             "details": "Review data handling in Convex queries and dashboard components to confirm no personally identifiable information (PII) is exposed. Implement aggregation thresholds or data masking as needed. Conduct privacy audits and testing.",
             "status": "pending",
             "testStrategy": ""
@@ -477,7 +588,10 @@
             "id": 5,
             "title": "Implement Export Functionality for Reports",
             "description": "Add functionality to export dashboard reports in common formats (e.g., CSV, PDF) including filtered and aggregated data visualizations.",
-            "dependencies": ["8.2", "8.3"],
+            "dependencies": [
+              "8.2",
+              "8.3"
+            ],
             "details": "Develop export features that allow users to download data summaries and charts. Ensure exported reports reflect current filter settings and maintain data anonymization. Test export accuracy and formatting.",
             "status": "pending",
             "testStrategy": ""
@@ -491,7 +605,9 @@
         "details": "Design multi-step onboarding flow including language selection, basic profile setup, skills/interests selection, and opportunities discovery. Implement progress tracking and skip options. Add onboarding completion rewards or gamification elements. Create contextual help and tooltips. Ensure mobile-responsive design throughout the flow.",
         "testStrategy": "Test complete onboarding flow on different devices, verify users can skip steps and return later, confirm progress is saved correctly, and validate the experience is intuitive for target age group.",
         "priority": "medium",
-        "dependencies": [6],
+        "dependencies": [
+          6
+        ],
         "status": "pending",
         "subtasks": [
           {
@@ -507,7 +623,9 @@
             "id": 2,
             "title": "Implement Language Selection Feature",
             "description": "Develop the language selector component and integrate it into the onboarding flow, supporting dynamic switching between Arabic (RTL) and English (LTR).",
-            "dependencies": ["9.1"],
+            "dependencies": [
+              "9.1"
+            ],
             "details": "Use internationalization framework to handle translations and text direction. Persist user language preference for subsequent sessions.",
             "status": "pending",
             "testStrategy": ""
@@ -516,7 +634,10 @@
             "id": 3,
             "title": "Develop Profile Setup and Skills/Interests Selection",
             "description": "Implement the onboarding steps for basic profile setup and selection of skills and interests using the master taxonomies, including search and filtering capabilities.",
-            "dependencies": ["9.1", "9.2"],
+            "dependencies": [
+              "9.1",
+              "9.2"
+            ],
             "details": "Ensure data persistence and validation. Integrate with backend to save user inputs progressively. Support bilingual data display and selection.",
             "status": "pending",
             "testStrategy": ""
@@ -525,7 +646,10 @@
             "id": 4,
             "title": "Implement Progress Tracking and Skip Options",
             "description": "Create logic to track user progress through onboarding steps, allow skipping steps, and enable users to return later to complete onboarding.",
-            "dependencies": ["9.1", "9.3"],
+            "dependencies": [
+              "9.1",
+              "9.3"
+            ],
             "details": "Persist progress state in backend or local storage. Provide visual progress indicators in UI. Ensure skip functionality does not break flow or data integrity.",
             "status": "pending",
             "testStrategy": ""
@@ -534,7 +658,9 @@
             "id": 5,
             "title": "Add Gamification, Rewards, and Contextual Help",
             "description": "Integrate onboarding completion rewards or gamification elements such as badges or incentives. Develop contextual help features including tooltips and guided tips throughout the onboarding flow.",
-            "dependencies": ["9.4"],
+            "dependencies": [
+              "9.4"
+            ],
             "details": "Use subtle animations for tooltips to engage users. Provide on-demand help without overwhelming the user. Reward completion to encourage engagement and retention.",
             "status": "pending",
             "testStrategy": ""
@@ -548,7 +674,9 @@
         "details": "Create reusable UI component library with Tailwind CSS supporting both RTL and LTR layouts. Implement responsive breakpoints for mobile, tablet, and desktop. Add WCAG 2.1 AA compliance including proper ARIA labels, keyboard navigation, color contrast, and screen reader support. Create loading states and error boundaries for better UX.",
         "testStrategy": "Test responsive design across different screen sizes, verify accessibility using automated tools and manual testing, confirm keyboard navigation works properly, and validate screen reader compatibility.",
         "priority": "medium",
-        "dependencies": [4],
+        "dependencies": [
+          4
+        ],
         "status": "pending",
         "subtasks": [
           {
@@ -564,7 +692,9 @@
             "id": 2,
             "title": "Implement Responsive Breakpoints for Mobile, Tablet, and Desktop",
             "description": "Configure and apply responsive design breakpoints within the UI components to ensure optimal display and usability across mobile, tablet, and desktop screen sizes.",
-            "dependencies": ["10.1"],
+            "dependencies": [
+              "10.1"
+            ],
             "details": "Define Tailwind CSS breakpoints for common device widths. Adjust component layouts, font sizes, and spacing accordingly. Test responsiveness on multiple devices and simulators to verify fluid and adaptive UI behavior.",
             "status": "pending",
             "testStrategy": ""
@@ -573,7 +703,9 @@
             "id": 3,
             "title": "Add WCAG 2.1 AA Compliance Features",
             "description": "Incorporate accessibility features to meet WCAG 2.1 Level AA standards, including ARIA labels, keyboard navigation support, color contrast compliance, and screen reader compatibility.",
-            "dependencies": ["10.1"],
+            "dependencies": [
+              "10.1"
+            ],
             "details": "Implement semantic HTML and ARIA roles/attributes for all components. Ensure all interactive elements are keyboard accessible with logical tab order. Use color palettes that meet minimum contrast ratios (4.5:1). Test with screen readers and accessibility evaluation tools.",
             "status": "pending",
             "testStrategy": ""
@@ -582,7 +714,10 @@
             "id": 4,
             "title": "Create Loading States for UI Components",
             "description": "Design and implement loading indicators and skeleton states for UI components to improve user experience during asynchronous data fetching or processing.",
-            "dependencies": ["10.1", "10.2"],
+            "dependencies": [
+              "10.1",
+              "10.2"
+            ],
             "details": "Develop visually consistent loading spinners, progress bars, or skeleton placeholders using Tailwind CSS. Integrate these states into components where data loading or actions occur. Ensure loading states are accessible and announced by screen readers.",
             "status": "pending",
             "testStrategy": ""
@@ -591,7 +726,9 @@
             "id": 5,
             "title": "Implement Error Boundaries for UI Components",
             "description": "Add error boundary components to gracefully handle and display errors within the UI, enhancing robustness and user feedback.",
-            "dependencies": ["10.1"],
+            "dependencies": [
+              "10.1"
+            ],
             "details": "Create reusable error boundary wrappers that catch JavaScript errors in child components. Display user-friendly error messages and fallback UI. Log errors for monitoring and ensure error states are accessible and clearly communicated.",
             "status": "pending",
             "testStrategy": ""
@@ -605,7 +742,10 @@
         "details": "Set up Vercel project with automatic deployments from Git. Configure preview environments for pull requests. Set up environment variables for different stages (development, staging, production). Configure Convex deployments for different environments. Implement proper error pages and fallbacks. Set up domain configuration and SSL certificates.",
         "testStrategy": "Test deployment pipeline works correctly, verify preview environments are created for PRs, confirm environment variables are properly configured, and validate production deployment is stable.",
         "priority": "medium",
-        "dependencies": [1, 2],
+        "dependencies": [
+          1,
+          2
+        ],
         "status": "pending",
         "subtasks": [
           {
@@ -621,7 +761,9 @@
             "id": 2,
             "title": "Set Up Preview Environments for Pull Requests",
             "description": "Configure Vercel to automatically create preview environments for pull requests to enable testing and review before merging.",
-            "dependencies": ["11.1"],
+            "dependencies": [
+              "11.1"
+            ],
             "details": "Enable preview deployments in Vercel settings. Ensure that pull requests from Git repositories trigger preview environment creation. Validate that each PR deployment is isolated and accessible for QA and review.",
             "status": "pending",
             "testStrategy": ""
@@ -630,7 +772,9 @@
             "id": 3,
             "title": "Manage Environment Variables for Multiple Stages",
             "description": "Set up and configure environment variables specific to development, staging, and production environments within Vercel and Convex deployments.",
-            "dependencies": ["11.1"],
+            "dependencies": [
+              "11.1"
+            ],
             "details": "Define environment variables in Vercel dashboard or via CLI for each stage. Configure Convex deployments to use the correct environment variables per environment. Test that variables are correctly loaded and used in each deployment stage.",
             "status": "pending",
             "testStrategy": ""
@@ -639,7 +783,9 @@
             "id": 4,
             "title": "Configure Domain, SSL Certificates, and Error Pages",
             "description": "Set up custom domain configuration with SSL certificates on Vercel and implement proper error pages and fallback mechanisms for production deployments.",
-            "dependencies": ["11.1"],
+            "dependencies": [
+              "11.1"
+            ],
             "details": "Add and verify custom domains in Vercel. Enable automatic SSL certificate provisioning. Configure error pages (e.g., 404, 500) and fallback UI to improve user experience during failures. Validate domain accessibility and SSL security.",
             "status": "pending",
             "testStrategy": ""
@@ -653,7 +799,12 @@
         "details": "Implement React Server Components where beneficial, optimize bundle size and loading performance. Add comprehensive unit tests for components and Convex functions. Implement integration tests for critical user flows. Set up performance monitoring and Core Web Vitals tracking. Conduct security audit and penetration testing. Optimize images and implement lazy loading.",
         "testStrategy": "Run performance audits using Lighthouse, verify Core Web Vitals meet targets, confirm test coverage is adequate, validate security measures are in place, and conduct user acceptance testing with target demographics.",
         "priority": "medium",
-        "dependencies": [8, 9, 10, 11],
+        "dependencies": [
+          8,
+          9,
+          10,
+          11
+        ],
         "status": "pending",
         "subtasks": [
           {
@@ -669,7 +820,9 @@
             "id": 2,
             "title": "Optimize Bundle Size and Loading Performance",
             "description": "Reduce JavaScript bundle size by code splitting, tree shaking, and removing unnecessary dependencies. Improve loading times by optimizing asset delivery and leveraging lazy loading where appropriate.",
-            "dependencies": ["12.1"],
+            "dependencies": [
+              "12.1"
+            ],
             "details": "Analyze bundle composition and identify large dependencies or code that can be deferred. Implement lazy loading for non-critical resources and optimize loading strategies to improve Time to Interactive (TTI) and First Contentful Paint (FCP).",
             "status": "pending",
             "testStrategy": ""
@@ -687,7 +840,9 @@
             "id": 4,
             "title": "Implement Integration Tests for Critical User Flows",
             "description": "Create integration tests that simulate real user interactions across multiple components and backend services to validate end-to-end functionality.",
-            "dependencies": ["12.3"],
+            "dependencies": [
+              "12.3"
+            ],
             "details": "Identify critical user journeys such as authentication, data submission, and navigation. Automate tests that cover these flows, verifying UI behavior, data consistency, and error handling.",
             "status": "pending",
             "testStrategy": ""
@@ -696,7 +851,9 @@
             "id": 5,
             "title": "Set Up Performance Monitoring and Core Web Vitals Tracking",
             "description": "Configure tools to monitor application performance in production, focusing on Core Web Vitals metrics and real user monitoring (RUM).",
-            "dependencies": ["12.2"],
+            "dependencies": [
+              "12.2"
+            ],
             "details": "Integrate performance monitoring services (e.g., Lighthouse CI, Web Vitals libraries, or third-party monitoring tools). Set up dashboards and alerts for metrics like LCP, FID, and CLS to track and improve user experience.",
             "status": "pending",
             "testStrategy": ""
@@ -705,7 +862,9 @@
             "id": 6,
             "title": "Conduct Security Audit, Penetration Testing, and Optimize Images with Lazy Loading",
             "description": "Perform a thorough security audit and penetration testing to identify vulnerabilities. Optimize images for faster loading and implement lazy loading to defer offscreen image loading.",
-            "dependencies": ["12.2"],
+            "dependencies": [
+              "12.2"
+            ],
             "details": "Review application code and dependencies for security issues. Use automated and manual penetration testing tools. Compress and resize images appropriately. Implement lazy loading techniques to improve page load speed and reduce bandwidth.",
             "status": "pending",
             "testStrategy": ""
@@ -715,7 +874,7 @@
     ],
     "metadata": {
       "created": "2025-08-16T07:34:51.087Z",
-      "updated": "2025-08-17T12:55:13.095Z",
+      "updated": "2025-08-18T19:40:55.223Z",
       "description": "Tasks for master context"
     }
   }
