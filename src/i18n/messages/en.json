@@ -4,14 +4,24 @@
     "welcome": "Welcome",
     "language": "Language",
     "arabic": "Arabic",
-    "english": "English"
+    "english": "English",
+    "loading": "Loading..."
   },
   "auth": {
+    "headWelcome": "Welcome to Sawaed",
+    "headSubHeading": "Sign in to Continue",
     "signIn": "Sign in",
     "signOut": "Sign out",
     "continue": "Continue",
     "email": "Email",
-    "otp": "Verification Code"
+    "otp": "Enter Code",
+    "dontHaveAccount": "Don't have an account?",
+    "signUp": "Just enter you email – we'll create it on first sign-in.",
+    "resendCode": "Resend Code",
+    "changeEmail": "Change Email",
+    "resentCode": "A new code has been sent.",
+    "sendingCode": "Sending code...",
+    "codeDigits": "We send a 6-digit code to"
   },
   "roles": {
     "youth": "Youth",

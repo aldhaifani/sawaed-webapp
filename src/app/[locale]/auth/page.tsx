@@ -24,6 +24,8 @@ import {
   InputOTPSlot,
   InputOTPSeparator,
 } from "@/components/ui/input-otp";
+import { useTranslations } from "next-intl";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 
 type Step = "email" | { email: string };
 
@@ -36,10 +38,13 @@ export default function LoginPage(): ReactElement {
   const [error, setError] = useState<string>("");
   const [code, setCode] = useState<string>("");
   const [resending, setResending] = useState<boolean>(false);
+  const [cooldown, setCooldown] = useState<number>(0);
   const [info, setInfo] = useState<string>("");
   const codeFormRef = useRef<HTMLFormElement | null>(null);
   const lastAutoSubmittedCodeRef = useRef<string | null>(null);
   const me = useQuery(api.rbac.currentUser);
+  const tAuth = useTranslations("auth");
+  const tCommon = useTranslations("common");
 
   // Normalize any locale-specific digits (e.g., Arabic-Indic) to ASCII 0-9
   const toAsciiDigits = (value: string): string => {
@@ -59,7 +64,18 @@ export default function LoginPage(): ReactElement {
     setInfo("");
     // Reset auto-submit tracker when switching steps
     lastAutoSubmittedCodeRef.current = null;
+    // Reset resend cooldown when switching steps
+    setCooldown(0);
   }, [step]);
+
+  // Tick down the resend cooldown every second
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = window.setInterval(() => {
+      setCooldown((s) => (s > 0 ? s - 1 : 0));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [cooldown]);
 
   // Determine active locale from pathname or cookie
   const getActiveLocale = useCallback((): "en" | "ar" => {
@@ -121,7 +137,7 @@ export default function LoginPage(): ReactElement {
         .trim()
         .toLowerCase();
       if (!email) {
-        setError("Please enter your email.");
+        setError(tAuth("email"));
         return;
       }
       const form = new FormData();
@@ -148,7 +164,7 @@ export default function LoginPage(): ReactElement {
     event.preventDefault();
     if (loading || step === "email") return;
     if (code.length !== 6) {
-      setError("Please enter the 6-digit code.");
+      setError(tAuth("otp"));
       return;
     }
     setLoading(true);
@@ -175,10 +191,12 @@ export default function LoginPage(): ReactElement {
   }
 
   async function onResendCode(): Promise<void> {
-    if (resending || step === "email") return;
+    if (resending || step === "email" || cooldown > 0) return;
     setResending(true);
     setError("");
     setInfo("");
+    // Start 90s cooldown immediately on click
+    setCooldown(90);
     try {
       const form = new FormData();
       form.set("email", step.email.trim().toLowerCase());
@@ -192,6 +210,8 @@ export default function LoginPage(): ReactElement {
           ? err.message
           : "Failed to resend code. Please try again.";
       setError(message);
+      // Cancel cooldown on failure to allow retry
+      setCooldown(0);
     } finally {
       setResending(false);
     }
@@ -213,12 +233,17 @@ export default function LoginPage(): ReactElement {
 
       <div className="relative z-10 flex min-h-screen items-center px-4 py-16 md:py-32">
         <div className="bg-background/80 m-auto w-full max-w-md rounded-xl border p-6 backdrop-blur">
-          <div className="text-center">
-            <LogoIcon className="mx-auto inline-block" />
+          <div className="w-full text-center">
+            <div className="flex w-full justify-between">
+              <LogoIcon className="inline-block" />
+              <LanguageSwitcher />
+            </div>
             <h1 className="mt-6 text-xl font-semibold text-balance">
-              <span className="text-muted-foreground">Welcome to Sawaed.</span>{" "}
+              <span className="text-muted-foreground">
+                {tAuth("headWelcome")}
+              </span>{" "}
               <br />
-              Sign in to continue
+              {tAuth("headSubHeading")}
             </h1>
           </div>
 
@@ -226,7 +251,7 @@ export default function LoginPage(): ReactElement {
             <form onSubmit={onSubmitEmail} className="mt-6 space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email" className="block text-sm">
-                  Email
+                  {tAuth("email")}
                 </Label>
                 <Input
                   type="email"
@@ -244,7 +269,7 @@ export default function LoginPage(): ReactElement {
                 </p>
               )}
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Sending..." : "Continue"}
+                {loading ? tAuth("sendingCode") : tAuth("continue")}
               </Button>
             </form>
           ) : (
@@ -255,13 +280,13 @@ export default function LoginPage(): ReactElement {
             >
               <div>
                 <p className="text-muted-foreground text-sm">
-                  We sent a 6‑digit code to
+                  {tAuth("codeDigits")}
                 </p>
                 <p className="font-medium">{step.email}</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="code" className="block text-sm">
-                  Enter code
+                  {tAuth("otp")}
                 </Label>
                 <div className="flex justify-center">
                   <InputOTP
@@ -298,41 +323,43 @@ export default function LoginPage(): ReactElement {
                   className="w-full"
                   disabled={loading || code.length !== 6}
                 >
-                  {loading ? "Verifying..." : "Continue"}
+                  {loading ? tCommon("loading") : tAuth("continue")}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setStep("email")}
-                  disabled={loading}
+                  onClick={onResendCode}
+                  disabled={resending || loading || cooldown > 0}
                 >
-                  Change email
+                  {resending
+                    ? tAuth("sendingCode")
+                    : `${tAuth("resendCode")}${cooldown > 0 ? ` (${Math.floor(cooldown / 60)}:${String(cooldown % 60).padStart(2, "0")})` : ""}`}
                 </Button>
               </div>
               <div className="mt-2 flex items-center justify-between">
                 <Button
                   type="button"
-                  variant="ghost"
-                  onClick={onResendCode}
-                  disabled={resending}
+                  variant="secondary"
+                  onClick={() => setStep("email")}
+                  disabled={loading}
                   className="px-5 text-sm"
                 >
-                  {resending ? "Resending..." : "Resend code"}
+                  {tAuth("changeEmail")}
                 </Button>
                 {info && (
-                  <span className="text-xs text-emerald-600">{info}</span>
+                  <span className="text-xs text-emerald-600">
+                    {tAuth("resentCode")}
+                  </span>
                 )}
               </div>
-              <p className="text-muted-foreground text-center text-xs">
-                Didn’t get a code? Check spam or try again later.
-              </p>
             </form>
           )}
 
           <div className="mt-6 text-center">
             <p className="text-muted-foreground text-sm">
-              Don’t have an account? <br /> Just enter your email — we’ll create
-              it on first sign-in.
+              {tAuth("dontHaveAccount")}
+              <br />
+              {tAuth("signUp")}
             </p>
           </div>
         </div>

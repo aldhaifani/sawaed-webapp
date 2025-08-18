@@ -6,6 +6,7 @@ import { PostHogProvider } from "@/components/PostHogProvider";
 
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
+import { cookies } from "next/headers";
 
 export const metadata: Metadata = {
   title: "Sawaed",
@@ -18,12 +19,17 @@ const geist = Geist({
   variable: "--font-geist-sans",
 });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const cookieStore = await cookies();
+  const cookieLocale = cookieStore.get("locale")?.value;
+  const locale =
+    cookieLocale === "en" || cookieLocale === "ar" ? cookieLocale : "ar";
+  const dir = locale === "ar" ? "rtl" : "ltr";
   return (
     <ConvexAuthNextjsServerProvider>
-      <html lang="en" className={`${geist.variable}`}>
+      <html lang={locale} dir={dir} className={`${geist.variable}`}>
         <body>
           <PostHogProvider>
             <ConvexClientProvider>{children}</ConvexClientProvider>

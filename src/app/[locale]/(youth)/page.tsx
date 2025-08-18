@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { getTranslations } from "next-intl/server";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 
 export default async function YouthHomePage(): Promise<ReactElement> {
   const tCommon = await getTranslations("common");
@@ -9,7 +10,7 @@ export default async function YouthHomePage(): Promise<ReactElement> {
         <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-[5rem]">
           {tCommon("appName")}
         </h1>
-        <p className="text-xl opacity-90">{tCommon("welcome")}</p>
+        <LogoutButton />
       </div>
     </main>
   );
