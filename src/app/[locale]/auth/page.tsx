@@ -177,14 +177,9 @@ export default function LoginPage(): ReactElement {
       // Redirect after successful verification (locale-aware root)
       const locale = getActiveLocale();
       router.push(`/${locale}`);
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : typeof err === "string"
-            ? err
-            : "Invalid code. Please try again.";
-      setError(message);
+    } catch {
+      // Show a friendly, localized message instead of raw server error
+      setError(tAuth("invalidCode"));
     } finally {
       setLoading(false);
     }
@@ -204,12 +199,9 @@ export default function LoginPage(): ReactElement {
       setInfo("A new code has been sent.");
       // Allow a fresh auto-submit on the next complete entry
       lastAutoSubmittedCodeRef.current = null;
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Failed to resend code. Please try again.";
-      setError(message);
+    } catch {
+      // Localized resend error message
+      setError(tAuth("resendFailed"));
       // Cancel cooldown on failure to allow retry
       setCooldown(0);
     } finally {

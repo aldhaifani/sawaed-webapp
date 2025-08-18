@@ -21,7 +21,9 @@
     "changeEmail": "Change Email",
     "resentCode": "A new code has been sent.",
     "sendingCode": "Sending code...",
-    "codeDigits": "We send a 6-digit code to"
+    "codeDigits": "We send a 6-digit code to",
+    "invalidCode": "Invalid code. Please try again.",
+    "resendFailed": "Failed to resend code. Please try again."
   },
   "roles": {
     "youth": "Youth",
