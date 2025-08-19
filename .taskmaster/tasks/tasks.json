@@ -238,7 +238,7 @@
         "dependencies": [
           1
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -296,7 +296,7 @@
               "4.4"
             ],
             "details": "Fetch and render database content conditionally based on current locale, integrate translation keys for dynamic fields, and verify correct display in both RTL and LTR layouts.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -312,7 +312,7 @@
           1,
           4
         ],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -874,7 +874,7 @@
     ],
     "metadata": {
       "created": "2025-08-16T07:34:51.087Z",
-      "updated": "2025-08-18T19:40:55.223Z",
+      "updated": "2025-08-18T19:52:09.366Z",
       "description": "Tasks for master context"
     }
   }
