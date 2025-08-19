@@ -62,5 +62,26 @@
     "noneSelected": "Nothing selected",
     "clear": "Clear",
     "removeItemAria": "Remove ${name}"
+  },
+  "onboarding": {
+    "brand": "Sawaed",
+    "stepOf": "Step {step} of {total}",
+    "welcomeTitle": "Welcome!",
+    "welcomeBody": "Let’s get to know you to match you with the right opportunities.",
+    "basicDetails": "Basic details",
+    "firstNameAr": "First name (Arabic)",
+    "lastNameAr": "Last name (Arabic)",
+    "firstNameEn": "First name (English)",
+    "lastNameEn": "Last name (English)",
+    "region": "Region",
+    "city": "City",
+    "selectRegion": "Select a region",
+    "selectCity": "Select a city",
+    "skillsInterests": "Skills & Interests",
+    "selectSkillAtLeastOne": "Select at least one skill",
+    "selectInterestAtLeastOne": "Select at least one interest",
+    "back": "Back",
+    "next": "Next",
+    "finish": "Finish"
   }
 }

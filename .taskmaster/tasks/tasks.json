@@ -255,7 +255,7 @@
         "testStrategy": "Verify taxonomies are properly seeded in both languages, test search functionality works in both Arabic and English, and confirm admin can add/edit taxonomy items.",
         "priority": "medium",
         "dependencies": [1, 4],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -281,7 +281,7 @@
             "description": "Develop frontend search and filtering features that allow users to efficiently find and select skills and interests from the bilingual taxonomies.",
             "dependencies": ["5.2"],
             "details": "Create UI components supporting bilingual search input, autocomplete, and filters by category (e.g., technical, soft skills, arts). Ensure search works seamlessly in both Arabic and English, with responsive and accessible design.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -290,7 +290,7 @@
             "description": "Create an administrative interface to allow authorized users to add, edit, or remove skills and interests in the bilingual taxonomies.",
             "dependencies": ["5.2"],
             "details": "Design and implement a secure admin dashboard with CRUD functionality for taxonomy items. Support bilingual data entry and validation. Include audit trails or versioning if possible to track changes.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -303,7 +303,7 @@
         "testStrategy": "Test profile creation flow, verify file uploads work correctly, confirm skills/interests are properly associated with users, and validate profile editing updates all related data correctly.",
         "priority": "high",
         "dependencies": [3, 4, 5],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -715,7 +715,7 @@
     ],
     "metadata": {
       "created": "2025-08-16T07:34:51.087Z",
-      "updated": "2025-08-19T09:20:50.501Z",
+      "updated": "2025-08-19T10:10:25.377Z",
       "description": "Tasks for master context"
     }
   }

@@ -98,6 +98,15 @@ const schema = defineSchema({
     userId: v.id("appUsers"),
     currentStep: v.optional(v.string()), // e.g., "language", "profile", "skills", "interests"
     completed: v.boolean(),
+    // Draft fields persisted during onboarding
+    firstNameAr: v.optional(v.string()),
+    lastNameAr: v.optional(v.string()),
+    firstNameEn: v.optional(v.string()),
+    lastNameEn: v.optional(v.string()),
+    city: v.optional(v.string()),
+    region: v.optional(v.string()),
+    draftSkillIds: v.optional(v.array(v.id("skills"))),
+    draftInterestIds: v.optional(v.array(v.id("interests"))),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

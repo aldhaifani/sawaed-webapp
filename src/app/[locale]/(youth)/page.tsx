@@ -4,10 +4,24 @@ import type { ReactElement } from "react";
 import { useTranslations } from "next-intl";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { TaxonomySelector } from "@/components/taxonomies/taxonomy-selector";
+import { useEffect } from "react";
+import { useLocale } from "next-intl";
+import { useRouter } from "next/navigation";
+import { useQuery } from "convex/react";
+import { api } from "@/../convex/_generated/api";
 
 export default function YouthHomePage(): ReactElement {
   const tCommon = useTranslations("common");
   const tTax = useTranslations("superadmin.taxonomies");
+  const locale = (useLocale() as "ar" | "en") ?? "ar";
+  const router = useRouter();
+  const status = useQuery(api.onboarding.getStatus, {});
+  useEffect(() => {
+    if (!status) return; // loading
+    if (!status.completed) {
+      router.replace(`/${locale}/onboarding`);
+    }
+  }, [status, router, locale]);
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
       <div className="container flex flex-col items-center justify-center gap-6 px-4 py-16">

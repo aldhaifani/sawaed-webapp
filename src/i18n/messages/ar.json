@@ -62,5 +62,26 @@
     "noneSelected": "لا توجد عناصر مختارة",
     "clear": "مسح",
     "removeItemAria": "إزالة ${name}"
+  },
+  "onboarding": {
+    "brand": "سواعد",
+    "stepOf": "الخطوة {step} من {total}",
+    "welcomeTitle": "أهلًا بك!",
+    "welcomeBody": "دعنا نتعرّف عليك لنساعدك في العثور على الفرص المناسبة.",
+    "basicDetails": "البيانات الأساسية",
+    "firstNameAr": "الاسم الأول (عربي)",
+    "lastNameAr": "اسم العائلة (عربي)",
+    "firstNameEn": "First name (English)",
+    "lastNameEn": "Last name (English)",
+    "region": "المنطقة",
+    "city": "المدينة",
+    "selectRegion": "اختر المنطقة",
+    "selectCity": "اختر المدينة",
+    "skillsInterests": "المهارات والاهتمامات",
+    "selectSkillAtLeastOne": "اختر مهارة واحدة على الأقل",
+    "selectInterestAtLeastOne": "اختر اهتمامًا واحدًا على الأقل",
+    "back": "رجوع",
+    "next": "التالي",
+    "finish": "إنهاء"
   }
 }
