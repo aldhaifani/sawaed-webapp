@@ -29,5 +29,38 @@
     "youth": "Youth",
     "admin": "Admin",
     "superAdmin": "Super Admin"
+  },
+  "superadmin": {
+    "taxonomies": {
+      "title": "Taxonomies (Admin)",
+      "seed": "Seed from JSON",
+      "skills": "Skills",
+      "interests": "Interests",
+      "add": "Add",
+      "edit": "Edit",
+      "delete": "Delete",
+      "nameEn": "Name (EN)",
+      "nameAr": "Name (AR)",
+      "promptEn": "New EN name",
+      "promptAr": "New AR name"
+    }
+  },
+  "skillsBrowser": {
+    "searchPlaceholder": "Search skills",
+    "noResults": "No results"
+  },
+  "taxonomySelector": {
+    "searchSkillsPlaceholder": "Search skills",
+    "searchInterestsPlaceholder": "Search interests",
+    "searchAria": "Search",
+    "categoriesAria": "Categories",
+    "allCategories": "All",
+    "browse": "Browse",
+    "noResults": "No results",
+    "add": "Add",
+    "selected": "Selected",
+    "noneSelected": "Nothing selected",
+    "clear": "Clear",
+    "removeItemAria": "Remove ${name}"
   }
 }

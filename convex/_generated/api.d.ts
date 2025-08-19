@@ -25,6 +25,8 @@ import type * as preferences from "../preferences.js";
 import type * as rbac from "../rbac.js";
 import type * as rbacHelpers from "../rbacHelpers.js";
 import type * as rbacWrappers from "../rbacWrappers.js";
+import type * as seed from "../seed.js";
+import type * as taxonomies from "../taxonomies.js";
 import type * as users from "../users.js";
 
 /**
@@ -48,6 +50,8 @@ declare const fullApi: ApiFromModules<{
   rbac: typeof rbac;
   rbacHelpers: typeof rbacHelpers;
   rbacWrappers: typeof rbacWrappers;
+  seed: typeof seed;
+  taxonomies: typeof taxonomies;
   users: typeof users;
 }>;
 export declare const api: FilterApi<

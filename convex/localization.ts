@@ -29,6 +29,22 @@ export const listSkillsLocalized = query({
   },
 });
 
+// Extended variant with category metadata (non-breaking addition)
+export const listSkillsLocalizedWithMeta = query({
+  args: { locale: AppLocale },
+  handler: async (
+    ctx,
+    { locale },
+  ): Promise<Array<{ id: Id<"skills">; name: string; category?: string }>> => {
+    const rows = await ctx.db.query("skills").collect();
+    return rows.map((r) => ({
+      id: r._id,
+      name: choose(locale, r.nameAr, r.nameEn),
+      category: r.category ?? undefined,
+    }));
+  },
+});
+
 export const listInterestsLocalized = query({
   args: { locale: AppLocale },
   handler: async (
@@ -39,6 +55,24 @@ export const listInterestsLocalized = query({
     return rows.map((r) => ({
       id: r._id,
       name: choose(locale, r.nameAr, r.nameEn),
+    }));
+  },
+});
+
+// Extended variant with category metadata (non-breaking addition)
+export const listInterestsLocalizedWithMeta = query({
+  args: { locale: AppLocale },
+  handler: async (
+    ctx,
+    { locale },
+  ): Promise<
+    Array<{ id: Id<"interests">; name: string; category?: string }>
+  > => {
+    const rows = await ctx.db.query("interests").collect();
+    return rows.map((r) => ({
+      id: r._id,
+      name: choose(locale, r.nameAr, r.nameEn),
+      category: r.category ?? undefined,
     }));
   },
 });

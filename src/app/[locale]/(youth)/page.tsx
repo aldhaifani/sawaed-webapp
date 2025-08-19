@@ -3,9 +3,11 @@
 import type { ReactElement } from "react";
 import { useTranslations } from "next-intl";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { TaxonomySelector } from "@/components/taxonomies/taxonomy-selector";
 
 export default function YouthHomePage(): ReactElement {
   const tCommon = useTranslations("common");
+  const tTax = useTranslations("superadmin.taxonomies");
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
       <div className="container flex flex-col items-center justify-center gap-6 px-4 py-16">
@@ -13,6 +15,27 @@ export default function YouthHomePage(): ReactElement {
           {tCommon("appName")}
         </h1>
         <LogoutButton />
+        <div className="w-full rounded-lg bg-white/10 p-4">
+          <h2 className="mb-3 text-xl font-semibold">{tTax("skills")}</h2>
+          <TaxonomySelector
+            kind="skill"
+            onChange={({ selectedIds }) => {
+              // TODO: Persist selections in a follow-up (userTaxonomy convex mutations)
+              // For now, no-op integration to avoid breaking flows
+              console.debug("Selected skills:", selectedIds);
+            }}
+          />
+        </div>
+        <div className="w-full rounded-lg bg-white/10 p-4">
+          <h2 className="mb-3 text-xl font-semibold">{tTax("interests")}</h2>
+          <TaxonomySelector
+            kind="interest"
+            onChange={({ selectedIds }) => {
+              // TODO: Persist selections in a follow-up (userTaxonomy convex mutations)
+              console.debug("Selected interests:", selectedIds);
+            }}
+          />
+        </div>
       </div>
     </main>
   );

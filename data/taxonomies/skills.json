@@ -1,0 +1,104 @@
+[
+  {
+    "slug": "digital-literacy",
+    "nameEn": "Digital literacy",
+    "nameAr": "الثقافة الرقمية",
+    "category": "technical"
+  },
+  {
+    "slug": "office-productivity",
+    "nameEn": "Office productivity",
+    "nameAr": "الإنتاجية المكتبية",
+    "category": "technical"
+  },
+  {
+    "slug": "coding-programming",
+    "nameEn": "Coding/programming",
+    "nameAr": "البرمجة",
+    "category": "technical"
+  },
+  {
+    "slug": "web-mobile-development",
+    "nameEn": "Web and mobile development",
+    "nameAr": "تطوير الويب والتطبيقات",
+    "category": "technical"
+  },
+  {
+    "slug": "data-analysis-visualization",
+    "nameEn": "Data analysis and visualization",
+    "nameAr": "تحليل البيانات وتصورها",
+    "category": "technical"
+  },
+  {
+    "slug": "ui-ux-design",
+    "nameEn": "UI/UX design",
+    "nameAr": "تصميم تجربة/واجهة المستخدم",
+    "category": "technical"
+  },
+  {
+    "slug": "ai-ml-fundamentals",
+    "nameEn": "AI/ML fundamentals",
+    "nameAr": "أساسيات الذكاء الاصطناعي وتعلم الآلة",
+    "category": "technical"
+  },
+  {
+    "slug": "cybersecurity-basics",
+    "nameEn": "Cybersecurity basics",
+    "nameAr": "أساسيات الأمن السيبراني",
+    "category": "technical"
+  },
+  {
+    "slug": "cloud-computing",
+    "nameEn": "Cloud computing",
+    "nameAr": "الحوسبة السحابية",
+    "category": "technical"
+  },
+  {
+    "slug": "project-management-basics",
+    "nameEn": "Project management basics",
+    "nameAr": "أساسيات إدارة المشاريع",
+    "category": "soft"
+  },
+  {
+    "slug": "communication",
+    "nameEn": "Communication",
+    "nameAr": "التواصل",
+    "category": "soft"
+  },
+  {
+    "slug": "teamwork-collaboration",
+    "nameEn": "Teamwork and collaboration",
+    "nameAr": "العمل الجماعي والتعاون",
+    "category": "soft"
+  },
+  {
+    "slug": "creativity",
+    "nameEn": "Creativity",
+    "nameAr": "الإبداع",
+    "category": "soft"
+  },
+  {
+    "slug": "graphic-design",
+    "nameEn": "Graphic design",
+    "nameAr": "التصميم الجرافيكي",
+    "category": "creative"
+  },
+  {
+    "slug": "motion-graphics-animation",
+    "nameEn": "Motion graphics and animation",
+    "nameAr": "الرسوم المتحركة والموشن جرافيك",
+    "category": "creative"
+  },
+  {
+    "slug": "photography-videography",
+    "nameEn": "Photography and videography",
+    "nameAr": "التصوير الفوتوغرافي وصناعة الفيديو",
+    "category": "creative"
+  },
+  {
+    "slug": "content-writing-storytelling",
+    "nameEn": "Content writing and storytelling",
+    "nameAr": "كتابة المحتوى وسرد القصص",
+    "category": "creative"
+  }
+]

@@ -53,17 +53,23 @@ const schema = defineSchema({
   skills: defineTable({
     nameEn: v.string(),
     nameAr: v.string(),
+    category: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_name_en", ["nameEn"]),
+  })
+    .index("by_name_en", ["nameEn"])
+    .index("by_category", ["category"]),
 
   // Master taxonomy: Interests (bilingual)
   interests: defineTable({
     nameEn: v.string(),
     nameAr: v.string(),
+    category: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_name_en", ["nameEn"]),
+  })
+    .index("by_name_en", ["nameEn"])
+    .index("by_category", ["category"]),
 
   // Junction table: User ↔ Skill
   userSkills: defineTable({

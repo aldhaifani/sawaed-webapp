@@ -29,5 +29,38 @@
     "youth": "الشباب",
     "admin": "المشرف",
     "superAdmin": "المشرف الأعلى"
+  },
+  "superadmin": {
+    "taxonomies": {
+      "title": "التصنيفات (لوحة التحكم)",
+      "seed": "استيراد من JSON",
+      "skills": "المهارات",
+      "interests": "الاهتمامات",
+      "add": "إضافة",
+      "edit": "تعديل",
+      "delete": "حذف",
+      "nameEn": "الاسم (إنجليزي)",
+      "nameAr": "الاسم (عربي)",
+      "promptEn": "اسم جديد (إنجليزي)",
+      "promptAr": "اسم جديد (عربي)"
+    }
+  },
+  "skillsBrowser": {
+    "searchPlaceholder": "ابحث عن مهارة",
+    "noResults": "لا توجد نتائج"
+  },
+  "taxonomySelector": {
+    "searchSkillsPlaceholder": "ابحث عن مهارة",
+    "searchInterestsPlaceholder": "ابحث عن اهتمام",
+    "searchAria": "بحث",
+    "categoriesAria": "الفئات",
+    "allCategories": "الكل",
+    "browse": "تصفح",
+    "noResults": "لا توجد نتائج",
+    "add": "إضافة",
+    "selected": "المختار",
+    "noneSelected": "لا توجد عناصر مختارة",
+    "clear": "مسح",
+    "removeItemAria": "إزالة ${name}"
   }
 }

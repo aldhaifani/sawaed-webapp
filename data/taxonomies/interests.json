@@ -1,0 +1,260 @@
+[
+  {
+    "slug": "visual-arts",
+    "nameEn": "Visual arts",
+    "nameAr": "الفنون البصرية",
+    "category": "arts_culture"
+  },
+  {
+    "slug": "photography-film",
+    "nameEn": "Photography and film",
+    "nameAr": "التصوير والسينما",
+    "category": "arts_culture"
+  },
+  {
+    "slug": "music-performance",
+    "nameEn": "Music and performance",
+    "nameAr": "الموسيقى والعروض",
+    "category": "arts_culture"
+  },
+  {
+    "slug": "theater-drama",
+    "nameEn": "Theater and drama",
+    "nameAr": "المسرح والدراما",
+    "category": "arts_culture"
+  },
+  {
+    "slug": "literature-writing",
+    "nameEn": "Literature and creative writing",
+    "nameAr": "الأدب والكتابة الإبداعية",
+    "category": "arts_culture"
+  },
+  {
+    "slug": "heritage-museums",
+    "nameEn": "Cultural heritage and museums",
+    "nameAr": "التراث الثقافي والمتاحف",
+    "category": "arts_culture"
+  },
+  {
+    "slug": "fashion-design",
+    "nameEn": "Fashion and design",
+    "nameAr": "الأزياء والتصميم",
+    "category": "arts_culture"
+  },
+  {
+    "slug": "football-futsal",
+    "nameEn": "Football, futsal",
+    "nameAr": "كرة القدم، كرة الصالات",
+    "category": "sports_wellness"
+  },
+  {
+    "slug": "athletics-running",
+    "nameEn": "Athletics, running, walking",
+    "nameAr": "ألعاب القوى، الجري، المشي",
+    "category": "sports_wellness"
+  },
+  {
+    "slug": "swimming-water-sports",
+    "nameEn": "Swimming and water sports",
+    "nameAr": "السباحة والرياضات المائية",
+    "category": "sports_wellness"
+  },
+  {
+    "slug": "cycling",
+    "nameEn": "Cycling",
+    "nameAr": "ركوب الدراجات",
+    "category": "sports_wellness"
+  },
+  {
+    "slug": "martial-arts",
+    "nameEn": "Martial arts",
+    "nameAr": "فنون القتال",
+    "category": "sports_wellness"
+  },
+  {
+    "slug": "hiking-outdoors",
+    "nameEn": "Hiking and outdoors",
+    "nameAr": "المشي الجبلي والأنشطة الخارجية",
+    "category": "sports_wellness"
+  },
+  {
+    "slug": "fitness-gym",
+    "nameEn": "Fitness and gym",
+    "nameAr": "اللياقة البدنية والنوادي الرياضية",
+    "category": "sports_wellness"
+  },
+  {
+    "slug": "esports-gaming",
+    "nameEn": "Esports and gaming",
+    "nameAr": "الرياضات الإلكترونية والألعاب",
+    "category": "sports_wellness"
+  },
+  {
+    "slug": "coding-app-dev",
+    "nameEn": "Coding and app development",
+    "nameAr": "البرمجة وتطوير التطبيقات",
+    "category": "tech_innovation"
+  },
+  {
+    "slug": "robotics-electronics",
+    "nameEn": "Robotics and electronics",
+    "nameAr": "الروبوتات والإلكترونيات",
+    "category": "tech_innovation"
+  },
+  {
+    "slug": "ai-ml-clubs",
+    "nameEn": "AI/ML clubs",
+    "nameAr": "أندية الذكاء الاصطناعي وتعلم الآلة",
+    "category": "tech_innovation"
+  },
+  {
+    "slug": "drones-maker",
+    "nameEn": "Drones and maker culture",
+    "nameAr": "الطائرات بدون طيار وثقافة الصُنّاع",
+    "category": "tech_innovation"
+  },
+  {
+    "slug": "startups-entrepreneurship",
+    "nameEn": "Startups and entrepreneurship",
+    "nameAr": "الشركات الناشئة وريادة الأعمال",
+    "category": "tech_innovation"
+  },
+  {
+    "slug": "cybersecurity-interest",
+    "nameEn": "Cybersecurity interest",
+    "nameAr": "الاهتمام بالأمن السيبراني",
+    "category": "tech_innovation"
+  },
+  {
+    "slug": "ar-vr-game-dev",
+    "nameEn": "AR/VR and game development",
+    "nameAr": "الواقعان المعزز والافتراضي وتطوير الألعاب",
+    "category": "tech_innovation"
+  },
+  {
+    "slug": "social-media-content",
+    "nameEn": "Social media content creation",
+    "nameAr": "إنشاء المحتوى على وسائل التواصل",
+    "category": "media_digital"
+  },
+  {
+    "slug": "podcasting-vlogging",
+    "nameEn": "Podcasting and vlogging",
+    "nameAr": "البودكاست والتدوين المرئي",
+    "category": "media_digital"
+  },
+  {
+    "slug": "digital-photography-editing",
+    "nameEn": "Digital photography and editing",
+    "nameAr": "التصوير الرقمي والتحرير",
+    "category": "media_digital"
+  },
+  {
+    "slug": "influencer-marketing",
+    "nameEn": "Influencer marketing and community building",
+    "nameAr": "التسويق عبر المؤثرين وبناء المجتمعات",
+    "category": "media_digital"
+  },
+  {
+    "slug": "online-learning-moocs",
+    "nameEn": "Online learning and MOOCs",
+    "nameAr": "التعلم عبر الإنترنت والدورات المفتوحة",
+    "category": "media_digital"
+  },
+  {
+    "slug": "sustainability-recycling",
+    "nameEn": "Sustainability and recycling",
+    "nameAr": "الاستدامة وإعادة التدوير",
+    "category": "environment_outdoors"
+  },
+  {
+    "slug": "marine-conservation",
+    "nameEn": "Marine conservation and fisheries",
+    "nameAr": "حماية البيئة البحرية والمصايد",
+    "category": "environment_outdoors"
+  },
+  {
+    "slug": "desert-mountain-exploration",
+    "nameEn": "Desert and mountain exploration",
+    "nameAr": "استكشاف الصحراء والجبال",
+    "category": "environment_outdoors"
+  },
+  {
+    "slug": "community-cleanups",
+    "nameEn": "Community clean-ups",
+    "nameAr": "حملات النظافة المجتمعية",
+    "category": "environment_outdoors"
+  },
+  {
+    "slug": "volunteering-youth-clubs",
+    "nameEn": "Volunteering and youth clubs",
+    "nameAr": "التطوع والأندية الشبابية",
+    "category": "community_civic"
+  },
+  {
+    "slug": "cultural-events-festivals",
+    "nameEn": "Cultural events and festivals",
+    "nameAr": "الفعاليات والمهرجانات الثقافية",
+    "category": "community_civic"
+  },
+  {
+    "slug": "health-awareness",
+    "nameEn": "Health awareness campaigns",
+    "nameAr": "حملات التوعية الصحية",
+    "category": "community_civic"
+  },
+  {
+    "slug": "inclusion-accessibility",
+    "nameEn": "Inclusion and accessibility",
+    "nameAr": "الشمول وإمكانية الوصول",
+    "category": "community_civic"
+  },
+  {
+    "slug": "tourism-hospitality",
+    "nameEn": "Tourism and hospitality",
+    "nameAr": "السياحة والضيافة",
+    "category": "career_sectors"
+  },
+  {
+    "slug": "logistics-ports",
+    "nameEn": "Logistics and ports",
+    "nameAr": "اللوجستيات والموانئ",
+    "category": "career_sectors"
+  },
+  {
+    "slug": "energy-renewables",
+    "nameEn": "Energy (renewables, efficiency)",
+    "nameAr": "الطاقة (المتجددة والكفاءة)",
+    "category": "career_sectors"
+  },
+  {
+    "slug": "finance-fintech",
+    "nameEn": "Finance and fintech",
+    "nameAr": "المالية والتقنية المالية",
+    "category": "career_sectors"
+  },
+  {
+    "slug": "manufacturing-industry4",
+    "nameEn": "Manufacturing and Industry 4.0",
+    "nameAr": "التصنيع والصناعة 4.0",
+    "category": "career_sectors"
+  },
+  {
+    "slug": "fisheries-agritech",
+    "nameEn": "Fisheries and agritech",
+    "nameAr": "المصايد والتقنيات الزراعية",
+    "category": "career_sectors"
+  },
+  {
+    "slug": "healthcare-healthtech",
+    "nameEn": "Healthcare and healthtech",
+    "nameAr": "الرعاية الصحية والتقنية الصحية",
+    "category": "career_sectors"
+  },
+  {
+    "slug": "creative-industries",
+    "nameEn": "Creative industries",
+    "nameAr": "الصناعات الإبداعية",
+    "category": "career_sectors"
+  }
+]
