@@ -83,5 +83,15 @@
     "back": "رجوع",
     "next": "التالي",
     "finish": "إنهاء"
+  },
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "opportunities": "الفرص",
+    "openMenu": "فتح القائمة"
+  },
+  "userMenu": {
+    "profile": "الملف الشخصي",
+    "settings": "الإعدادات",
+    "logout": "تسجيل الخروج"
   }
 }

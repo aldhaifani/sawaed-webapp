@@ -10,8 +10,8 @@ import {
 } from "@/shared/rbac";
 import { IntlProvider } from "@/components/i18n/intl-provider";
 import { Direction } from "@/components/i18n/direction";
-import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { ConvexClientProvider } from "@/app/ConvexClientProvider";
+import { Navbar } from "@/components/ui/navbar";
 import { OnboardingGate } from "@/components/auth/onboarding-gate";
 
 interface LocaleYouthLayoutProps {
@@ -49,11 +49,11 @@ export default async function LocaleYouthLayout(props: LocaleYouthLayoutProps) {
   return (
     <IntlProvider locale={localeToUse}>
       <Direction locale={localeToUse} />
-      <OnboardingGate />
-      <div className="flex w-full justify-end p-2">
-        <LanguageSwitcher />
-      </div>
-      <ConvexClientProvider>{children}</ConvexClientProvider>
+      <ConvexClientProvider>
+        <OnboardingGate />
+        <Navbar role="YOUTH" />
+        {children}
+      </ConvexClientProvider>
     </IntlProvider>
   );
 }

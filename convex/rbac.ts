@@ -11,6 +11,8 @@ export interface CurrentUserResponse {
   readonly isBlocked: boolean;
   readonly isDeleted: boolean;
   readonly languagePreference: "ar" | "en";
+  readonly avatarUrl?: string;
+  readonly pictureUrl?: string;
 }
 
 /**
@@ -26,6 +28,10 @@ export const currentUser = query({
       .withIndex("by_auth_user", (q) => q.eq("authUserId", authUserId))
       .unique();
     if (!appUser) return null;
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", appUser._id))
+      .unique();
     return {
       userId: appUser._id as Id<"appUsers">,
       authUserId,
@@ -34,6 +40,8 @@ export const currentUser = query({
       isBlocked: appUser.isBlocked,
       isDeleted: appUser.isDeleted,
       languagePreference: appUser.languagePreference,
+      avatarUrl: appUser.avatarUrl ?? undefined,
+      pictureUrl: profile?.pictureUrl ?? undefined,
     };
   },
 });

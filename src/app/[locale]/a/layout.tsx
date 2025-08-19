@@ -10,7 +10,8 @@ import {
 import { ROLES } from "@/shared/rbac";
 import { IntlProvider } from "@/components/i18n/intl-provider";
 import { Direction } from "@/components/i18n/direction";
-import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { ConvexClientProvider } from "@/app/ConvexClientProvider";
+import { Navbar } from "@/components/ui/navbar";
 
 interface AdminLayoutProps {
   readonly children: ReactNode;
@@ -45,10 +46,10 @@ export default async function AdminLayout(props: AdminLayoutProps) {
   return (
     <IntlProvider locale={locale}>
       <Direction locale={locale} />
-      <div className="flex w-full justify-end p-2">
-        <LanguageSwitcher />
-      </div>
-      {children}
+      <ConvexClientProvider>
+        <Navbar role="ADMIN" />
+        {children}
+      </ConvexClientProvider>
     </IntlProvider>
   );
 }

@@ -52,7 +52,7 @@ export default function BasicDropdown({
     <div ref={dropdownRef} className={`relative inline-block ${className}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-background hover:bg-primary flex w-full items-center justify-between gap-2 rounded-lg border px-4 py-2 text-left transition-colors"
+        className="bg-background hover:bg-primary flex w-full items-center justify-between gap-2 rounded-lg border px-4 py-2 text-start transition-colors"
       >
         <span className="block truncate">
           {selectedItem ? selectedItem.label : label}
@@ -98,7 +98,7 @@ export default function BasicDropdown({
                 >
                   <button
                     onClick={() => handleItemSelect(item)}
-                    className={`flex w-full items-center px-4 py-2 text-left text-sm ${
+                    className={`flex w-full items-center px-4 py-2 text-start text-sm ${
                       selectedItem?.id === item.id
                         ? "text-brand font-medium"
                         : ""

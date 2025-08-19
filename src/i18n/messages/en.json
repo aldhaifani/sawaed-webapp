@@ -83,5 +83,15 @@
     "back": "Back",
     "next": "Next",
     "finish": "Finish"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "opportunities": "Opportunities",
+    "openMenu": "Open menu"
+  },
+  "userMenu": {
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Logout"
   }
 }

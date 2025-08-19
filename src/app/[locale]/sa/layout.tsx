@@ -10,8 +10,8 @@ import {
 import { ROLES } from "@/shared/rbac";
 import { IntlProvider } from "@/components/i18n/intl-provider";
 import { Direction } from "@/components/i18n/direction";
-import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import { ConvexClientProvider } from "@/app/ConvexClientProvider";
+import { Navbar } from "@/components/ui/navbar";
 
 interface SuperAdminLayoutProps {
   readonly children: ReactNode;
@@ -45,10 +45,10 @@ export default async function SuperAdminLayout(props: SuperAdminLayoutProps) {
   return (
     <IntlProvider locale={locale}>
       <Direction locale={locale} />
-      <div className="flex w-full justify-end p-2">
-        <LanguageSwitcher />
-      </div>
-      <ConvexClientProvider>{children}</ConvexClientProvider>
+      <ConvexClientProvider>
+        <Navbar role="SUPER_ADMIN" />
+        {children}
+      </ConvexClientProvider>
     </IntlProvider>
   );
 }
