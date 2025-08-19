@@ -1,32 +1,394 @@
 "use client";
 
 import type { ReactElement } from "react";
-import { useTranslations } from "next-intl";
-import { LogoutButton } from "@/components/auth/LogoutButton";
-import { useEffect } from "react";
+import { useMemo, useEffect } from "react";
 import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import {
+  CalendarDays,
+  MapPin,
+  Clock,
+  CheckCircle2,
+  Circle,
+  Trophy,
+  ChevronRight,
+  ExternalLink,
+} from "lucide-react";
+
+function SectionCard({
+  title,
+  children,
+  right,
+}: {
+  title: string;
+  children: React.ReactNode;
+  right?: React.ReactNode;
+}): ReactElement {
+  return (
+    <section className="bg-card rounded-2xl border shadow-sm">
+      <header className="flex items-center justify-between border-b px-4 py-3 sm:px-6">
+        <h3 className="text-foreground text-base font-semibold">{title}</h3>
+        {right ? <div className="shrink-0">{right}</div> : null}
+      </header>
+      <div className="p-4 sm:p-6">{children}</div>
+    </section>
+  );
+}
+
+interface OpportunityItem {
+  readonly id: string;
+  readonly title: string;
+  readonly location: string;
+  readonly hours: string;
+}
+
+interface ActivityItem {
+  readonly id: string;
+  readonly title: string;
+  readonly location: string;
+  readonly hours: string;
+  readonly status: "Accepted" | "Pending" | "Withdrawn";
+}
 
 export default function YouthDashboardPage(): ReactElement {
-  const tCommon = useTranslations("common");
   const locale = (useLocale() as "ar" | "en") ?? "ar";
   const router = useRouter();
   const status = useQuery(api.onboarding.getStatus, {});
+
   useEffect(() => {
     if (!status) return; // loading
-    if (!status.completed) {
-      router.replace(`/${locale}/onboarding`);
-    }
+    if (!status.completed) router.replace(`/${locale}/onboarding`);
   }, [status, router, locale]);
+
+  // Dummy data
+  const progress = 55;
+  const modules = useMemo(
+    () => [
+      {
+        id: 1,
+        label: "Module #1",
+        title: "Foundations of Digital Marketing",
+        done: true,
+      },
+      {
+        id: 2,
+        label: "Module #2",
+        title: "Search Engine Optimization Basics",
+        done: true,
+      },
+      {
+        id: 3,
+        label: "Module #3",
+        title: "Social Media Marketing",
+        done: true,
+      },
+      {
+        id: 4,
+        label: "Module #4",
+        title: "Content Creation Essentials",
+        done: false,
+      },
+      { id: 5, label: "Module #5", title: "Final Project", done: false },
+    ],
+    [],
+  );
+
+  const opportunities: readonly OpportunityItem[] = [
+    {
+      id: "op-1",
+      title: "Public Speaking & Presentation Skills Workshop",
+      hours: "6 hrs",
+      location: "Youth Center, Muscat",
+    },
+    {
+      id: "op-2",
+      title: "Digital Skills Bootcamp",
+      hours: "12 hrs",
+      location: "Innovation Park Muscat",
+    },
+  ];
+
+  const activities: readonly ActivityItem[] = [
+    {
+      id: "ac-1",
+      title: "Public Speaking & Presentation Skills Workshop",
+      status: "Accepted",
+      hours: "6 hrs",
+      location: "Youth Center, Muscat",
+    },
+    {
+      id: "ac-2",
+      title: "Creative Writing Circle",
+      status: "Pending",
+      hours: "2 hrs",
+      location: "Bawsher Library",
+    },
+  ];
+
+  const checklist = [
+    { label: "Core Identity (20%)", completed: true },
+    { label: "Skills & Talents (20%)", completed: true },
+    { label: "Interests & Hobbies (15%)", completed: true },
+    { label: "Education (15%)", completed: true },
+    { label: "Projects (10%)", completed: false },
+    { label: "Work Experience & Volunteering (10%)", completed: false },
+    { label: "Awards & Certifications (10%)", completed: false },
+  ] as const;
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-      <div className="container flex flex-col items-center justify-center gap-6 px-4 py-16">
-        <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-[5rem]">
-          {tCommon("appName")}
-        </h1>
-        <LogoutButton />
+    <main className="bg-background min-h-screen w-full">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+        {/* Hero greeting */}
+        <header className="mb-4 sm:mb-6">
+          <h1 className="text-foreground text-2xl font-bold sm:text-3xl">
+            Welcome back, Tareq!
+          </h1>
+        </header>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+          {/* Main column */}
+          <div className="space-y-6">
+            {/* Learning Path */}
+            <SectionCard
+              title="Learning Path"
+              right={
+                <Button variant="outline" className="gap-1 text-xs sm:text-sm">
+                  View Details <ChevronRight className="size-4" />
+                </Button>
+              }
+            >
+              <div className="mb-3 flex flex-wrap items-center gap-4 text-xs sm:text-sm">
+                <span>Current Level: lvl 1</span>
+                <span>Goal: reach lvl 2</span>
+                <div className="flex items-center gap-2">
+                  <span>Progress:</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-36 sm:w-56">
+                      <Progress value={progress} className="h-1.5" />
+                    </div>
+                    <span className="text-muted-foreground text-xs">
+                      {progress}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {/* Milestones timeline */}
+              <div className="rounded-xl border p-4 shadow-xs sm:p-5">
+                <div className="relative">
+                  {/* background connector behind circles */}
+                  <div className="bg-border absolute top-3 right-[5%] left-[5%] z-0 hidden h-1 rounded-full sm:block" />
+                  <ol className="relative z-10 grid grid-cols-5 items-start gap-2">
+                    {modules.map((m, i) => {
+                      const next =
+                        !m.done && modules.slice(0, i).every((x) => x.done);
+                      return (
+                        <li
+                          key={m.id}
+                          className="flex flex-col items-center gap-2"
+                        >
+                          <div
+                            className={`relative z-10 grid size-7 place-items-center rounded-full border transition-shadow ${
+                              m.done
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : next
+                                  ? "bg-secondary text-secondary-foreground ring-primary/30 ring-2"
+                                  : "bg-muted text-muted-foreground"
+                            } ${next ? "animate-pulse" : ""}`}
+                          >
+                            {m.done ? (
+                              <CheckCircle2 className="size-4" />
+                            ) : (
+                              <Circle className="size-3" />
+                            )}
+                          </div>
+                          <div className="text-center">
+                            <div
+                              className="text-foreground text-[10px] font-medium sm:text-xs"
+                              title={m.title}
+                            >
+                              {m.label}
+                            </div>
+                            <div
+                              className="text-muted-foreground mt-0.5 line-clamp-2 text-[10px] sm:text-xs"
+                              title={m.title}
+                            >
+                              {m.title}
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </div>
+              </div>
+            </SectionCard>
+
+            {/* Two-up: Suggested Opportunities & My activities */}
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <SectionCard title="Suggested Opportunities">
+                <ul className="space-y-3">
+                  {opportunities.map((op) => (
+                    <li
+                      key={op.id}
+                      className="bg-background flex flex-col gap-4 rounded-xl border p-4 shadow-xs transition-shadow hover:shadow-sm"
+                    >
+                      <div className="flex w-full justify-start gap-4">
+                        <div className="bg-muted text-muted-foreground grid size-12 shrink-0 place-items-center rounded-lg border">
+                          <Trophy className="size-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-foreground truncate text-sm font-semibold text-wrap">
+                            {op.title}
+                          </p>
+                          <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-3 text-xs">
+                            <span className="inline-flex items-center gap-1">
+                              <Clock className="size-3" /> {op.hours}
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin className="size-3" /> {op.location}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex w-full justify-center gap-4">
+                        <Button size="sm" className="w-[60%] text-xs">
+                          Apply
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-[30%] text-xs"
+                        >
+                          Ignore
+                        </Button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </SectionCard>
+
+              <SectionCard title="My activities">
+                <ul className="space-y-3">
+                  {activities.map((ac) => (
+                    <li
+                      key={ac.id}
+                      className="bg-background flex flex-col gap-4 rounded-xl border p-4 shadow-xs transition-shadow hover:shadow-sm"
+                    >
+                      <div className="flex w-full justify-start gap-4">
+                        <div className="flex flex-col justify-center gap-1">
+                          <div className="bg-muted text-muted-foreground grid size-12 shrink-0 place-items-center rounded-lg border">
+                            <CalendarDays className="size-5" />
+                          </div>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${ac.status === "Accepted" ? "bg-green-100 text-green-700" : ac.status === "Pending" ? "bg-amber-100 text-amber-700" : "bg-muted text-muted-foreground"}`}
+                          >
+                            {ac.status}
+                          </span>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-foreground truncate text-sm font-semibold text-wrap">
+                            {ac.title}
+                          </p>
+                          <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-3 text-xs">
+                            <span className="inline-flex items-center gap-1">
+                              <Clock className="size-3" /> {ac.hours}
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin className="size-3" /> {ac.location}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex w-full justify-center gap-3">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="w-[60%] text-xs"
+                        >
+                          View Information
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-[30%] text-xs"
+                        >
+                          Withdraw
+                        </Button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </SectionCard>
+            </div>
+          </div>
+
+          {/* Right sidebar */}
+          <aside className="space-y-6">
+            {/* Profile Completion */}
+            <section className="bg-card rounded-2xl border p-4 shadow-sm sm:p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-foreground text-base font-semibold">
+                    Profile Completion
+                  </h3>
+                </div>
+                <Button size="sm" className="text-xs">
+                  Edit Profile
+                </Button>
+              </div>
+              <div className="mb-2 text-center">
+                <div className="text-muted-foreground mb-1 text-xs">70%</div>
+                <div className="w-full">
+                  <Progress value={70} className="h-1.5" />
+                </div>
+              </div>
+              <ul className="space-y-2">
+                {checklist.map((c) => (
+                  <li key={c.label} className="flex items-center gap-2 text-sm">
+                    {c.completed ? (
+                      <CheckCircle2 className="size-4 text-green-600" />
+                    ) : (
+                      <Circle className="text-muted-foreground size-4" />
+                    )}
+                    <span
+                      className={
+                        c.completed
+                          ? "decoration-foreground/30 text-muted-foreground line-through"
+                          : "text-foreground"
+                      }
+                    >
+                      {c.label}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            {/* Quick Links */}
+            <section className="bg-card rounded-2xl border p-4 shadow-sm sm:p-6">
+              <h3 className="text-foreground mb-3 text-base font-semibold">
+                Quick Links
+              </h3>
+              <ul className="space-y-2 text-sm">
+                {["Inbox", "Support Tickets", "Find a peer"].map((l) => (
+                  <li
+                    key={l}
+                    className="hover:bg-muted flex items-center justify-between gap-2 rounded-lg border px-3 py-2"
+                  >
+                    <span>{l}</span>
+                    <Button size="icon" variant="outline" className="size-7">
+                      <ExternalLink className="size-4" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </aside>
+        </div>
       </div>
     </main>
   );
