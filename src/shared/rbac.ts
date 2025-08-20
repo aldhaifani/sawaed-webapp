@@ -24,7 +24,7 @@ export function getDashboardPathForRole(role: Role): string {
 
 /**
  * Return the locale-prefixed dashboard path for a given role.
- * Example: (role=ADMIN, locale=\"en\") -> \"/en/a\"
+ * Example: (role=ADMIN, locale="en") -> "/en/a"
  */
 export function getDashboardPathForRoleLocale(
   role: Role,
@@ -33,4 +33,35 @@ export function getDashboardPathForRoleLocale(
   const base = getDashboardPathForRole(role);
   if (base === "/") return `/${locale}`;
   return `/${locale}${base}`;
+}
+
+/**
+ * Base path segment for a role ("", "/a", "/sa").
+ */
+export function getBasePathForRole(role: Role): "" | "/a" | "/sa" {
+  if (role === ROLES.ADMIN) return "/a";
+  if (role === ROLES.SUPER_ADMIN) return "/sa";
+  return "";
+}
+
+/**
+ * Role-aware profile path with locale prefix.
+ */
+export function getProfilePathForRoleLocale(
+  role: Role,
+  locale: "en" | "ar",
+): string {
+  const base = getBasePathForRole(role);
+  return `/${locale}${base}/profile`;
+}
+
+/**
+ * Role-aware settings path with locale prefix.
+ */
+export function getSettingsPathForRoleLocale(
+  role: Role,
+  locale: "en" | "ar",
+): string {
+  const base = getBasePathForRole(role);
+  return `/${locale}${base}/settings`;
 }

@@ -7,6 +7,11 @@ import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
 import Image from "next/image";
+import type { Role } from "@/shared/rbac";
+import {
+  getProfilePathForRoleLocale,
+  getSettingsPathForRoleLocale,
+} from "@/shared/rbac";
 
 export interface UserData {
   name: string;
@@ -18,6 +23,7 @@ export interface UserAccountAvatarProps {
   user?: UserData;
   avatarUrl?: string;
   className?: string;
+  role: Role;
 }
 
 const initialUserData: UserData = {
@@ -30,6 +36,7 @@ export default function UserAccountAvatar({
   user = initialUserData,
   avatarUrl,
   className = "",
+  role,
 }: UserAccountAvatarProps) {
   const [userData] = useState<UserData>(user);
   const locale = (useLocale() as "ar" | "en") ?? "ar";
@@ -74,14 +81,18 @@ export default function UserAccountAvatar({
           <div className="flex flex-col p-2">
             <button
               className="hover:bg-smooth-200 rounded-sm p-2 text-start"
-              onClick={() => router.push(`/${locale}/profile`)}
+              onClick={() =>
+                router.push(getProfilePathForRoleLocale(role, locale))
+              }
             >
               <User size={16} className="mr-2 inline" />{" "}
               {t("profile", { defaultMessage: "Profile" })}
             </button>
             <button
               className="hover:bg-smooth-200 rounded-sm p-2 text-start"
-              onClick={() => router.push(`/${locale}/settings`)}
+              onClick={() =>
+                router.push(getSettingsPathForRoleLocale(role, locale))
+              }
             >
               <Settings size={16} className="mr-2 inline" />{" "}
               {t("settings", { defaultMessage: "Settings" })}

@@ -10,11 +10,10 @@ import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import UserAccountAvatar from "@/components/ui/UserAccountAvatar";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-
-export type AppRole = "YOUTH" | "ADMIN" | "SUPER_ADMIN";
+import type { Role } from "@/shared/rbac";
 
 interface NavbarProps {
-  readonly role: AppRole;
+  readonly role: Role;
 }
 
 /**
@@ -43,7 +42,10 @@ export function Navbar({ role }: NavbarProps): ReactElement | null {
       ];
     }
     if (role === "ADMIN") {
-      return [{ href: `/${locale}/a`, label: t("dashboard") }];
+      return [
+        { href: `/${locale}/a`, label: t("dashboard") },
+        { href: `/${locale}/a/opportunities`, label: t("opportunities") },
+      ];
     }
     return [{ href: `/${locale}/sa`, label: t("dashboard") }];
   }, [role, locale, t]);
@@ -75,7 +77,11 @@ export function Navbar({ role }: NavbarProps): ReactElement | null {
         <div className="flex items-center gap-3">
           <div className="hidden items-center gap-4 md:flex">
             <LanguageSwitcher />
-            <UserAccountAvatar className="p-0.5" avatarUrl={avatarSrc} />
+            <UserAccountAvatar
+              className="p-0.5"
+              avatarUrl={avatarSrc}
+              role={role}
+            />
           </div>
           <div className="flex items-center md:hidden">
             <button
@@ -105,7 +111,11 @@ export function Navbar({ role }: NavbarProps): ReactElement | null {
             ))}
             <div className="flex items-center justify-between">
               <LanguageSwitcher />
-              <UserAccountAvatar className="p-0.5" avatarUrl={avatarSrc} />
+              <UserAccountAvatar
+                className="p-0.5"
+                avatarUrl={avatarSrc}
+                role={role}
+              />
             </div>
           </div>
         </div>
