@@ -1,10 +1,47 @@
 "use client";
 
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useLocale } from "next-intl";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
+import BasicDropdown from "@/components/ui/BasicDropdown";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/BasicDialog";
+import { TaxonomySelector } from "@/components/taxonomies/taxonomy-selector";
+import FileUpload from "@/components/ui/FileUpload";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { InfoGrid, type FieldItem } from "@/components/youths/profile/InfoGrid";
+import { SectionCard } from "@/components/youths/profile/SectionCard";
+import { TabButton } from "@/components/youths/profile/TabButton";
+import {
+  ExperienceForm,
+  type ExperiencePayload,
+} from "@/components/youths/profile/ExperienceForm";
+import {
+  ProjectForm,
+  type ProjectPayload,
+} from "@/components/youths/profile/ProjectForm";
+import {
+  AwardForm,
+  type AwardPayload,
+} from "@/components/youths/profile/AwardForm";
+import {
+  EduForm,
+  type EducationItem,
+} from "@/components/youths/profile/EduForm";
+import type { LucideIcon as IconType } from "lucide-react";
 import {
   Pen,
-  Plus,
   Eye,
   Mail,
   MapPin,
@@ -17,115 +54,368 @@ import {
   Heart,
   Layers,
   FolderGit2,
-  Clock,
   CheckCircle2,
+  Clock,
   XCircle,
   Archive,
   Send,
 } from "lucide-react";
-import BasicDropdown from "@/components/ui/BasicDropdown";
-
-type TabKey =
-  | "identity"
-  | "education"
-  | "skills"
-  | "interests"
-  | "experience"
-  | "projects"
-  | "awards"
-  | "activities";
-
-interface FieldItem {
-  readonly label: string;
-  readonly value: string;
-}
-
-interface EducationItem {
-  readonly institution: string;
-  readonly degree: string;
-  readonly field: string;
-  readonly start: string; // e.g., 2021
-  readonly end: string; // e.g., 2025 or "Present"
-  readonly description?: string;
-}
-
-function TabButton({
-  isActive,
-  onClick,
-  icon: Icon,
-  label,
-}: {
-  isActive: boolean;
-  onClick: () => void;
-  icon: React.ComponentType<{ className?: string; size?: number }>;
-  label: string;
-}): ReactElement {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
-        isActive
-          ? "bg-secondary text-foreground border-border"
-          : "bg-background text-muted-foreground hover:bg-muted border-transparent"
-      }`}
-      aria-pressed={isActive}
-    >
-      <Icon className="size-4" />
-      <span>{label}</span>
-    </button>
-  );
-}
-
-function InfoGrid({ items }: { items: readonly FieldItem[] }): ReactElement {
-  return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((f) => (
-        <div key={f.label} className="bg-background rounded-md border p-4">
-          <div className="text-muted-foreground text-xs">{f.label}</div>
-          <div className="text-foreground mt-1 text-sm font-medium">
-            {f.value}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function SectionCard({
-  title,
-  actionLabel,
-  children,
-}: {
-  title: string;
-  actionLabel?: string;
-  children: React.ReactNode;
-}): ReactElement {
-  return (
-    <section className="bg-card rounded-xl border shadow-sm">
-      <header className="flex items-center justify-between border-b px-4 py-3 sm:px-6">
-        <h3 className="text-foreground text-base font-semibold">{title}</h3>
-        {actionLabel ? (
-          <button
-            type="button"
-            className="bg-background text-foreground hover:bg-muted inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs font-medium"
-          >
-            {actionLabel === "Add" ? (
-              <Plus className="size-3" />
-            ) : actionLabel === "Edit" ? (
-              <Pen className="size-3" />
-            ) : null}
-            {actionLabel}
-          </button>
-        ) : null}
-      </header>
-      <div className="p-4 sm:p-6">{children}</div>
-    </section>
-  );
-}
 
 export default function YouthProfilePage(): ReactElement {
+  const locale = useLocale();
+
+  // Types
+  type CollaborationStatus = "open" | "closed" | "looking" | "";
+  type TabKey =
+    | "identity"
+    | "education"
+    | "skills"
+    | "interests"
+    | "experience"
+    | "projects"
+    | "awards"
+    | "activities";
+  type IdentityForm = {
+    readonly headline: string;
+    readonly bio: string;
+    readonly city: string;
+    readonly region: string;
+    readonly collaborationStatus: CollaborationStatus;
+    readonly pictureUrl?: string;
+    readonly phone?: string;
+  };
+  type ExperienceDialogState = {
+    readonly open: boolean;
+    readonly mode: "create" | "edit";
+    readonly id?: Id<"experiences">;
+    readonly defaults?: Partial<ExperiencePayload>;
+  };
+  type ProjectDialogState = {
+    readonly open: boolean;
+    readonly mode: "create" | "edit";
+    readonly id?: Id<"projects">;
+    readonly defaults?: Partial<ProjectPayload>;
+  };
+  type AwardDialogState = {
+    readonly open: boolean;
+    readonly mode: "create" | "edit";
+    readonly id?: Id<"awards">;
+    readonly defaults?: Partial<AwardPayload>;
+  };
+  type EducationDialogState = {
+    readonly open: boolean;
+    readonly mode: "create" | "edit";
+    readonly id?: Id<"education">;
+    readonly defaults?: Partial<EducationItem>;
+  };
+  type ActivityViewItem = {
+    title: string;
+    status: string;
+    icon: IconType;
+    tone: string;
+  };
+
+  // Data
+  const data = useQuery(api.profiles.getMyProfileComposite, {
+    locale: locale as "ar" | "en",
+  });
+
+  // Mutations / Actions
+  const mutateBasics = useMutation(api.profiles.updateProfileBasics);
+  const updateUserPhone = useMutation(api.profiles.updateUserPhone);
+  const clearProfilePicture = useMutation(api.profiles.clearProfilePicture);
+  const setProfilePictureFromStorageId = useMutation(
+    api.profiles.setProfilePictureFromStorageId,
+  );
+  const generateUploadUrl = useAction(
+    api.profiles.generateProfilePictureUploadUrl,
+  );
+  const createExperience = useMutation(api.profiles.createExperience);
+  const updateExperience = useMutation(api.profiles.updateExperience);
+  const createProject = useMutation(api.profiles.createProject);
+  const updateProject = useMutation(api.profiles.updateProject);
+  const createAward = useMutation(api.profiles.createAward);
+  const updateAward = useMutation(api.profiles.updateAward);
+  const createEdu = useMutation(api.profiles.createEducation);
+  const updateEdu = useMutation(api.profiles.updateEducation);
+  const mutateTaxonomies = useMutation(api.profiles.setUserTaxonomies);
+
+  // UI State
   const [tab, setTab] = useState<TabKey>("identity");
+  const [openIdentity, setOpenIdentity] = useState<boolean>(false);
+  const [openSkills, setOpenSkills] = useState<boolean>(false);
+  const [openExperience, setOpenExperience] = useState<ExperienceDialogState>({
+    open: false,
+    mode: "create",
+  });
+  const [openProject, setOpenProject] = useState<ProjectDialogState>({
+    open: false,
+    mode: "create",
+  });
+  const [openAward, setOpenAward] = useState<AwardDialogState>({
+    open: false,
+    mode: "create",
+  });
+  const [openEducation, setOpenEducation] = useState<EducationDialogState>({
+    open: false,
+    mode: "create",
+  });
+
+  // Form state
+  const [identityForm, setIdentityForm] = useState<IdentityForm>({
+    headline: "",
+    bio: "",
+    city: "",
+    region: "",
+    collaborationStatus: "",
+    pictureUrl: undefined,
+    phone: undefined,
+  });
+  const [phoneNine, setPhoneNine] = useState<string>("");
+  const [phoneError, setPhoneError] = useState<string>("");
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [selectedSkillIds, setSelectedSkillIds] = useState<
+    readonly Id<"skills">[]
+  >([]);
+  const [selectedInterestIds, setSelectedInterestIds] = useState<
+    readonly Id<"interests">[]
+  >([]);
+
+  // Region/City mapping (same as onboarding)
+  const regionCityMap: Record<string, readonly string[]> = useMemo(
+    () => ({
+      "Ad Dakhiliyah": [
+        "Nizwa",
+        "Bahla",
+        "Samail",
+        "Izki",
+        "Bidbid",
+        "Adam",
+        "Al Hamra",
+        "Manah",
+        "Jebel Akhdar",
+      ],
+      "Ad Dhahirah": ["Ibri", "Yanqul", "Dhank"],
+      "Al Batinah North": [
+        "Sohar",
+        "Shinas",
+        "Liwa",
+        "Saham",
+        "Al Khabourah",
+        "Suwayq",
+      ],
+      "Al Batinah South": [
+        "Rustaq",
+        "Awabi",
+        "Nakhl",
+        "Wadi al Ma’awil",
+        "Barka",
+        "Musana’ah",
+      ],
+      "Al Buraimi": ["Al Buraimi", "Mahdah", "Al Sinainah"],
+      "Al Wusta": ["Haima", "others..."],
+      "Ash Sharqiyah North": [
+        "Ibra",
+        "Mudhaibi",
+        "Bidiyah",
+        "Al Qabil",
+        "Wadi Bani Khalid",
+        "Dima wa’l Ta’een",
+      ],
+      "Ash Sharqiyah South": [
+        "Sur",
+        "Al Kamil wa’l Wafi",
+        "Jalan Bani Bu Hassan",
+        "Jalan Bani Bu Ali",
+        "Masirah",
+      ],
+      Dhofar: [
+        "Salalah",
+        "Taqah",
+        "Mirbat",
+        "Thumrait",
+        "Sadah",
+        "Rakhyut",
+        "Dhalkut",
+        "Muqshin",
+        "Shalim and the Hallaniyat Islands",
+        "Al-Mazyūnah",
+      ],
+      Muscat: ["Muscat", "Muttrah", "Bawshar", "Seeb", "Al Amarat", "Qurayyat"],
+      Musandam: ["Khasab", "Dibba", "Bukha", "Madha"],
+    }),
+    [],
+  );
+
+  const regions = useMemo(() => {
+    const arabicMap: Record<string, string> = {
+      "Ad Dakhiliyah": "الداخلية",
+      "Ad Dhahirah": "الظاهرة",
+      "Al Batinah North": "شمال الباطنة",
+      "Al Batinah South": "جنوب الباطنة",
+      "Al Buraimi": "البريمي",
+      "Al Wusta": "الوسطى",
+      "Ash Sharqiyah North": "شمال الشرقية",
+      "Ash Sharqiyah South": "جنوب الشرقية",
+      Dhofar: "ظفار",
+      Muscat: "مسقط",
+      Musandam: "مسندم",
+    };
+    return Object.keys(regionCityMap).map((r) => ({
+      id: r,
+      label: locale === "ar" ? (arabicMap[r] ?? r) : r,
+    }));
+  }, [regionCityMap, locale]);
+
+  const cities = useMemo(() => {
+    if (!identityForm.region) return [] as { id: string; label: string }[];
+    const cityAr: Record<string, Record<string, string>> = {
+      "Ad Dakhiliyah": {
+        Nizwa: "نزوى",
+        Bahla: "بهلا",
+        Samail: "سمائل",
+        Izki: "إزكي",
+        Bidbid: "بدبد",
+        Adam: "آدم",
+        "Al Hamra": "الحمراء",
+        Manah: "منح",
+        "Jebel Akhdar": "الجبل الأخضر",
+      },
+      "Ad Dhahirah": { Ibri: "عبري", Yanqul: "ينقل", Dhank: "ضنك" },
+      "Al Batinah North": {
+        Sohar: "صحار",
+        Shinas: "شناص",
+        Liwa: "لوى",
+        Saham: "صحم",
+        "Al Khabourah": "الخابورة",
+        Suwayq: "السويق",
+      },
+      "Al Batinah South": {
+        Rustaq: "الرستاق",
+        Awabi: "العوابي",
+        Nakhl: "نخل",
+        "Wadi al Ma’awil": "وادي المعاول",
+        Barka: "بركاء",
+        "Musana’ah": "المصنعة",
+      },
+      "Al Buraimi": {
+        "Al Buraimi": "البريمي",
+        Mahdah: "محضة",
+        "Al Sinainah": "السنينة",
+      },
+      "Al Wusta": { Haima: "هيما", "others...": "أخرى" },
+      "Ash Sharqiyah North": {
+        Ibra: "إبراء",
+        Mudhaibi: "المضيبي",
+        Bidiyah: "بدية",
+        "Al Qabil": "القابل",
+        "Wadi Bani Khalid": "وادي بني خالد",
+        "Dima wa’l Ta’een": "دماء والطائيين",
+      },
+      "Ash Sharqiyah South": {
+        Sur: "صور",
+        "Al Kamil wa’l Wafi": "الكامل والوافي",
+        "Jalan Bani Bu Hassan": "جعلان بني بو حسن",
+        "Jalan Bani Bu Ali": "جعلان بني بو علي",
+        Masirah: "مصيرة",
+      },
+      Dhofar: {
+        Salalah: "صلالة",
+        Taqah: "طاقة",
+        Mirbat: "مرباط",
+        Thumrait: "ثمريت",
+        Sadah: "سدح",
+        Rakhyut: "رخيوت",
+        Dhalkut: "ضلكوت",
+        Muqshin: "مقشن",
+        "Shalim and the Hallaniyat Islands": "شليم وجزر الحلانيات",
+        "Al-Mazyūnah": "المزيونة",
+      },
+      Muscat: {
+        Muscat: "مسقط",
+        Muttrah: "مطرح",
+        Bawshar: "بوشر",
+        Seeb: "السيب",
+        "Al Amarat": "العامرات",
+        Qurayyat: "قريات",
+      },
+      Musandam: { Khasab: "خصب", Dibba: "دبا", Bukha: "بخا", Madha: "مدحاء" },
+    };
+    const list = regionCityMap[identityForm.region] ?? [];
+    return list.map((c) => ({
+      id: c,
+      label: locale === "ar" ? (cityAr[identityForm.region]?.[c] ?? c) : c,
+    }));
+  }, [identityForm.region, regionCityMap, locale]);
+
+  // helper to convert empty strings to undefined (to avoid sending empty values)
+  const emptyToU = useCallback(
+    (s: string): string | undefined => (s.trim().length > 0 ? s : undefined),
+    [],
+  );
+
+  // init identity form when data loads
+  useMemo(() => {
+    if (!data) return;
+    setIdentityForm({
+      headline: data.profile?.headline ?? "",
+      bio: data.profile?.bio ?? "",
+      city: data.profile?.city ?? "",
+      region: data.profile?.region ?? "",
+      collaborationStatus:
+        (data.profile
+          ?.collaborationStatus as IdentityForm["collaborationStatus"]) || "",
+      pictureUrl: data.profile?.pictureUrl ?? undefined,
+      phone: data.user.phone ?? undefined,
+    });
+    const p = data.user.phone ?? "";
+    const re = /^\+968(\d{0,9})/;
+    const m = re.exec(p);
+    const nextNine = m?.[1] ?? "";
+    setPhoneNine(nextNine);
+    setSelectedSkillIds((data.skills ?? []).map((s) => s.id));
+    setSelectedInterestIds((data.interests ?? []).map((i) => i.id));
+  }, [data]);
+
+  const onOpenIdentity = useCallback(() => setOpenIdentity(true), []);
+
+  const onSaveIdentity = useCallback(async () => {
+    try {
+      const collaboration =
+        identityForm.collaborationStatus === ""
+          ? undefined
+          : identityForm.collaborationStatus;
+      await mutateBasics({
+        headline: emptyToU(identityForm.headline),
+        bio: emptyToU(identityForm.bio),
+        city: emptyToU(identityForm.city),
+        region: emptyToU(identityForm.region),
+        pictureUrl: identityForm.pictureUrl ?? undefined,
+        collaborationStatus: collaboration,
+      });
+      // Save phone if valid and changed
+      const fullPhone = `+968${phoneNine}`;
+      const phoneValid = /^\+968\d{9}$/.test(fullPhone);
+      if (phoneValid && fullPhone !== (data?.user.phone ?? "")) {
+        await updateUserPhone({ phone: fullPhone });
+      }
+      setOpenIdentity(false);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [identityForm, mutateBasics, emptyToU, phoneNine, data, updateUserPhone]);
+
+  const onSaveSkills = useCallback(async () => {
+    try {
+      await mutateTaxonomies({
+        skillIds: [...selectedSkillIds],
+        interestIds: [...selectedInterestIds],
+      });
+      setOpenSkills(false);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [mutateTaxonomies, selectedSkillIds, selectedInterestIds]);
 
   const tabs = useMemo(
     () =>
@@ -142,124 +432,162 @@ export default function YouthProfilePage(): ReactElement {
     [],
   );
 
-  // Matches schema: appUsers + profiles
-  const identity: readonly FieldItem[] = [
-    { label: "First Name", value: "Ahmed" },
-    { label: "Last Name", value: "Al-Harthy" },
-    { label: "Email", value: "ahmed.alharthy@example.com" },
-    { label: "Phone", value: "+968 9123 4567" },
-    { label: "City", value: "Muscat" },
-    { label: "Region", value: "Muscat Governorate" },
-    { label: "Headline", value: "Omani Student & Volunteer" },
-    { label: "Gender", value: "Male" },
-    { label: "Completion", value: "82%" },
-  ] as const;
+  // Derived identity fields from backend
+  const identity: readonly FieldItem[] = useMemo(() => {
+    if (data === undefined) return [];
+    if (!data) return [];
+    const firstName = data.user.firstName ?? "";
+    const lastName = data.user.lastName ?? "";
+    const email = data.user.email ?? "";
+    const phone = data.user.phone ?? "";
+    const city = data.profile?.city ?? "";
+    const region = data.profile?.region ?? "";
+    const headline = data.profile?.headline ?? "";
+    const completion = `${data.profile?.completionPercentage ?? 0}%`;
+    const items: FieldItem[] = [
+      { label: "First Name", value: firstName },
+      { label: "Last Name", value: lastName },
+      { label: "Email", value: email },
+      { label: "Phone", value: phone },
+      { label: "City", value: city },
+      { label: "Region", value: region },
+      { label: "Headline", value: headline },
+      { label: "Completion", value: completion },
+    ];
+    return items as readonly FieldItem[];
+  }, [data]);
 
-  const educationItems: readonly EducationItem[] = [
-    {
-      institution: "Al Khoud Secondary School",
-      degree: "High School Diploma",
-      field: "Science Track",
-      start: "2021",
-      end: "2024",
-      description: "Robotics team captain, community service club, GPA 3.8.",
-    },
-    {
-      institution: "Sultan Qaboos University",
-      degree: "BSc (Planned)",
-      field: "Computer Engineering",
-      start: "2024",
-      end: "2028",
-      description: "Interest in smart cities, IoT, and civic technology.",
-    },
-  ] as const;
+  const educationItems: readonly (EducationItem & { _id: Id<"education"> })[] =
+    useMemo(() => {
+      if (!data?.education) return [];
+      return data.education.map((e) => ({
+        institution: e.institution ?? "",
+        degree: e.degree ?? "",
+        field: e.field ?? "",
+        start: e.startYear ? String(e.startYear) : "",
+        end:
+          typeof e.endYear === "string"
+            ? e.endYear
+            : e.endYear
+              ? String(e.endYear)
+              : "",
+        description: e.description ?? undefined,
+        _id: e._id,
+      }));
+    }, [data]);
 
-  const skills = [
-    "Arabic (Native)",
-    "English",
-    "JavaScript",
-    "Python",
-    "Teamwork",
-    "Leadership",
-  ] as const;
+  const skills = useMemo(
+    () => (data?.skills ?? []).map((s) => s.name),
+    [data],
+  ) as readonly string[];
 
-  const interests = ["Football", "Hiking", "Photography", "Reading"] as const;
+  const interests = useMemo(
+    () => (data?.interests ?? []).map((i) => i.name),
+    [data],
+  ) as readonly string[];
 
-  const experiences = [
-    {
-      title: "Event Volunteer",
-      org: "Oman Charitable Organization",
-      period: "2024 · 3 mo",
-      detail: "Supported donation drives and youth activities in Muscat.",
-    },
-    {
-      title: "Web Development Intern",
-      org: "ICT Oman",
-      period: "2025 · 6 wk",
-      detail: "Built an internal dashboard prototype using React.",
-    },
-  ] as const;
+  const experiences = useMemo(
+    () =>
+      (data?.experiences ?? []).map((e) => ({
+        id: e._id,
+        title: e.title ?? "",
+        organization: e.organization ?? "",
+        startDate: e.startDate ?? undefined,
+        endDate: e.endDate ?? undefined,
+        period: [
+          e.startDate ? new Date(e.startDate).getFullYear() : "",
+          e.endDate ? new Date(e.endDate).getFullYear() : "Present",
+        ]
+          .filter(Boolean)
+          .join(" – "),
+        description: e.description ?? "",
+      })),
+    [data],
+  ) as readonly {
+    id: Id<"experiences">;
+    title: string;
+    organization: string;
+    startDate?: number;
+    endDate?: number;
+    period: string;
+    description: string;
+  }[];
 
-  const projects = [
-    {
-      title: "Wadi Trails Finder",
-      period: "2024",
-      detail: "Simple web app to discover safe hiking trails around Oman.",
-    },
-    {
-      title: "Dates Farm Inventory",
-      period: "2023",
-      detail:
-        "Spreadsheet + script to track harvest and sales for a family farm.",
-    },
-  ] as const;
+  const projects = useMemo(
+    () =>
+      (data?.projects ?? []).map((p) => ({
+        id: p._id,
+        title: p.title ?? "",
+        period: p.period ?? "",
+        detail: p.description ?? "",
+        url: p.url ?? "",
+      })),
+    [data],
+  ) as readonly {
+    id: Id<"projects">;
+    title: string;
+    period: string;
+    detail: string;
+    url?: string;
+  }[];
 
-  const awards = [
-    {
-      title: "Sultanate Science Fair – Finalist",
-      issuer: "Ministry of Education",
-      year: "2024",
-    },
-    {
-      title: "Volunteer Recognition",
-      issuer: "Muscat Municipality",
-      year: "2023",
-    },
-  ] as const;
+  const awards = useMemo(
+    () =>
+      (data?.awards ?? []).map((a) => ({
+        id: a._id,
+        title: a.title ?? "",
+        issuer: a.issuer ?? "",
+        year: a.year ? String(a.year) : "",
+      })),
+    [data],
+  ) as readonly {
+    id: Id<"awards">;
+    title: string;
+    issuer: string;
+    year: string;
+  }[];
 
-  // Matches schema: eventRegistrations.status in [pending, accepted, rejected, cancelled, waitlisted]
-  const activities = [
-    {
-      title: "Summer Coding Camp – Muscat",
-      status: "accepted",
-      icon: CheckCircle2,
-      tone: "text-green-700 bg-green-100",
-    },
-    {
-      title: "Robotics Internship – Knowledge Oasis Muscat",
-      status: "pending",
-      icon: Clock,
-      tone: "text-amber-700 bg-amber-100",
-    },
-    {
-      title: "Design Workshop – Innovation Park Muscat",
-      status: "rejected",
-      icon: XCircle,
-      tone: "text-red-700 bg-red-100",
-    },
-    {
-      title: "Community Service Day – Muttrah",
-      status: "cancelled",
-      icon: Archive,
-      tone: "text-muted-foreground bg-muted",
-    },
-    {
-      title: "Youth Leadership – National Youth Program",
-      status: "waitlisted",
-      icon: Send,
-      tone: "text-blue-700 bg-blue-100",
-    },
-  ] as const;
+  // Activities derived from eventRegistrations
+  const activities = useMemo(() => {
+    const statuses = [
+      "accepted",
+      "pending",
+      "rejected",
+      "cancelled",
+      "waitlisted",
+    ] as const;
+    type ActivityStatus = (typeof statuses)[number];
+    const statusTone: Record<ActivityStatus, { icon: IconType; tone: string }> =
+      {
+        accepted: { icon: CheckCircle2, tone: "text-green-700 bg-green-100" },
+        pending: { icon: Clock, tone: "text-amber-700 bg-amber-100" },
+        rejected: { icon: XCircle, tone: "text-red-700 bg-red-100" },
+        cancelled: { icon: Archive, tone: "text-muted-foreground bg-muted" },
+        waitlisted: { icon: Send, tone: "text-blue-700 bg-blue-100" },
+      };
+    type ActivityDoc = {
+      status?: string;
+      title?: string;
+      opportunityTitle?: string;
+      _id?: string;
+    };
+    return (data?.activities ?? []).map((a: ActivityDoc) => {
+      const raw = String(a.status ?? "pending");
+      const status: ActivityStatus = (statuses as readonly string[]).includes(
+        raw,
+      )
+        ? (raw as ActivityStatus)
+        : "pending";
+      const selected = statusTone[status];
+      const { icon, tone } = selected;
+      return {
+        title: a.title ?? a.opportunityTitle ?? `Application ${a._id ?? ""}`,
+        status,
+        icon,
+        tone,
+      } as ActivityViewItem;
+    });
+  }, [data]) as readonly ActivityViewItem[];
 
   return (
     <main className="bg-background min-h-screen w-full">
@@ -273,37 +601,69 @@ export default function YouthProfilePage(): ReactElement {
           <div className="bg-muted h-28 w-full sm:h-32" />
           <div className="flex flex-col gap-4 px-4 pb-4 sm:flex-row sm:items-end sm:justify-between sm:px-6 sm:pb-6">
             <div className="-mt-10 flex items-end gap-4 sm:-mt-12">
-              <div className="border-card bg-muted relative size-20 shrink-0 rounded-full border-4 sm:size-24">
+              <div className="border-card bg-muted relative size-20 shrink-0 overflow-hidden rounded-full border-4 sm:size-24">
+                {data?.profile?.pictureUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={data.profile.pictureUrl}
+                    alt="Profile picture"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="bg-muted flex h-full w-full items-center justify-center text-lg font-semibold">
+                    {(() => {
+                      const first = data?.user.firstName?.[0] ?? "";
+                      const last = data?.user.lastName?.[0] ?? "";
+                      const fallback = (data?.user.email ?? "")
+                        .slice(0, 1)
+                        .toUpperCase();
+                      const initials = `${first}${last}`.trim() || fallback;
+                      return initials;
+                    })()}
+                  </div>
+                )}
                 {/* Collaboration status badge */}
-                <span className="py-0.3 text-[15px]/(0) font-h absolute -right-1 -bottom-1 rounded-full border bg-green-100 px-1 font-medium text-green-700 shadow-sm">
-                  🤝
-                </span>
+                {(() => {
+                  const status = data?.profile?.collaborationStatus;
+                  const emoji =
+                    status === "open"
+                      ? "🤝"
+                      : status === "looking"
+                        ? "👀"
+                        : status === "closed"
+                          ? "🔒"
+                          : "";
+                  return emoji ? (
+                    <span className="py-0.3 text-[15px]/(0) font-h absolute -right-1 -bottom-1 z-10 rounded-full border bg-green-100 px-1 font-medium text-green-700 shadow-sm">
+                      {emoji}
+                    </span>
+                  ) : null;
+                })()}
               </div>
               <div>
                 <h2 className="text-foreground text-xl font-semibold sm:text-2xl">
-                  Ahmed Al-Harthy
+                  {data === undefined
+                    ? "Loading..."
+                    : data
+                      ? `${data.user.firstName ?? ""} ${data.user.lastName ?? ""}`.trim() ||
+                        data.user.email
+                      : ""}
                 </h2>
-                <p className="text-muted-foreground text-sm">Omani Student</p>
+                <p className="text-muted-foreground text-sm">
+                  {data?.profile?.headline ?? ""}
+                </p>
                 <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-3">
                   <span className="inline-flex items-center gap-1 text-xs">
-                    <Mail className="size-3" /> ahmed.alharthy@example.com
+                    <Mail className="size-3" /> {data?.user.email ?? ""}
                   </span>
                   <span className="inline-flex items-center gap-1 text-xs">
-                    <Phone className="size-3" /> +968 9123 4567
+                    <Phone className="size-3" /> {data?.user.phone ?? ""}
                   </span>
                   <span className="inline-flex items-center gap-1 text-xs">
-                    <MapPin className="size-3" /> Muscat
+                    <MapPin className="size-3" /> {data?.profile?.city ?? ""}
                   </span>
                 </div>
               </div>
-            </div>
-            <div className="flex justify-center gap-2">
-              <button
-                type="button"
-                className="bg-background text-foreground hover:bg-muted inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium"
-              >
-                <Pen className="size-4" /> Edit
-              </button>
             </div>
           </div>
         </section>
@@ -345,216 +705,728 @@ export default function YouthProfilePage(): ReactElement {
           {/* Content */}
           <div className="space-y-6">
             {tab === "identity" && (
-              <SectionCard title="Profile Information" actionLabel="Edit">
-                <InfoGrid items={identity} />
+              <SectionCard
+                title="Profile Information"
+                actionLabel="Edit"
+                onAction={onOpenIdentity}
+              >
+                {data === undefined ? (
+                  <div className="text-muted-foreground text-sm">
+                    Loading...
+                  </div>
+                ) : identity.length > 0 ? (
+                  <InfoGrid items={identity} />
+                ) : (
+                  <div className="text-muted-foreground text-sm">
+                    No information yet.
+                  </div>
+                )}
               </SectionCard>
             )}
 
             {tab === "education" && (
-              <SectionCard title="Education" actionLabel="Add">
-                <ul className="space-y-3">
-                  {educationItems.map((e) => (
-                    <li
-                      key={`${e.institution}-${e.start}`}
-                      className="bg-background rounded-md border p-4"
-                    >
-                      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                        <div className="min-w-0">
-                          <p className="text-foreground truncate text-sm font-semibold">
-                            {e.institution}
-                          </p>
-                          <p className="text-muted-foreground text-xs">
-                            {e.degree} · {e.field}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-muted-foreground text-xs">
-                            {e.start} – {e.end}
+              <SectionCard
+                title="Education"
+                actionLabel="Add"
+                onAction={() =>
+                  setOpenEducation({ open: true, mode: "create" })
+                }
+              >
+                {data === undefined ? (
+                  <div className="text-muted-foreground text-sm">
+                    Loading...
+                  </div>
+                ) : educationItems.length > 0 ? (
+                  <ul className="space-y-3">
+                    {educationItems.map((e) => (
+                      <li
+                        key={`${e.institution}-${e.start}`}
+                        className="bg-background rounded-md border p-4"
+                      >
+                        <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+                          <div className="min-w-0">
+                            <p className="text-foreground truncate text-sm font-semibold">
+                              {e.institution}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                              {e.degree} · {e.field}
+                            </p>
                           </div>
-                          <button
-                            type="button"
-                            className="bg-muted text-foreground inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs"
-                          >
-                            <Pen className="size-3" /> Edit
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <div className="text-muted-foreground text-xs">
+                              {e.start} – {e.end}
+                            </div>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              className="gap-1"
+                              onClick={() =>
+                                setOpenEducation({
+                                  open: true,
+                                  mode: "edit",
+                                  id: e._id,
+                                  defaults: e,
+                                })
+                              }
+                            >
+                              <Pen className="size-3" /> Edit
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                      {e.description ? (
-                        <p className="text-foreground/80 mt-2 text-sm">
-                          {e.description}
-                        </p>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
+                        {e.description ? (
+                          <p className="text-foreground/80 mt-2 text-sm">
+                            {e.description}
+                          </p>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-muted-foreground text-sm">
+                    No education added yet.
+                  </div>
+                )}
               </SectionCard>
             )}
 
             {tab === "skills" && (
-              <SectionCard title="Skills & Talents" actionLabel="Edit">
-                <div className="flex flex-wrap gap-2">
-                  {skills.map((s) => (
-                    <span
-                      key={s}
-                      className="bg-background text-foreground rounded-full border px-3 py-1 text-sm"
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
+              <SectionCard
+                title="Skills & Talents"
+                actionLabel="Edit"
+                onAction={() => setOpenSkills(true)}
+              >
+                {data === undefined ? (
+                  <div className="text-muted-foreground text-sm">
+                    Loading...
+                  </div>
+                ) : skills.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {skills.map((s) => (
+                      <span
+                        key={s}
+                        className="bg-background text-foreground rounded-full border px-3 py-1 text-sm"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground text-sm">
+                    No skills selected yet.
+                  </div>
+                )}
               </SectionCard>
             )}
 
             {tab === "interests" && (
-              <SectionCard title="Interests & Hobbies" actionLabel="Edit">
-                <div className="flex flex-wrap gap-2">
-                  {interests.map((s) => (
-                    <span
-                      key={s}
-                      className="bg-background text-foreground rounded-full border px-3 py-1 text-sm"
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </div>
+              <SectionCard
+                title="Interests & Hobbies"
+                actionLabel="Edit"
+                onAction={() => setOpenSkills(true)}
+              >
+                {data === undefined ? (
+                  <div className="text-muted-foreground text-sm">
+                    Loading...
+                  </div>
+                ) : interests.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {interests.map((s) => (
+                      <span
+                        key={s}
+                        className="bg-background text-foreground rounded-full border px-3 py-1 text-sm"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground text-sm">
+                    No interests selected yet.
+                  </div>
+                )}
               </SectionCard>
             )}
 
             {tab === "experience" && (
-              <SectionCard title="Work & Volunteering" actionLabel="Add">
-                <ul className="space-y-3">
-                  {experiences.map((e) => (
-                    <li
-                      key={e.title}
-                      className="bg-background rounded-md border p-4"
-                    >
-                      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                        <div>
-                          <p className="text-foreground text-sm font-semibold">
-                            {e.title}
-                          </p>
-                          <p className="text-muted-foreground text-xs">
-                            {e.org}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-muted-foreground text-xs">
-                            {e.period}
+              <SectionCard
+                title="Work & Volunteering"
+                actionLabel="Add"
+                onAction={() =>
+                  setOpenExperience({ open: true, mode: "create" })
+                }
+              >
+                {data === undefined ? (
+                  <div className="text-muted-foreground text-sm">
+                    Loading...
+                  </div>
+                ) : experiences.length > 0 ? (
+                  <ul className="space-y-3">
+                    {experiences.map((e) => (
+                      <li
+                        key={e.id}
+                        className="bg-background rounded-md border p-4"
+                      >
+                        <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+                          <div>
+                            <p className="text-foreground text-sm font-semibold">
+                              {e.title}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                              {e.organization}
+                            </p>
                           </div>
-                          <button
-                            type="button"
-                            className="bg-muted text-foreground rounded-md border px-2 py-1 text-xs"
-                          >
-                            Edit
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <div className="text-muted-foreground text-xs">
+                              {e.period}
+                            </div>
+                            <button
+                              type="button"
+                              className="bg-muted text-foreground inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px]"
+                              onClick={() =>
+                                setOpenExperience({
+                                  open: true,
+                                  mode: "edit",
+                                  id: e.id,
+                                  defaults: {
+                                    title: e.title,
+                                    organization: e.organization,
+                                    startDate: e.startDate,
+                                    endDate: e.endDate,
+                                    description: e.description,
+                                  },
+                                })
+                              }
+                            >
+                              <Pen className="size-3" /> Edit
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                      <p className="text-foreground/80 mt-2 text-sm">
-                        {e.detail}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
+                        <p className="text-foreground/80 mt-2 text-sm">
+                          {e.description}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-muted-foreground text-sm">
+                    No experience added yet.
+                  </div>
+                )}
               </SectionCard>
             )}
 
             {tab === "projects" && (
-              <SectionCard title="Projects" actionLabel="Add">
-                <ul className="space-y-3">
-                  {projects.map((p) => (
-                    <li
-                      key={p.title}
-                      className="bg-background rounded-md border p-4"
-                    >
-                      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                        <p className="text-foreground text-sm font-semibold">
-                          {p.title}
+              <SectionCard
+                title="Projects"
+                actionLabel="Add"
+                onAction={() => setOpenProject({ open: true, mode: "create" })}
+              >
+                {data === undefined ? (
+                  <div className="text-muted-foreground text-sm">
+                    Loading...
+                  </div>
+                ) : projects.length > 0 ? (
+                  <ul className="space-y-3">
+                    {projects.map((p) => (
+                      <li
+                        key={p.title}
+                        className="bg-background rounded-md border p-4"
+                      >
+                        <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+                          <p className="text-foreground text-sm font-semibold">
+                            {p.title}
+                          </p>
+                          <span className="text-muted-foreground flex items-center gap-2 text-xs">
+                            {p.period}
+                            <button
+                              type="button"
+                              className="bg-muted text-foreground inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px]"
+                              onClick={() =>
+                                setOpenProject({
+                                  open: true,
+                                  mode: "edit",
+                                  id: p.id,
+                                  defaults: {
+                                    title: p.title,
+                                    period: p.period,
+                                    description: p.detail,
+                                    url: p.url,
+                                  },
+                                })
+                              }
+                            >
+                              <Pen className="size-3" /> Edit
+                            </button>
+                          </span>
+                        </div>
+                        <p className="text-foreground/80 mt-2 text-sm">
+                          {p.detail}
                         </p>
-                        <span className="text-muted-foreground flex items-center gap-2 text-xs">
-                          {p.period}
-                          <button
-                            type="button"
-                            className="bg-muted text-foreground inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px]"
-                          >
-                            <Pen className="size-3" /> Edit
-                          </button>
-                        </span>
-                      </div>
-                      <p className="text-foreground/80 mt-2 text-sm">
-                        {p.detail}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-muted-foreground text-sm">
+                    No projects added yet.
+                  </div>
+                )}
               </SectionCard>
             )}
 
             {tab === "awards" && (
-              <SectionCard title="Awards & Certificates" actionLabel="Add">
-                <ul className="space-y-3">
-                  {awards.map((a) => (
-                    <li
-                      key={a.title}
-                      className="bg-background rounded-md border p-4"
-                    >
-                      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                        <div>
-                          <p className="text-foreground text-sm font-semibold">
-                            {a.title}
-                          </p>
-                          <p className="text-muted-foreground text-xs">
-                            {a.issuer}
-                          </p>
+              <SectionCard
+                title="Awards & Certificates"
+                actionLabel="Add"
+                onAction={() => setOpenAward({ open: true, mode: "create" })}
+              >
+                {data === undefined ? (
+                  <div className="text-muted-foreground text-sm">
+                    Loading...
+                  </div>
+                ) : awards.length > 0 ? (
+                  <ul className="space-y-3">
+                    {awards.map((a) => (
+                      <li
+                        key={a.title}
+                        className="bg-background rounded-md border p-4"
+                      >
+                        <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+                          <div>
+                            <p className="text-foreground text-sm font-semibold">
+                              {a.title}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                              {a.issuer}
+                            </p>
+                          </div>
+                          <span className="text-muted-foreground flex items-center gap-2 text-xs">
+                            {a.year}
+                            <button
+                              type="button"
+                              className="bg-muted text-foreground inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px]"
+                              onClick={() =>
+                                setOpenAward({
+                                  open: true,
+                                  mode: "edit",
+                                  id: a.id,
+                                  defaults: {
+                                    title: a.title,
+                                    issuer: a.issuer,
+                                    year: a.year ? Number(a.year) : undefined,
+                                  },
+                                })
+                              }
+                            >
+                              <Pen className="size-3" /> Edit
+                            </button>
+                          </span>
                         </div>
-                        <span className="text-muted-foreground flex items-center gap-2 text-xs">
-                          {a.year}
-                          <button
-                            type="button"
-                            className="bg-muted text-foreground inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px]"
-                          >
-                            <Pen className="size-3" /> Edit
-                          </button>
-                        </span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-muted-foreground text-sm">
+                    No awards added yet.
+                  </div>
+                )}
               </SectionCard>
             )}
 
             {tab === "activities" && (
               <SectionCard title="Activities (Opportunity Applications)">
-                <ul className="space-y-3">
-                  {activities.map((a) => (
-                    <li
-                      key={a.title}
-                      className="bg-background flex items-center justify-between gap-3 rounded-md border p-4"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-foreground truncate text-sm font-semibold">
-                          {a.title}
-                        </p>
-                        <div
-                          className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${a.tone}`}
-                        >
-                          <a.icon className="size-3" />
-                          <span>{a.status}</span>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className="bg-muted text-foreground inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs"
+                {data === undefined ? (
+                  <div className="text-muted-foreground text-sm">
+                    Loading...
+                  </div>
+                ) : activities.length > 0 ? (
+                  <ul className="space-y-3">
+                    {activities.map((a) => (
+                      <li
+                        key={a.title}
+                        className="bg-background flex items-center justify-between gap-3 rounded-md border p-4"
                       >
-                        <Eye className="size-3" /> View
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                        <div className="min-w-0">
+                          <p className="text-foreground truncate text-sm font-semibold">
+                            {a.title}
+                          </p>
+                          <div
+                            className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${a.tone}`}
+                          >
+                            <a.icon className="size-3" />
+                            <span>{a.status}</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className="bg-muted text-foreground inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs"
+                        >
+                          <Eye className="size-3" /> View
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-muted-foreground text-sm">
+                    No activities yet.
+                  </div>
+                )}
               </SectionCard>
             )}
           </div>
         </div>
       </div>
+
+      {/* Identity Dialog */}
+      <Dialog open={openIdentity} onOpenChange={setOpenIdentity}>
+        <DialogContent className="w-[95vw] max-w-xl p-0">
+          <DialogHeader className="border-b p-4">
+            <DialogTitle>Edit profile</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 p-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="headline">Headline</Label>
+                <Input
+                  id="headline"
+                  value={identityForm.headline}
+                  onChange={(e) =>
+                    setIdentityForm((p) => ({ ...p, headline: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="region">Region</Label>
+                <BasicDropdown
+                  label={identityForm.region || "Select region"}
+                  items={regions}
+                  onChange={(i) =>
+                    setIdentityForm((p) => ({
+                      ...p,
+                      region: String(i.id),
+                      city: "",
+                    }))
+                  }
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="city">City</Label>
+                <BasicDropdown
+                  label={identityForm.city || "Select city"}
+                  items={cities}
+                  onChange={(i) =>
+                    setIdentityForm((p) => ({ ...p, city: String(i.id) }))
+                  }
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-1 sm:col-span-2">
+                <Label htmlFor="bio">Bio</Label>
+                <Input
+                  id="bio"
+                  value={identityForm.bio}
+                  onChange={(e) =>
+                    setIdentityForm((p) => ({ ...p, bio: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="phone">Phone</Label>
+                <div className="flex items-center">
+                  <span className="bg-muted text-foreground inline-flex items-center rounded-l-md border border-r-0 px-2 text-sm">
+                    +968
+                  </span>
+                  <Input
+                    id="phone"
+                    inputMode="numeric"
+                    pattern="\\d{9}"
+                    value={phoneNine}
+                    onChange={(e) => {
+                      const next = e.target.value
+                        .replace(/[^0-9]/g, "")
+                        .slice(0, 9);
+                      setPhoneNine(next);
+                      if (next.length === 0) setPhoneError("");
+                      else
+                        setPhoneError(
+                          next.length === 9 ? "" : "Must be 9 digits",
+                        );
+                    }}
+                    className="rounded-l-none"
+                    placeholder="000000000"
+                  />
+                </div>
+                {phoneError ? (
+                  <p className="mt-1 text-xs text-red-600">{phoneError}</p>
+                ) : null}
+              </div>
+              <div className="space-y-1 sm:col-span-2">
+                <Label>Collaboration status</Label>
+                <RadioGroup
+                  value={identityForm.collaborationStatus}
+                  onValueChange={(val) =>
+                    setIdentityForm((p) => ({
+                      ...p,
+                      collaborationStatus:
+                        (val as IdentityForm["collaborationStatus"]) || "",
+                    }))
+                  }
+                  className="grid grid-cols-1 gap-2 sm:grid-cols-3"
+                >
+                  <RadioGroupItem value="open">🤝 Open</RadioGroupItem>
+                  <RadioGroupItem value="looking">👀 Looking</RadioGroupItem>
+                  <RadioGroupItem value="closed">🔒 Closed</RadioGroupItem>
+                </RadioGroup>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Profile Picture</Label>
+                {uploadedFileName || identityForm.pictureUrl ? (
+                  <div className="bg-muted text-foreground inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                    <span className="max-w-[260px] truncate">
+                      {uploadedFileName ?? "Profile picture uploaded"}
+                    </span>
+                    <button
+                      type="button"
+                      className="inline-flex items-center text-red-600 hover:text-red-700"
+                      onClick={async () => {
+                        try {
+                          await clearProfilePicture({});
+                          setUploadedFileName(null);
+                          setIdentityForm((p) => ({
+                            ...p,
+                            pictureUrl: undefined,
+                          }));
+                        } catch (err) {
+                          console.error(err);
+                        }
+                      }}
+                    >
+                      <XCircle className="size-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <FileUpload
+                    acceptedFileTypes={[
+                      "image/png",
+                      "image/jpeg",
+                      "image/webp",
+                    ]}
+                    onUploadSuccess={async (file: File) => {
+                      try {
+                        const { uploadUrl } = await generateUploadUrl({});
+                        const res = await fetch(uploadUrl, {
+                          method: "POST",
+                          headers: { "Content-Type": file.type },
+                          body: file,
+                        });
+                        if (!res.ok) throw new Error("UPLOAD_FAILED");
+                        const json = (await res.json()) as {
+                          storageId: string;
+                        };
+                        await setProfilePictureFromStorageId({
+                          storageId:
+                            json.storageId as unknown as Id<"_storage">,
+                        });
+                        setUploadedFileName(file.name);
+                        setIdentityForm((p) => ({
+                          ...p,
+                          pictureUrl: "uploaded",
+                        }));
+                      } catch (err) {
+                        console.error(err);
+                      }
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <DialogClose>
+                <Button variant="ghost">Cancel</Button>
+              </DialogClose>
+              <Button onClick={onSaveIdentity} className="gap-2">
+                <CheckCircle2 className="size-4" /> Save
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Experience Dialog (create/edit) */}
+      <Dialog
+        open={openExperience.open}
+        onOpenChange={(o) => setOpenExperience((p) => ({ ...p, open: o }))}
+      >
+        <DialogContent className="w-[95vw] max-w-xl p-0">
+          <DialogHeader className="border-b p-4">
+            <DialogTitle>
+              {openExperience.mode === "create"
+                ? "Add experience"
+                : "Edit experience"}
+            </DialogTitle>
+          </DialogHeader>
+          <ExperienceForm
+            defaults={openExperience.defaults}
+            onCancel={() => setOpenExperience((p) => ({ ...p, open: false }))}
+            onSubmit={async (payload: ExperiencePayload) => {
+              try {
+                if (openExperience.mode === "create") {
+                  await createExperience(payload);
+                } else if (
+                  openExperience.mode === "edit" &&
+                  openExperience.id
+                ) {
+                  await updateExperience({ id: openExperience.id, ...payload });
+                }
+                setOpenExperience((p) => ({ ...p, open: false }));
+              } catch (e) {
+                console.error(e);
+              }
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Project Dialog (create/edit) */}
+      <Dialog
+        open={openProject.open}
+        onOpenChange={(o) => setOpenProject((p) => ({ ...p, open: o }))}
+      >
+        <DialogContent className="w-[95vw] max-w-xl p-0">
+          <DialogHeader className="border-b p-4">
+            <DialogTitle>
+              {openProject.mode === "create" ? "Add project" : "Edit project"}
+            </DialogTitle>
+          </DialogHeader>
+          <ProjectForm
+            defaults={openProject.defaults}
+            onCancel={() => setOpenProject((p) => ({ ...p, open: false }))}
+            onSubmit={async (payload: ProjectPayload) => {
+              try {
+                if (openProject.mode === "create") {
+                  await createProject(payload);
+                } else if (openProject.mode === "edit" && openProject.id) {
+                  await updateProject({ id: openProject.id, ...payload });
+                }
+                setOpenProject((p) => ({ ...p, open: false }));
+              } catch (e) {
+                console.error(e);
+              }
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Award Dialog (create/edit) */}
+      <Dialog
+        open={openAward.open}
+        onOpenChange={(o) => setOpenAward((p) => ({ ...p, open: o }))}
+      >
+        <DialogContent className="w-[95vw] max-w-xl p-0">
+          <DialogHeader className="border-b p-4">
+            <DialogTitle>
+              {openAward.mode === "create"
+                ? "Add award/certificate"
+                : "Edit award/certificate"}
+            </DialogTitle>
+          </DialogHeader>
+          <AwardForm
+            defaults={openAward.defaults}
+            onCancel={() => setOpenAward((p) => ({ ...p, open: false }))}
+            onSubmit={async (payload: AwardPayload) => {
+              try {
+                if (openAward.mode === "create") {
+                  await createAward(payload);
+                } else if (openAward.mode === "edit" && openAward.id) {
+                  await updateAward({ id: openAward.id, ...payload });
+                }
+                setOpenAward((p) => ({ ...p, open: false }));
+              } catch (e) {
+                console.error(e);
+              }
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Skills & Interests Dialog */}
+      <Dialog open={openSkills} onOpenChange={setOpenSkills}>
+        <DialogContent className="w-[95vw] max-w-2xl p-0">
+          <DialogHeader className="border-b p-4">
+            <DialogTitle>Edit skills & interests</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-6 p-4 sm:grid-cols-2">
+            <div>
+              <h4 className="mb-2 text-sm font-medium">Skills</h4>
+              <TaxonomySelector
+                kind="skill"
+                initialSelected={selectedSkillIds}
+                onChange={({ selectedIds }) =>
+                  setSelectedSkillIds(
+                    selectedIds.map(
+                      (id) => id as unknown as Id<"skills">,
+                    ) as readonly Id<"skills">[],
+                  )
+                }
+              />
+            </div>
+            <div>
+              <h4 className="mb-2 text-sm font-medium">Interests</h4>
+              <TaxonomySelector
+                kind="interest"
+                initialSelected={selectedInterestIds}
+                onChange={({ selectedIds }) =>
+                  setSelectedInterestIds(
+                    selectedIds.map(
+                      (id) => id as unknown as Id<"interests">,
+                    ) as readonly Id<"interests">[],
+                  )
+                }
+              />
+            </div>
+            <div className="col-span-1 flex items-center justify-end gap-2 sm:col-span-2">
+              <DialogClose>
+                <Button variant="ghost">Cancel</Button>
+              </DialogClose>
+              <Button onClick={onSaveSkills} className="gap-2">
+                <CheckCircle2 className="size-4" /> Save
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Education Dialog (create/edit) */}
+      <Dialog
+        open={openEducation.open}
+        onOpenChange={(o) => setOpenEducation((p) => ({ ...p, open: o }))}
+      >
+        <DialogContent className="w-[95vw] max-w-xl p-0">
+          <DialogHeader className="border-b p-4">
+            <DialogTitle>
+              {openEducation.mode === "create"
+                ? "Add education"
+                : "Edit education"}
+            </DialogTitle>
+          </DialogHeader>
+          <EduForm
+            defaults={openEducation.defaults}
+            onCancel={() => setOpenEducation((p) => ({ ...p, open: false }))}
+            onSubmit={async (payload) => {
+              try {
+                if (openEducation.mode === "create") {
+                  await createEdu(payload);
+                } else if (openEducation.mode === "edit" && openEducation.id) {
+                  await updateEdu({ id: openEducation.id, ...payload });
+                }
+                setOpenEducation((p) => ({ ...p, open: false }));
+              } catch (e) {
+                console.error(e);
+              }
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

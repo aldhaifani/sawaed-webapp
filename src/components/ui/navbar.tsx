@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { useState, useMemo, type ReactElement } from "react";
 import { Menu } from "lucide-react";
 import Image from "next/image";
-import { LanguageSwitcher } from "@/components/ui/language-switcher";
 import UserAccountAvatar from "@/components/ui/UserAccountAvatar";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -76,7 +75,6 @@ export function Navbar({ role }: NavbarProps): ReactElement | null {
         {/* Right group: Switcher + Avatar (desktop) + Hamburger (mobile) */}
         <div className="flex items-center gap-3">
           <div className="hidden items-center gap-4 md:flex">
-            <LanguageSwitcher />
             <UserAccountAvatar
               className="p-0.5"
               avatarUrl={avatarSrc}
@@ -110,7 +108,6 @@ export function Navbar({ role }: NavbarProps): ReactElement | null {
               </Link>
             ))}
             <div className="flex items-center justify-between">
-              <LanguageSwitcher />
               <UserAccountAvatar
                 className="p-0.5"
                 avatarUrl={avatarSrc}

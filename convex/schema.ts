@@ -93,6 +93,60 @@ const schema = defineSchema({
     .index("by_user_interest", ["userId", "interestId"]) // aid uniqueness checks in code
     .index("by_user_created", ["userId", "createdAt"]), // list in insertion order
 
+  // Education entries per user
+  education: defineTable({
+    userId: v.id("appUsers"),
+    institution: v.string(),
+    degree: v.string(),
+    field: v.optional(v.string()),
+    startYear: v.optional(v.number()),
+    endYear: v.optional(v.union(v.number(), v.literal("Present"))),
+    description: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"]) // fetch a user's education
+    .index("by_user_created", ["userId", "createdAt"]), // ordered listing
+
+  // Work & volunteering experiences per user
+  experiences: defineTable({
+    userId: v.id("appUsers"),
+    title: v.string(),
+    organization: v.string(),
+    startDate: v.optional(v.number()), // ms epoch
+    endDate: v.optional(v.number()), // ms epoch
+    description: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"]) // fetch a user's experiences
+    .index("by_user_created", ["userId", "createdAt"]),
+
+  // Projects per user
+  projects: defineTable({
+    userId: v.id("appUsers"),
+    title: v.string(),
+    period: v.optional(v.string()),
+    description: v.optional(v.string()),
+    url: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"]) // fetch a user's projects
+    .index("by_user_created", ["userId", "createdAt"]),
+
+  // Awards & certifications per user
+  awards: defineTable({
+    userId: v.id("appUsers"),
+    title: v.string(),
+    issuer: v.optional(v.string()),
+    year: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"]) // fetch a user's awards
+    .index("by_user_created", ["userId", "createdAt"]),
+
   // Track onboarding progress/state per user
   userOnboarding: defineTable({
     userId: v.id("appUsers"),

@@ -26,6 +26,18 @@ const config = {
   },
   // This is required to support PostHog trailing slash API requests
   skipTrailingSlashRedirect: true,
+  images: {
+    // Allow Convex storage images
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "proper-swan-784.convex.cloud",
+        port: "",
+        pathname: "/api/storage/**",
+        search: "",
+      },
+    ],
+  },
 };
 
 // Injected content via Sentry wizard below (converted to ESM)

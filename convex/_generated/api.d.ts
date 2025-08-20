@@ -23,6 +23,7 @@ import type * as localization from "../localization.js";
 import type * as onboarding from "../onboarding.js";
 import type * as posthog from "../posthog.js";
 import type * as preferences from "../preferences.js";
+import type * as profiles from "../profiles.js";
 import type * as rbac from "../rbac.js";
 import type * as rbacHelpers from "../rbacHelpers.js";
 import type * as rbacWrappers from "../rbacWrappers.js";
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   onboarding: typeof onboarding;
   posthog: typeof posthog;
   preferences: typeof preferences;
+  profiles: typeof profiles;
   rbac: typeof rbac;
   rbacHelpers: typeof rbacHelpers;
   rbacWrappers: typeof rbacWrappers;
