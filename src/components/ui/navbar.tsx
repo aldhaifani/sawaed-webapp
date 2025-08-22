@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
-import { useState, useMemo, type ReactElement } from "react";
+import { useState, useMemo, useEffect, type ReactElement } from "react";
 import { Menu } from "lucide-react";
 import Image from "next/image";
 import UserAccountAvatar from "@/components/ui/UserAccountAvatar";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Role } from "@/shared/rbac";
+import ThemeToggleButton from "@/components/ui/theme-toggle-button";
 
 interface NavbarProps {
   readonly role: Role;
@@ -31,6 +32,11 @@ export function Navbar({ role }: NavbarProps): ReactElement | null {
   // Hide on auth and onboarding pages
   const hidden = useMemo(() => {
     return pathname.includes("/auth") || pathname.includes("/onboarding");
+  }, [pathname]);
+
+  // Auto-close mobile drawer whenever route changes
+  useEffect(() => {
+    setOpen(false);
   }, [pathname]);
 
   const links = useMemo(() => {
@@ -75,6 +81,8 @@ export function Navbar({ role }: NavbarProps): ReactElement | null {
         {/* Right group: Switcher + Avatar (desktop) + Hamburger (mobile) */}
         <div className="flex items-center gap-3">
           <div className="hidden items-center gap-4 md:flex">
+            <ThemeToggleButton />
+
             <UserAccountAvatar
               className="p-0.5"
               avatarUrl={avatarSrc}
@@ -113,6 +121,7 @@ export function Navbar({ role }: NavbarProps): ReactElement | null {
                 avatarUrl={avatarSrc}
                 role={role}
               />
+              <ThemeToggleButton />
             </div>
           </div>
         </div>

@@ -260,6 +260,16 @@ const schema = defineSchema({
     .index("by_event_user", ["eventId", "userId"]) // aid duplicate prevention in code
     .index("by_event_status", ["eventId", "status"]) // filter attendees by status
     .index("by_user_status", ["userId", "status"]), // list user's registrations by status
+
+  // Per-user notification preferences
+  notificationPreferences: defineTable({
+    userId: v.id("appUsers"),
+    productUpdates: v.boolean(),
+    securityAlerts: v.boolean(),
+    marketing: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user", ["userId"]),
 });
 
 export default schema;

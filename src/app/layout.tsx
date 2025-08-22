@@ -7,6 +7,7 @@ import { PostHogProvider } from "@/components/PostHogProvider";
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 import { cookies } from "next/headers";
+import { ThemeProvider } from "@/components/ui/theme-provider";
 
 export const metadata: Metadata = {
   title: "Sawaed",
@@ -31,9 +32,11 @@ export default async function RootLayout({
     <ConvexAuthNextjsServerProvider>
       <html lang={locale} dir={dir} className={`${geist.variable}`}>
         <body>
-          <PostHogProvider>
-            <ConvexClientProvider>{children}</ConvexClientProvider>
-          </PostHogProvider>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+            <PostHogProvider>
+              <ConvexClientProvider>{children}</ConvexClientProvider>
+            </PostHogProvider>
+          </ThemeProvider>
         </body>
       </html>
     </ConvexAuthNextjsServerProvider>

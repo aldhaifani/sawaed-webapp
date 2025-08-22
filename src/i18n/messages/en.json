@@ -222,5 +222,59 @@
       "illustration": "Upload File Illustration",
       "progress": "Upload Progress Indicator"
     }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your account, preferences, and security.",
+    "sections": {
+      "preferences": {
+        "title": "Preferences",
+        "description": "Choose language and appearance.",
+        "language": {
+          "label": "Language",
+          "subtitle": "Used across the app UI."
+        },
+        "theme": {
+          "label": "Theme",
+          "subtitle": "Switch between system, light, and dark.",
+          "system": "System",
+          "light": "Light",
+          "dark": "Dark"
+        }
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Manage what you want to be notified about.",
+        "footer": "You can change these at any time.",
+        "product": {
+          "title": "Product updates",
+          "subtitle": "Announcements about new features and improvements."
+        },
+        "security": {
+          "title": "Security alerts",
+          "subtitle": "Logins and password changes."
+        },
+        "marketing": {
+          "title": "Opportunities & marketing",
+          "subtitle": "Occasional emails with curated opportunities."
+        }
+      },
+      "account": {
+        "title": "Account",
+        "description": "Manage basic account details and actions.",
+        "email": {
+          "label": "Email",
+          "subtitle": "Change the email used for sign-in and notifications.",
+          "action": "Change email"
+        },
+        "delete": {
+          "button": "Delete account",
+          "title": "Delete account",
+          "confirmMessage": "This action is permanent. Are you sure you want to delete your account?",
+          "cancel": "Cancel",
+          "confirm": "Delete"
+        }
+      }
+    }
   }
 }

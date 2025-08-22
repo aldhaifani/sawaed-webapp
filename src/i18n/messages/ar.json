@@ -206,7 +206,7 @@
     "defaultTypes": "SVG أو PNG أو JPG أو GIF",
     "typesAndMax": "{types} حتى {size}",
     "uploadFile": "رفع ملف",
-    "orDragHere": "أو اسحب وأفلت الملف هنا",
+    "orDragHere": "أو اسحب الملف هنا",
     "cancel": "إلغاء",
     "errors": {
       "tooLarge": "حجم الملف يتجاوز {size}",
@@ -215,12 +215,66 @@
     "aria": {
       "fileUpload": "رفع ملف",
       "illustration": "رسم توضيحي للرفع",
-      "fileInput": "حقل اختيار ملف",
-      "progress": "تقدم الرفع: {percent}%"
+      "fileInput": "حقل اختيار الملف",
+      "progress": "تقدّم الرفع: {percent}%"
     },
     "titles": {
       "illustration": "رسم توضيحي لرفع الملف",
-      "progress": "مؤشر تقدم الرفع"
+      "progress": "مؤشر تقدّم الرفع"
+    }
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "subtitle": "إدارة الحساب والتفضيلات والأمان.",
+    "sections": {
+      "preferences": {
+        "title": "التفضيلات",
+        "description": "اختر اللغة والمظهر.",
+        "language": {
+          "label": "اللغة",
+          "subtitle": "تستخدم عبر واجهة التطبيق."
+        },
+        "theme": {
+          "label": "المظهر",
+          "subtitle": "التبديل بين النظام والفاتح والداكن.",
+          "system": "النظام",
+          "light": "فاتح",
+          "dark": "داكن"
+        }
+      },
+      "notifications": {
+        "title": "الإشعارات",
+        "description": "إدارة ما تريد تلقي الإشعارات بشأنه.",
+        "footer": "يمكنك تغييرها في أي وقت.",
+        "product": {
+          "title": "تحديثات المنتج",
+          "subtitle": "إعلانات عن الميزات الجديدة والتحسينات."
+        },
+        "security": {
+          "title": "تنبيهات الأمان",
+          "subtitle": "تسجيلات الدخول وتغييرات كلمة المرور."
+        },
+        "marketing": {
+          "title": "الفرص والتسويق",
+          "subtitle": "رسائل بريدية بين حين وآخر بفرص مختارة."
+        }
+      },
+      "account": {
+        "title": "الحساب",
+        "description": "إدارة تفاصيل وإجراءات الحساب الأساسية.",
+        "email": {
+          "label": "البريد الإلكتروني",
+          "subtitle": "تغيير البريد المستخدم لتسجيل الدخول والإشعارات.",
+          "action": "تغيير البريد الإلكتروني"
+        },
+        "delete": {
+          "button": "حذف الحساب",
+          "title": "حذف الحساب",
+          "confirmMessage": "هذا الإجراء نهائي. هل أنت متأكد من حذف حسابك؟",
+          "cancel": "إلغاء",
+          "confirm": "حذف"
+        }
+      }
     }
   }
 }

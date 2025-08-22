@@ -1,22 +1,22 @@
 "use client";
 
 import type { ReactElement } from "react";
-import { useState } from "react";
-import {
-  Mail,
-  Globe,
-  Moon,
-  Sun,
-  Bell,
-  Shield,
-  Trash2,
-  Laptop,
-  User2,
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { useCallback, useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { usePathname, useRouter } from "next/navigation";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/../convex/_generated/api";
+import { Mail, Globe, Bell, Shield, Trash2, User2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Toggle } from "@/components/ui/toggle";
+import { Switch } from "@/components/ui/switch";
 import BasicDropdown from "@/components/ui/BasicDropdown";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 function SectionCard({
   title,
@@ -81,44 +81,123 @@ function Row({
 }
 
 export default function SettingsPage(): ReactElement {
-  const [email, setEmail] = useState<string>("ahmed.alharthy@example.com");
-  const [language, setLanguage] = useState<string>("en");
-  const [theme, setTheme] = useState<"system" | "light" | "dark">("system");
-  const [marketing, setMarketing] = useState<boolean>(true);
+  const t = useTranslations("settings");
+  const locale = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Fetch current email (for display only) and notifications
+  const profileData = useQuery(api.profiles.getMyProfileComposite, {
+    locale: locale === "en" ? "en" : "ar",
+  });
+  const notif = useQuery(api.notifications.getMyNotificationPreferences, {});
+
+  // Local state
+  const [, setEmail] = useState<string>("");
+  const [, setTheme] = useState<"system" | "light" | "dark">("system");
+  const [marketing, setMarketing] = useState<boolean>(false);
   const [product, setProduct] = useState<boolean>(true);
   const [security, setSecurity] = useState<boolean>(true);
-  // Removed unused profilePublic and searchable states
+  const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
 
-  // Removed unused sessions memoized data
+  // Initialize from queries
+  useEffect(() => {
+    const userEmail = profileData?.user?.email;
+    if (userEmail) setEmail(userEmail);
+  }, [profileData]);
+  useEffect(() => {
+    if (notif) {
+      setProduct(!!notif.productUpdates);
+      setSecurity(!!notif.securityAlerts);
+      setMarketing(!!notif.marketing);
+    }
+  }, [notif]);
+
+  const applyTheme = useCallback((mode: "system" | "light" | "dark") => {
+    const root = document.documentElement;
+    const prefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
+    const isDark = mode === "dark" || (mode === "system" && prefersDark);
+    root.classList.toggle("dark", isDark);
+  }, []);
+
+  // Theme: load & persist
+  useEffect(() => {
+    const saved =
+      (localStorage.getItem("theme") as "system" | "light" | "dark" | null) ??
+      "system";
+    setTheme(saved);
+    applyTheme(saved);
+  }, [applyTheme]);
+
+  // Language switching
+  const setPreference = useMutation(api.preferences.setLanguagePreference);
+  const switchLocale = useCallback(
+    async (next: "en" | "ar") => {
+      const days = 365;
+      const expires = new Date(
+        Date.now() + days * 24 * 60 * 60 * 1000,
+      ).toUTCString();
+      document.cookie = `locale=${encodeURIComponent(next)}; expires=${expires}; path=/; samesite=lax`;
+      try {
+        await setPreference({ locale: next });
+      } catch {}
+      const current = pathname || window.location.pathname;
+      const parts = current.split("/");
+      const first = parts[1];
+      if (first === "en" || first === "ar") parts[1] = next;
+      else parts.splice(1, 0, next);
+      const target = parts.join("/") || `/${next}`;
+      router.push(target);
+      router.refresh();
+    },
+    [pathname, router, setPreference],
+  );
+
+  // Notifications persistence
+  const saveNotif = useMutation(api.notifications.setMyNotificationPreferences);
+  const updateNotif = useCallback(
+    async (next: {
+      productUpdates: boolean;
+      securityAlerts: boolean;
+      marketing: boolean;
+    }) => {
+      try {
+        await saveNotif(next);
+      } catch (e) {
+        console.error(e);
+      }
+    },
+    [saveNotif],
+  );
 
   return (
     <main className="bg-background min-h-screen w-full">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
         <header className="mb-5 sm:mb-6">
           <h1 className="text-foreground text-2xl font-bold sm:text-3xl">
-            Settings
+            {t("title")}
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Manage your account, preferences, and security.
-          </p>
+          <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
         </header>
 
         <div className="space-y-6">
           {/* Preferences Card: language & theme */}
           <SectionCard
-            title="Preferences"
-            description="Choose language and appearance."
+            title={t("sections.preferences.title")}
+            description={t("sections.preferences.description")}
           >
             <ul className="divide-y">
               <Row
                 icon={<Globe className="size-4" />}
-                title="Language"
-                subtitle="Used across the app UI."
+                title={t("sections.preferences.language.label")}
+                subtitle={t("sections.preferences.language.subtitle")}
                 right={
-                  <div className="w-48">
+                  <div className="w-28">
                     <BasicDropdown
                       className="w-full"
-                      label={language === "en" ? "English" : "Arabic"}
+                      label={locale === "en" ? "English" : "العربية"}
                       items={[
                         {
                           id: "en",
@@ -127,42 +206,14 @@ export default function SettingsPage(): ReactElement {
                         },
                         {
                           id: "ar",
-                          label: "Arabic",
+                          label: "العربية",
                           icon: <Globe className="size-4" />,
                         },
                       ]}
-                      onChange={(i) => setLanguage(String(i.id))}
+                      onChange={(i) =>
+                        void switchLocale(String(i.id) as "en" | "ar")
+                      }
                     />
-                  </div>
-                }
-              />
-              <Row
-                icon={<Moon className="size-4" />}
-                title="Theme"
-                subtitle="Switch between system, light, and dark."
-                right={
-                  <div className="flex gap-2">
-                    <Button
-                      variant={theme === "system" ? "secondary" : "outline"}
-                      onClick={() => setTheme("system")}
-                      className="gap-2"
-                    >
-                      <Laptop className="size-4" /> System
-                    </Button>
-                    <Button
-                      variant={theme === "light" ? "secondary" : "outline"}
-                      onClick={() => setTheme("light")}
-                      className="gap-2"
-                    >
-                      <Sun className="size-4" /> Light
-                    </Button>
-                    <Button
-                      variant={theme === "dark" ? "secondary" : "outline"}
-                      onClick={() => setTheme("dark")}
-                      className="gap-2"
-                    >
-                      <Moon className="size-4" /> Dark
-                    </Button>
                   </div>
                 }
               />
@@ -171,47 +222,68 @@ export default function SettingsPage(): ReactElement {
 
           {/* Notifications Card: list rows with toggles */}
           <SectionCard
-            title="Notifications"
-            description="Manage what you want to be notified about."
+            title={t("sections.notifications.title")}
+            description={t("sections.notifications.description")}
             footer={
               <p className="text-muted-foreground text-xs">
-                You can change these at any time.
+                {t("sections.notifications.footer")}
               </p>
             }
           >
             <ul className="divide-y">
               <Row
                 icon={<Bell className="size-4" />}
-                title="Product updates"
-                subtitle="Announcements about new features and improvements."
+                title={t("sections.notifications.product.title")}
+                subtitle={t("sections.notifications.product.subtitle")}
                 right={
-                  <Toggle
-                    pressed={product}
-                    onPressedChange={setProduct}
+                  <Switch
+                    checked={product}
+                    onCheckedChange={(v) => {
+                      setProduct(v);
+                      void updateNotif({
+                        productUpdates: v,
+                        securityAlerts: security,
+                        marketing,
+                      });
+                    }}
                     aria-label="Toggle product updates"
                   />
                 }
               />
               <Row
                 icon={<Shield className="size-4" />}
-                title="Security alerts"
-                subtitle="Logins and password changes."
+                title={t("sections.notifications.security.title")}
+                subtitle={t("sections.notifications.security.subtitle")}
                 right={
-                  <Toggle
-                    pressed={security}
-                    onPressedChange={setSecurity}
+                  <Switch
+                    checked={security}
+                    onCheckedChange={(v) => {
+                      setSecurity(v);
+                      void updateNotif({
+                        productUpdates: product,
+                        securityAlerts: v,
+                        marketing,
+                      });
+                    }}
                     aria-label="Toggle security alerts"
                   />
                 }
               />
               <Row
                 icon={<Bell className="size-4" />}
-                title="Opportunities & marketing"
-                subtitle="Occasional emails with curated opportunities."
+                title={t("sections.notifications.marketing.title")}
+                subtitle={t("sections.notifications.marketing.subtitle")}
                 right={
-                  <Toggle
-                    pressed={marketing}
-                    onPressedChange={setMarketing}
+                  <Switch
+                    checked={marketing}
+                    onCheckedChange={(v) => {
+                      setMarketing(v);
+                      void updateNotif({
+                        productUpdates: product,
+                        securityAlerts: security,
+                        marketing: v,
+                      });
+                    }}
                     aria-label="Toggle marketing"
                   />
                 }
@@ -220,15 +292,17 @@ export default function SettingsPage(): ReactElement {
           </SectionCard>
           {/* Accounts-like Card: Account settings */}
           <SectionCard
-            title="Account"
-            description="Manage basic account details and actions."
+            title={t("sections.account.title")}
+            description={t("sections.account.description")}
             footer={
               <div className="flex justify-end">
                 <Button
                   variant="destructive"
                   className="inline-flex items-center gap-2 text-xs"
+                  onClick={() => setConfirmOpen(true)}
                 >
-                  <Trash2 className="size-4" /> Delete account
+                  <Trash2 className="size-4" />{" "}
+                  {t("sections.account.delete.button")}
                 </Button>
               </div>
             }
@@ -236,23 +310,41 @@ export default function SettingsPage(): ReactElement {
             <ul className="divide-y">
               <Row
                 icon={<User2 className="size-4" />}
-                title="Email"
-                subtitle="Change the email used for sign-in and notifications."
+                title={t("sections.account.email.label")}
+                subtitle={t("sections.account.email.subtitle")}
                 right={
-                  <div className="relative w-72 max-sm:w-40">
-                    <Mail className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                    <Input
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
+                  <Button variant="outline" className="gap-2 text-xs" disabled>
+                    <Mail className="size-4" />{" "}
+                    {t("sections.account.email.action")}
+                  </Button>
                 }
               />
             </ul>
           </SectionCard>
         </div>
       </div>
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("sections.account.delete.title")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground text-sm">
+            {t("sections.account.delete.confirmMessage")}
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <DialogClose asChild>
+              <Button variant="secondary">
+                {t("sections.account.delete.cancel")}
+              </Button>
+            </DialogClose>
+            <DialogClose asChild>
+              <Button variant="destructive">
+                {t("sections.account.delete.confirm")}
+              </Button>
+            </DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
