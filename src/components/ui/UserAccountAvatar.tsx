@@ -75,37 +75,43 @@ export default function UserAccountAvatar({
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          className="bg-background w-48 overflow-hidden rounded-lg border text-sm shadow-lg"
+          className="bg-background z-50 w-48 overflow-hidden rounded-lg border text-sm shadow-lg"
           sideOffset={5}
         >
           <div className="flex flex-col p-2">
-            <button
-              className="hover:bg-smooth-200 rounded-sm p-2 text-start"
-              onClick={() =>
-                router.push(getProfilePathForRoleLocale(role, locale))
-              }
-            >
-              <User size={16} className="mr-2 inline" />{" "}
-              {t("profile", { defaultMessage: "Profile" })}
-            </button>
-            <button
-              className="hover:bg-smooth-200 rounded-sm p-2 text-start"
-              onClick={() =>
-                router.push(getSettingsPathForRoleLocale(role, locale))
-              }
-            >
-              <Settings size={16} className="mr-2 inline" />{" "}
-              {t("settings", { defaultMessage: "Settings" })}
-            </button>
-            <button
-              className="hover:bg-smooth-200 rounded-sm p-2 text-start"
-              onClick={useCallback(async () => {
-                await signOut();
-              }, [signOut])}
-            >
-              <LogOut size={16} className="mr-2 inline" />{" "}
-              {t("logout", { defaultMessage: "Logout" })}
-            </button>
+            <Popover.Close asChild>
+              <button
+                className="hover:bg-smooth-200 rounded-sm p-2 text-start"
+                onClick={() =>
+                  router.push(getProfilePathForRoleLocale(role, locale))
+                }
+              >
+                <User size={16} className="mr-2 inline" />{" "}
+                {t("profile", { defaultMessage: "Profile" })}
+              </button>
+            </Popover.Close>
+            <Popover.Close asChild>
+              <button
+                className="hover:bg-smooth-200 rounded-sm p-2 text-start"
+                onClick={() =>
+                  router.push(getSettingsPathForRoleLocale(role, locale))
+                }
+              >
+                <Settings size={16} className="mr-2 inline" />{" "}
+                {t("settings", { defaultMessage: "Settings" })}
+              </button>
+            </Popover.Close>
+            <Popover.Close asChild>
+              <button
+                className="hover:bg-smooth-200 rounded-sm p-2 text-start"
+                onClick={useCallback(async () => {
+                  await signOut();
+                }, [signOut])}
+              >
+                <LogOut size={16} className="mr-2 inline" />{" "}
+                {t("logout", { defaultMessage: "Logout" })}
+              </button>
+            </Popover.Close>
           </div>
         </Popover.Content>
       </Popover.Portal>
