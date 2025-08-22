@@ -15,6 +15,7 @@ interface BasicDropdownProps {
   items: DropdownItem[];
   onChange?: (item: DropdownItem) => void;
   className?: string;
+  selectedId?: string | number; // controlled selected value
 }
 
 export default function BasicDropdown({
@@ -22,6 +23,7 @@ export default function BasicDropdown({
   items,
   onChange,
   className = "",
+  selectedId,
 }: BasicDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<DropdownItem | null>(null);
@@ -48,11 +50,22 @@ export default function BasicDropdown({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Sync internal selected item when selectedId or items change
+  useEffect(() => {
+    if (selectedId === undefined || selectedId === null || selectedId === "") {
+      setSelectedItem(null);
+      return;
+    }
+    const found =
+      items.find((it) => String(it.id) === String(selectedId)) ?? null;
+    setSelectedItem(found);
+  }, [selectedId, items]);
+
   return (
     <div ref={dropdownRef} className={`relative inline-block ${className}`}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-background hover:bg-primary flex w-full items-center justify-between gap-2 rounded-lg border px-4 py-2 text-start transition-colors"
+        className="bg-background hover:bg-secondary flex w-full items-center justify-between gap-2 rounded-lg border px-4 py-2 text-start transition-colors"
       >
         <span className="block truncate">
           {selectedItem ? selectedItem.label : label}

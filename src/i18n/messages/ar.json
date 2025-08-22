@@ -80,6 +80,9 @@
     "skillsInterests": "المهارات والاهتمامات",
     "selectSkillAtLeastOne": "اختر مهارة واحدة على الأقل",
     "selectInterestAtLeastOne": "اختر اهتمامًا واحدًا على الأقل",
+    "gender": "الجنس",
+    "male": "ذكر",
+    "female": "أنثى",
     "back": "رجوع",
     "next": "التالي",
     "finish": "إنهاء"

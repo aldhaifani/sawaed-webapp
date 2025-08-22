@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DialogClose } from "@/components/ui/BasicDialog";
+import { DialogClose } from "@/components/ui/dialog";
 import { CheckCircle2 } from "lucide-react";
 
 export type ExperiencePayload = {
@@ -64,9 +64,9 @@ export function ExperienceForm({
   }, [title, organization, start, end, description, onSubmit]);
 
   return (
-    <div className="space-y-3 p-4">
+    <div className="space-y-3 px-4 pb-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="space-y-1 sm:col-span-2">
+        <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="e-title">Title</Label>
           <Input
             id="e-title"
@@ -75,7 +75,7 @@ export function ExperienceForm({
             placeholder="e.g. Volunteer Mentor"
           />
         </div>
-        <div className="space-y-1 sm:col-span-2">
+        <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="e-org">Organization</Label>
           <Input
             id="e-org"
@@ -84,7 +84,7 @@ export function ExperienceForm({
             placeholder="e.g. Local NGO"
           />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Label htmlFor="e-start">Start Year</Label>
           <Input
             id="e-start"
@@ -94,7 +94,7 @@ export function ExperienceForm({
             placeholder="e.g. 2023"
           />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Label htmlFor="e-end">End Year</Label>
           <Input
             id="e-end"
@@ -104,7 +104,7 @@ export function ExperienceForm({
             placeholder="e.g. 2024"
           />
         </div>
-        <div className="space-y-1 sm:col-span-2">
+        <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="e-desc">Description</Label>
           <Input
             id="e-desc"
@@ -114,7 +114,7 @@ export function ExperienceForm({
         </div>
       </div>
       <div className="flex items-center justify-end gap-2 pt-2">
-        <DialogClose>
+        <DialogClose asChild>
           <Button variant="ghost" onClick={onCancel}>
             Cancel
           </Button>

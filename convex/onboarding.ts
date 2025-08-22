@@ -38,6 +38,7 @@ export const getDraft = query({
     lastNameAr?: string;
     firstNameEn?: string;
     lastNameEn?: string;
+    gender?: "male" | "female";
     city?: string;
     region?: string;
     draftSkillIds?: Id<"skills">[];
@@ -62,6 +63,7 @@ export const getDraft = query({
       lastNameAr: existing.lastNameAr,
       firstNameEn: existing.firstNameEn,
       lastNameEn: existing.lastNameEn,
+      gender: existing.gender as "male" | "female" | undefined,
       city: existing.city,
       region: existing.region,
       draftSkillIds: existing.draftSkillIds as Id<"skills">[] | undefined,
@@ -110,12 +112,13 @@ export const saveDraftDetails = mutation({
     lastNameAr: v.string(),
     firstNameEn: v.string(),
     lastNameEn: v.string(),
+    gender: v.union(v.literal("male"), v.literal("female")),
     city: v.string(),
     region: v.string(),
   },
   handler: async (
     ctx,
-    { firstNameAr, lastNameAr, firstNameEn, lastNameEn, city, region },
+    { firstNameAr, lastNameAr, firstNameEn, lastNameEn, gender, city, region },
   ): Promise<boolean> => {
     const authUserId = await auth.getUserId(ctx);
     if (!authUserId) return false;
@@ -140,6 +143,7 @@ export const saveDraftDetails = mutation({
         lastNameAr,
         firstNameEn,
         lastNameEn,
+        gender,
         city,
         region,
         createdAt: now,
@@ -152,6 +156,7 @@ export const saveDraftDetails = mutation({
       lastNameAr,
       firstNameEn,
       lastNameEn,
+      gender,
       city,
       region,
       updatedAt: now,
@@ -243,13 +248,23 @@ export const upsertBasicDetails = mutation({
     lastNameAr: v.string(),
     firstNameEn: v.string(),
     lastNameEn: v.string(),
+    gender: v.union(v.literal("male"), v.literal("female")),
     city: v.string(),
     region: v.string(),
     locale: v.union(v.literal("ar"), v.literal("en")),
   },
   handler: async (
     ctx,
-    { firstNameAr, lastNameAr, firstNameEn, lastNameEn, city, region, locale },
+    {
+      firstNameAr,
+      lastNameAr,
+      firstNameEn,
+      lastNameEn,
+      gender,
+      city,
+      region,
+      locale,
+    },
   ): Promise<boolean> => {
     const authUserId = await auth.getUserId(ctx);
     if (!authUserId) return false;
@@ -259,11 +274,13 @@ export const upsertBasicDetails = mutation({
       .unique();
     if (!appUser || appUser.role !== "YOUTH") return false;
     const now = Date.now();
-    const displayFirst = locale === "ar" ? firstNameAr : firstNameEn;
-    const displayLast = locale === "ar" ? lastNameAr : lastNameEn;
+    // Persist bilingual names and gender on appUsers
     await ctx.db.patch(appUser._id, {
-      firstName: displayFirst,
-      lastName: displayLast,
+      firstNameAr,
+      lastNameAr,
+      firstNameEn,
+      lastNameEn,
+      gender,
       updatedAt: now,
     });
     // Ensure a profile row exists

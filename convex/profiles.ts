@@ -74,8 +74,10 @@ async function recomputeProfileCompletion(
     .first();
 
   const identityFields = [
-    user?.firstName,
-    user?.lastName,
+    (user as unknown as { firstNameAr?: string }).firstNameAr,
+    (user as unknown as { lastNameAr?: string }).lastNameAr,
+    (user as unknown as { firstNameEn?: string }).firstNameEn,
+    (user as unknown as { lastNameEn?: string }).lastNameEn,
     profile?.city,
     profile?.region,
     profile?.bio ?? profile?.headline,
@@ -116,6 +118,16 @@ export const getMyProfileComposite = query({
       .query("profiles")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .unique();
+    // If we have a storage id, regenerate a fresh URL
+    let pictureUrlFromStorage: string | undefined = undefined;
+    if (
+      (profile as unknown as { pictureStorageId?: Id<"_storage"> })
+        ?.pictureStorageId
+    ) {
+      const sid = (profile as unknown as { pictureStorageId: Id<"_storage"> })
+        .pictureStorageId;
+      pictureUrlFromStorage = (await ctx.storage.getUrl(sid)) ?? undefined;
+    }
 
     const skills = await ctx.db
       .query("userSkills")
@@ -171,11 +183,16 @@ export const getMyProfileComposite = query({
       user: {
         id: appUser._id,
         email: appUser.email,
-        firstName:
-          (appUser as unknown as { firstName?: string }).firstName ?? undefined,
-        lastName:
-          (appUser as unknown as { lastName?: string }).lastName ?? undefined,
+        firstName: choose(
+          (appUser as unknown as { firstNameAr?: string }).firstNameAr,
+          (appUser as unknown as { firstNameEn?: string }).firstNameEn,
+        ),
+        lastName: choose(
+          (appUser as unknown as { lastNameAr?: string }).lastNameAr,
+          (appUser as unknown as { lastNameEn?: string }).lastNameEn,
+        ),
         phone: (appUser as unknown as { phone?: string }).phone ?? undefined,
+        gender: (appUser as unknown as { gender?: "male" | "female" }).gender,
       },
       profile: profile
         ? {
@@ -184,29 +201,39 @@ export const getMyProfileComposite = query({
             bio: profile.bio ?? undefined,
             city: profile.city ?? undefined,
             region: profile.region ?? undefined,
-            pictureUrl: profile.pictureUrl ?? undefined,
+            pictureUrl:
+              pictureUrlFromStorage ?? profile.pictureUrl ?? undefined,
             collaborationStatus: profile.collaborationStatus ?? undefined,
             completionPercentage: profile.completionPercentage ?? 0,
           }
         : null,
-      skills: skillDocs
-        .filter(Boolean)
-        .map((d) => ({
-          id: d!._id as Id<"skills">,
-          name: choose(d!.nameAr, d!.nameEn),
-        })),
-      interests: interestDocs
-        .filter(Boolean)
-        .map((d) => ({
-          id: d!._id as Id<"interests">,
-          name: choose(d!.nameAr, d!.nameEn),
-        })),
+      skills: skillDocs.filter(Boolean).map((d) => ({
+        id: d!._id as Id<"skills">,
+        name: choose(d!.nameAr, d!.nameEn),
+      })),
+      interests: interestDocs.filter(Boolean).map((d) => ({
+        id: d!._id as Id<"interests">,
+        name: choose(d!.nameAr, d!.nameEn),
+      })),
       education,
       experiences,
       projects,
       awards,
       activities,
     };
+  },
+});
+
+export const updateUserGender = mutation({
+  args: { gender: v.union(v.literal("male"), v.literal("female")) },
+  handler: async (ctx, { gender }) => {
+    const appUser = await requireUser(ctx);
+    const now = Date.now();
+    await ctx.db.patch(appUser._id as Id<"appUsers">, {
+      gender,
+      updatedAt: now,
+    });
+    return { ok: true } as const;
   },
 });
 
@@ -295,8 +322,15 @@ export const clearProfilePicture = mutation({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .unique();
     if (!existing) return { ok: true } as const;
+    const storageId = (
+      existing as unknown as { pictureStorageId?: Id<"_storage"> }
+    ).pictureStorageId;
+    if (storageId) {
+      await ctx.storage.delete(storageId);
+    }
     await ctx.db.patch(existing._id, {
       pictureUrl: undefined,
+      pictureStorageId: undefined,
       updatedAt: Date.now(),
     });
     await recomputeProfileCompletion(ctx, userId);
@@ -628,6 +662,7 @@ export const setProfilePictureFromStorageId = mutation({
       const id = await ctx.db.insert("profiles", {
         userId,
         pictureUrl: pictureUrl ?? undefined,
+        pictureStorageId: storageId,
         completionPercentage: 0,
         createdAt: now,
         updatedAt: now,
@@ -635,8 +670,15 @@ export const setProfilePictureFromStorageId = mutation({
       await recomputeProfileCompletion(ctx, userId);
       return { id } as const;
     }
+    const prevSid = (
+      existing as unknown as { pictureStorageId?: Id<"_storage"> }
+    ).pictureStorageId;
+    if (prevSid) {
+      await ctx.storage.delete(prevSid);
+    }
     await ctx.db.patch(existing._id, {
       pictureUrl: pictureUrl ?? undefined,
+      pictureStorageId: storageId,
       updatedAt: now,
     });
     const completion = await recomputeProfileCompletion(ctx, userId);

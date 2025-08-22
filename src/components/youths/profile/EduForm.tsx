@@ -5,8 +5,9 @@ import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DialogClose } from "@/components/ui/BasicDialog";
+import { DialogClose } from "@/components/ui/dialog";
 import { CheckCircle2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 export type EducationItem = {
   readonly institution: string;
@@ -59,9 +60,9 @@ export function EduForm({
   }, [institution, degree, field, start, end, description, onSubmit]);
 
   return (
-    <div className="space-y-3 p-4">
+    <div className="space-y-3 px-4 pb-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Label htmlFor="institution">Institution</Label>
           <Input
             id="institution"
@@ -69,7 +70,7 @@ export function EduForm({
             onChange={(e) => setInstitution(e.target.value)}
           />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Label htmlFor="degree">Degree</Label>
           <Input
             id="degree"
@@ -77,7 +78,7 @@ export function EduForm({
             onChange={(e) => setDegree(e.target.value)}
           />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Label htmlFor="field">Field</Label>
           <Input
             id="field"
@@ -85,7 +86,7 @@ export function EduForm({
             onChange={(e) => setField(e.target.value)}
           />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Label htmlFor="start">Start Year</Label>
           <Input
             id="start"
@@ -94,7 +95,7 @@ export function EduForm({
             onChange={(e) => setStart(e.target.value)}
           />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Label htmlFor="end">End Year or Present</Label>
           <Input
             id="end"
@@ -103,17 +104,18 @@ export function EduForm({
             placeholder="e.g. 2025 or Present"
           />
         </div>
-        <div className="space-y-1 sm:col-span-2">
+        <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="desc">Description</Label>
-          <Input
+          <Textarea
             id="desc"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            className="resize-none"
           />
         </div>
       </div>
       <div className="flex items-center justify-end gap-2 pt-2">
-        <DialogClose>
+        <DialogClose asChild>
           <Button variant="ghost" onClick={onCancel}>
             Cancel
           </Button>

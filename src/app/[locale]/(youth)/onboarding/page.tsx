@@ -10,6 +10,7 @@ import BasicDropdown from "@/components/ui/BasicDropdown";
 import { TaxonomySelector } from "@/components/taxonomies/taxonomy-selector";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { LogoIcon } from "@/components/logo";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 
 /**
  * Youth Onboarding: 3 steps
@@ -52,6 +53,7 @@ export default function YouthOnboardingPage(): ReactElement {
     if (draft.lastNameAr) setLastNameAr(draft.lastNameAr);
     if (draft.firstNameEn) setFirstNameEn(draft.firstNameEn);
     if (draft.lastNameEn) setLastNameEn(draft.lastNameEn);
+    if (draft.gender) setGender(draft.gender);
     if (draft.region) setRegion(draft.region);
     if (draft.city) setCity(draft.city);
     if (draft.draftSkillIds)
@@ -69,6 +71,7 @@ export default function YouthOnboardingPage(): ReactElement {
   const [lastNameAr, setLastNameAr] = useState<string>("");
   const [firstNameEn, setFirstNameEn] = useState<string>("");
   const [lastNameEn, setLastNameEn] = useState<string>("");
+  const [gender, setGender] = useState<"male" | "female" | "">("");
   const [city, setCity] = useState<string>("");
   const [region, setRegion] = useState<string>("");
 
@@ -248,6 +251,7 @@ export default function YouthOnboardingPage(): ReactElement {
     lastNameAr.trim() &&
     firstNameEn.trim() &&
     lastNameEn.trim() &&
+    gender &&
     city &&
     region
       ? true
@@ -267,6 +271,7 @@ export default function YouthOnboardingPage(): ReactElement {
         lastNameAr,
         firstNameEn,
         lastNameEn,
+        gender: gender as "male" | "female",
         city,
         region,
       });
@@ -281,6 +286,7 @@ export default function YouthOnboardingPage(): ReactElement {
         lastNameAr,
         firstNameEn,
         lastNameEn,
+        gender: gender as "male" | "female",
         city,
         region,
         locale,
@@ -313,9 +319,12 @@ export default function YouthOnboardingPage(): ReactElement {
 
   return (
     <main className="bg-background text-foreground min-h-screen">
-      <header className="flex items-center justify-start gap-5 px-6 py-4">
-        <LogoIcon />
-        <div className="text-lg font-semibold">{t("brand")}</div>
+      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+        <div className="flex items-center gap-5">
+          <LogoIcon />
+          <div className="text-lg font-semibold">{t("brand")}</div>
+        </div>
+        <LanguageSwitcher />
       </header>
       <section className="mx-auto w-full max-w-3xl px-4 pb-12">
         <div className="mb-6">
@@ -377,6 +386,7 @@ export default function YouthOnboardingPage(): ReactElement {
                     onChange={(e) => setLastNameEn(e.target.value)}
                   />
                 </div>
+
                 <div>
                   <label className="mb-1 block text-sm opacity-80">
                     {t("region")}
@@ -384,6 +394,7 @@ export default function YouthOnboardingPage(): ReactElement {
                   <BasicDropdown
                     label={t("selectRegion")}
                     items={regions}
+                    selectedId={region}
                     onChange={(i) => {
                       setRegion(String(i.id));
                       setCity("");
@@ -398,9 +409,37 @@ export default function YouthOnboardingPage(): ReactElement {
                   <BasicDropdown
                     label={t("selectCity")}
                     items={cities}
+                    selectedId={city}
                     onChange={(i) => setCity(String(i.id))}
                     className="w-full"
                   />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm opacity-80">
+                    {t("gender")}
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <label className="inline-flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="gender"
+                        className="accent-primary"
+                        checked={gender === "male"}
+                        onChange={() => setGender("male")}
+                      />
+                      <span>{t("male")}</span>
+                    </label>
+                    <label className="inline-flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="gender"
+                        className="accent-primary"
+                        checked={gender === "female"}
+                        onChange={() => setGender("female")}
+                      />
+                      <span>{t("female")}</span>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>

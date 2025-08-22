@@ -12,8 +12,11 @@ const schema = defineSchema({
     email: v.string(),
     userName: v.optional(v.string()),
     avatarUrl: v.optional(v.string()),
-    firstName: v.optional(v.string()),
-    lastName: v.optional(v.string()),
+    firstNameAr: v.optional(v.string()),
+    lastNameAr: v.optional(v.string()),
+    firstNameEn: v.optional(v.string()),
+    lastNameEn: v.optional(v.string()),
+    gender: v.optional(v.union(v.literal("male"), v.literal("female"))),
     phone: v.optional(v.string()),
     role: v.union(
       v.literal("YOUTH"),
@@ -42,6 +45,7 @@ const schema = defineSchema({
     city: v.optional(v.string()),
     region: v.optional(v.string()),
     pictureUrl: v.optional(v.string()),
+    pictureStorageId: v.optional(v.id("_storage")),
     completionPercentage: v.optional(v.number()), // 0-100, validate range in code
     collaborationStatus: v.optional(
       v.union(v.literal("open"), v.literal("closed"), v.literal("looking")),
@@ -157,6 +161,7 @@ const schema = defineSchema({
     lastNameAr: v.optional(v.string()),
     firstNameEn: v.optional(v.string()),
     lastNameEn: v.optional(v.string()),
+    gender: v.optional(v.union(v.literal("male"), v.literal("female"))),
     city: v.optional(v.string()),
     region: v.optional(v.string()),
     draftSkillIds: v.optional(v.array(v.id("skills"))),

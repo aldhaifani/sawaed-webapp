@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DialogClose } from "@/components/ui/BasicDialog";
+import { DialogClose } from "@/components/ui/dialog";
 import { CheckCircle2 } from "lucide-react";
 
 export type ProjectPayload = {
@@ -44,9 +44,9 @@ export function ProjectForm({
   }, [title, period, url, description, onSubmit]);
 
   return (
-    <div className="space-y-3 p-4">
+    <div className="space-y-3 px-4 pb-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="space-y-1 sm:col-span-2">
+        <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="p-title">Title</Label>
           <Input
             id="p-title"
@@ -54,7 +54,7 @@ export function ProjectForm({
             onChange={(e) => setTitle(e.target.value)}
           />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Label htmlFor="p-period">Period</Label>
           <Input
             id="p-period"
@@ -63,7 +63,7 @@ export function ProjectForm({
             placeholder="e.g. 2023 – 2024"
           />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-2">
           <Label htmlFor="p-url">URL</Label>
           <Input
             id="p-url"
@@ -72,7 +72,7 @@ export function ProjectForm({
             placeholder="https://..."
           />
         </div>
-        <div className="space-y-1 sm:col-span-2">
+        <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="p-desc">Description</Label>
           <Input
             id="p-desc"
@@ -82,7 +82,7 @@ export function ProjectForm({
         </div>
       </div>
       <div className="flex items-center justify-end gap-2 pt-2">
-        <DialogClose>
+        <DialogClose asChild>
           <Button variant="ghost" onClick={onCancel}>
             Cancel
           </Button>

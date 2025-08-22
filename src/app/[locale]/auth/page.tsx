@@ -169,11 +169,15 @@ export default function LoginPage(): ReactElement {
     }
     setLoading(true);
     setError("");
+    // Keep the UI in a verifying state after a successful sign-in to avoid
+    // a brief flicker back to "Continue" that allows a second click.
+    let success = false;
     try {
       const form = new FormData(event.currentTarget);
       form.set("email", step.email.trim().toLowerCase());
       form.set("code", toAsciiDigits(code));
       await signIn("resend-otp", form);
+      success = true;
       // Redirect after successful verification (locale-aware root)
       const locale = getActiveLocale();
       router.push(`/${locale}`);
@@ -181,7 +185,12 @@ export default function LoginPage(): ReactElement {
       // Show a friendly, localized message instead of raw server error
       setError(tAuth("invalidCode"));
     } finally {
-      setLoading(false);
+      // Only clear loading if verification failed. On success, navigation will
+      // occur and the component will unmount; keeping loading=true prevents
+      // double submits and state conflicts.
+      if (!success) {
+        setLoading(false);
+      }
     }
   }
 

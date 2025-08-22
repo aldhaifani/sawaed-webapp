@@ -80,6 +80,9 @@
     "skillsInterests": "Skills & Interests",
     "selectSkillAtLeastOne": "Select at least one skill",
     "selectInterestAtLeastOne": "Select at least one interest",
+    "gender": "Gender",
+    "male": "Male",
+    "female": "Female",
     "back": "Back",
     "next": "Next",
     "finish": "Finish"

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactElement } from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
@@ -12,12 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogClose,
-} from "@/components/ui/BasicDialog";
-import { TaxonomySelector } from "@/components/taxonomies/taxonomy-selector";
+} from "@/components/ui/dialog";
+import { TaxonomySelectorGroup } from "@/components/taxonomies/taxonomy-selector-group";
 import FileUpload from "@/components/ui/FileUpload";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { InfoGrid, type FieldItem } from "@/components/youths/profile/InfoGrid";
@@ -60,6 +60,8 @@ import {
   Archive,
   Send,
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 
 export default function YouthProfilePage(): ReactElement {
   const locale = useLocale();
@@ -83,7 +85,9 @@ export default function YouthProfilePage(): ReactElement {
     readonly collaborationStatus: CollaborationStatus;
     readonly pictureUrl?: string;
     readonly phone?: string;
+    readonly gender: Gender;
   };
+  type Gender = "male" | "female" | "";
   type ExperienceDialogState = {
     readonly open: boolean;
     readonly mode: "create" | "edit";
@@ -123,6 +127,7 @@ export default function YouthProfilePage(): ReactElement {
   // Mutations / Actions
   const mutateBasics = useMutation(api.profiles.updateProfileBasics);
   const updateUserPhone = useMutation(api.profiles.updateUserPhone);
+  const updateUserGender = useMutation(api.profiles.updateUserGender);
   const clearProfilePicture = useMutation(api.profiles.clearProfilePicture);
   const setProfilePictureFromStorageId = useMutation(
     api.profiles.setProfilePictureFromStorageId,
@@ -144,6 +149,9 @@ export default function YouthProfilePage(): ReactElement {
   const [tab, setTab] = useState<TabKey>("identity");
   const [openIdentity, setOpenIdentity] = useState<boolean>(false);
   const [openSkills, setOpenSkills] = useState<boolean>(false);
+  const [taxonomyMode, setTaxonomyMode] = useState<
+    "skills" | "interests" | "both"
+  >("both");
   const [openExperience, setOpenExperience] = useState<ExperienceDialogState>({
     open: false,
     mode: "create",
@@ -170,10 +178,14 @@ export default function YouthProfilePage(): ReactElement {
     collaborationStatus: "",
     pictureUrl: undefined,
     phone: undefined,
+    gender: "",
   });
   const [phoneNine, setPhoneNine] = useState<string>("");
   const [phoneError, setPhoneError] = useState<string>("");
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [stagedFile, setStagedFile] = useState<File | null>(null);
+  const [pendingPictureRemoval, setPendingPictureRemoval] =
+    useState<boolean>(false);
   const [selectedSkillIds, setSelectedSkillIds] = useState<
     readonly Id<"skills">[]
   >([]);
@@ -354,9 +366,9 @@ export default function YouthProfilePage(): ReactElement {
     [],
   );
 
-  // init identity form when data loads
-  useMemo(() => {
-    if (!data) return;
+  // Initialize identity form only when dialog is closed (avoid overwriting edits while open)
+  useEffect(() => {
+    if (!data || openIdentity) return;
     setIdentityForm({
       headline: data.profile?.headline ?? "",
       bio: data.profile?.bio ?? "",
@@ -367,6 +379,7 @@ export default function YouthProfilePage(): ReactElement {
           ?.collaborationStatus as IdentityForm["collaborationStatus"]) || "",
       pictureUrl: data.profile?.pictureUrl ?? undefined,
       phone: data.user.phone ?? undefined,
+      gender: (data.user.gender as Gender) ?? "",
     });
     const p = data.user.phone ?? "";
     const re = /^\+968(\d{0,9})/;
@@ -375,35 +388,84 @@ export default function YouthProfilePage(): ReactElement {
     setPhoneNine(nextNine);
     setSelectedSkillIds((data.skills ?? []).map((s) => s.id));
     setSelectedInterestIds((data.interests ?? []).map((i) => i.id));
-  }, [data]);
+  }, [data, openIdentity]);
 
   const onOpenIdentity = useCallback(() => setOpenIdentity(true), []);
 
   const onSaveIdentity = useCallback(async () => {
-    try {
-      const collaboration =
-        identityForm.collaborationStatus === ""
-          ? undefined
-          : identityForm.collaborationStatus;
-      await mutateBasics({
-        headline: emptyToU(identityForm.headline),
-        bio: emptyToU(identityForm.bio),
-        city: emptyToU(identityForm.city),
-        region: emptyToU(identityForm.region),
-        pictureUrl: identityForm.pictureUrl ?? undefined,
-        collaborationStatus: collaboration,
-      });
-      // Save phone if valid and changed
-      const fullPhone = `+968${phoneNine}`;
-      const phoneValid = /^\+968\d{9}$/.test(fullPhone);
-      if (phoneValid && fullPhone !== (data?.user.phone ?? "")) {
-        await updateUserPhone({ phone: fullPhone });
+    // Capture current staging state, then close dialog immediately
+    const fileToUpload = stagedFile;
+    const shouldRemove = pendingPictureRemoval;
+    setOpenIdentity(false);
+    setStagedFile(null);
+    setPendingPictureRemoval(false);
+    setUploadedFileName(null);
+
+    // Run persistence in the background
+    void (async () => {
+      try {
+        const collaboration =
+          identityForm.collaborationStatus === ""
+            ? undefined
+            : identityForm.collaborationStatus;
+        await mutateBasics({
+          headline: emptyToU(identityForm.headline),
+          bio: emptyToU(identityForm.bio),
+          city: emptyToU(identityForm.city),
+          region: emptyToU(identityForm.region),
+          pictureUrl: identityForm.pictureUrl ?? undefined,
+          collaborationStatus: collaboration,
+        });
+        // Save phone if valid and changed
+        const fullPhone = `+968${phoneNine}`;
+        const phoneValid = /^\+968\d{9}$/.test(fullPhone);
+        if (phoneValid && fullPhone !== (data?.user.phone ?? "")) {
+          await updateUserPhone({ phone: fullPhone });
+        }
+        // Save gender if changed
+        const nextGender =
+          identityForm.gender === "" ? undefined : identityForm.gender;
+        if (
+          nextGender &&
+          nextGender !== (data?.user.gender as Gender | undefined)
+        ) {
+          await updateUserGender({ gender: nextGender });
+        }
+        // Persist profile picture changes
+        if (fileToUpload) {
+          const { uploadUrl } = await generateUploadUrl({});
+          const res = await fetch(uploadUrl, {
+            method: "POST",
+            headers: { "Content-Type": fileToUpload.type },
+            body: fileToUpload,
+          });
+          if (!res.ok) throw new Error("UPLOAD_FAILED");
+          const json = (await res.json()) as { storageId: string };
+          await setProfilePictureFromStorageId({
+            storageId: json.storageId as unknown as Id<"_storage">,
+          });
+        } else if (shouldRemove) {
+          await clearProfilePicture({});
+        }
+      } catch (e) {
+        console.error(e);
       }
-      setOpenIdentity(false);
-    } catch (e) {
-      console.error(e);
-    }
-  }, [identityForm, mutateBasics, emptyToU, phoneNine, data, updateUserPhone]);
+    })();
+  }, [
+    identityForm,
+    mutateBasics,
+    emptyToU,
+    phoneNine,
+    data,
+    updateUserPhone,
+    stagedFile,
+    pendingPictureRemoval,
+    generateUploadUrl,
+    setProfilePictureFromStorageId,
+    clearProfilePicture,
+    updateUserGender,
+    setOpenIdentity,
+  ]);
 
   const onSaveSkills = useCallback(async () => {
     try {
@@ -416,6 +478,30 @@ export default function YouthProfilePage(): ReactElement {
       console.error(e);
     }
   }, [mutateTaxonomies, selectedSkillIds, selectedInterestIds]);
+
+  // Stable handlers to avoid re-creating onChange function references
+  // which can trigger child effects repeatedly and cause update loops
+  const handleSkillsChange = useCallback(
+    ({ selectedIds }: { selectedIds: string[] }): void => {
+      setSelectedSkillIds(
+        selectedIds.map(
+          (id) => id as unknown as Id<"skills">,
+        ) as readonly Id<"skills">[],
+      );
+    },
+    [],
+  );
+
+  const handleInterestsChange = useCallback(
+    ({ selectedIds }: { selectedIds: string[] }): void => {
+      setSelectedInterestIds(
+        selectedIds.map(
+          (id) => id as unknown as Id<"interests">,
+        ) as readonly Id<"interests">[],
+      );
+    },
+    [],
+  );
 
   const tabs = useMemo(
     () =>
@@ -440,6 +526,12 @@ export default function YouthProfilePage(): ReactElement {
     const lastName = data.user.lastName ?? "";
     const email = data.user.email ?? "";
     const phone = data.user.phone ?? "";
+    const gender =
+      data.user.gender === "male"
+        ? "Male"
+        : data.user.gender === "female"
+          ? "Female"
+          : "";
     const city = data.profile?.city ?? "";
     const region = data.profile?.region ?? "";
     const headline = data.profile?.headline ?? "";
@@ -449,6 +541,7 @@ export default function YouthProfilePage(): ReactElement {
       { label: "Last Name", value: lastName },
       { label: "Email", value: email },
       { label: "Phone", value: phone },
+      { label: "Gender", value: gender },
       { label: "City", value: city },
       { label: "Region", value: region },
       { label: "Headline", value: headline },
@@ -601,27 +694,29 @@ export default function YouthProfilePage(): ReactElement {
           <div className="bg-muted h-28 w-full sm:h-32" />
           <div className="flex flex-col gap-4 px-4 pb-4 sm:flex-row sm:items-end sm:justify-between sm:px-6 sm:pb-6">
             <div className="-mt-10 flex items-end gap-4 sm:-mt-12">
-              <div className="border-card bg-muted relative size-20 shrink-0 overflow-hidden rounded-full border-4 sm:size-24">
-                {data?.profile?.pictureUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={data.profile.pictureUrl}
-                    alt="Profile picture"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="bg-muted flex h-full w-full items-center justify-center text-lg font-semibold">
-                    {(() => {
-                      const first = data?.user.firstName?.[0] ?? "";
-                      const last = data?.user.lastName?.[0] ?? "";
-                      const fallback = (data?.user.email ?? "")
-                        .slice(0, 1)
-                        .toUpperCase();
-                      const initials = `${first}${last}`.trim() || fallback;
-                      return initials;
-                    })()}
-                  </div>
-                )}
+              <div className="relative shrink-0">
+                <div className="border-card bg-muted size-20 overflow-hidden rounded-full border-4 sm:size-24">
+                  {data?.profile?.pictureUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={data.profile.pictureUrl}
+                      alt="Profile picture"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="bg-muted flex h-full w-full items-center justify-center text-lg font-semibold">
+                      {(() => {
+                        const first = data?.user.firstName?.[0] ?? "";
+                        const last = data?.user.lastName?.[0] ?? "";
+                        const fallback = (data?.user.email ?? "")
+                          .slice(0, 1)
+                          .toUpperCase();
+                        const initials = `${first}${last}`.trim() || fallback;
+                        return initials;
+                      })()}
+                    </div>
+                  )}
+                </div>
                 {/* Collaboration status badge */}
                 {(() => {
                   const status = data?.profile?.collaborationStatus;
@@ -634,9 +729,14 @@ export default function YouthProfilePage(): ReactElement {
                           ? "🔒"
                           : "";
                   return emoji ? (
-                    <span className="py-0.3 text-[15px]/(0) font-h absolute -right-1 -bottom-1 z-10 rounded-full border bg-green-100 px-1 font-medium text-green-700 shadow-sm">
-                      {emoji}
-                    </span>
+                    <div className="absolute right-0 bottom-0 z-10 -translate-x-1 -translate-y-1 sm:-translate-x-1 sm:-translate-y-1">
+                      <Badge
+                        variant="secondary"
+                        className="rounded-full px-1 py-[2px] text-[15px]"
+                      >
+                        {emoji}
+                      </Badge>
+                    </div>
                   ) : null;
                 })()}
               </div>
@@ -793,7 +893,10 @@ export default function YouthProfilePage(): ReactElement {
               <SectionCard
                 title="Skills & Talents"
                 actionLabel="Edit"
-                onAction={() => setOpenSkills(true)}
+                onAction={() => {
+                  setTaxonomyMode("skills");
+                  setOpenSkills(true);
+                }}
               >
                 {data === undefined ? (
                   <div className="text-muted-foreground text-sm">
@@ -822,7 +925,10 @@ export default function YouthProfilePage(): ReactElement {
               <SectionCard
                 title="Interests & Hobbies"
                 actionLabel="Edit"
-                onAction={() => setOpenSkills(true)}
+                onAction={() => {
+                  setTaxonomyMode("interests");
+                  setOpenSkills(true);
+                }}
               >
                 {data === undefined ? (
                   <div className="text-muted-foreground text-sm">
@@ -1077,14 +1183,24 @@ export default function YouthProfilePage(): ReactElement {
       </div>
 
       {/* Identity Dialog */}
-      <Dialog open={openIdentity} onOpenChange={setOpenIdentity}>
-        <DialogContent className="w-[95vw] max-w-xl p-0">
+      <Dialog
+        open={openIdentity}
+        onOpenChange={(o) => {
+          if (!o) {
+            setStagedFile(null);
+            setPendingPictureRemoval(false);
+            setUploadedFileName(null);
+          }
+          setOpenIdentity(o);
+        }}
+      >
+        <DialogContent className="max-h-[85vh] w-[95vw] max-w-xl overflow-y-auto p-0">
           <DialogHeader className="border-b p-4">
             <DialogTitle>Edit profile</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 p-4">
+          <div className="space-y-4 px-4 pb-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-1">
+              <div className="w-full space-y-2 sm:col-span-2">
                 <Label htmlFor="headline">Headline</Label>
                 <Input
                   id="headline"
@@ -1094,7 +1210,18 @@ export default function YouthProfilePage(): ReactElement {
                   }
                 />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="bio">Bio</Label>
+                <Textarea
+                  id="bio"
+                  value={identityForm.bio}
+                  onChange={(e) =>
+                    setIdentityForm((p) => ({ ...p, bio: e.target.value }))
+                  }
+                  className="resize-none"
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="region">Region</Label>
                 <BasicDropdown
                   label={identityForm.region || "Select region"}
@@ -1109,7 +1236,7 @@ export default function YouthProfilePage(): ReactElement {
                   className="w-full"
                 />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <Label htmlFor="city">City</Label>
                 <BasicDropdown
                   label={identityForm.city || "Select city"}
@@ -1120,20 +1247,11 @@ export default function YouthProfilePage(): ReactElement {
                   className="w-full"
                 />
               </div>
-              <div className="space-y-1 sm:col-span-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Input
-                  id="bio"
-                  value={identityForm.bio}
-                  onChange={(e) =>
-                    setIdentityForm((p) => ({ ...p, bio: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="space-y-1">
+
+              <div className="flex flex-col justify-center space-y-2 sm:col-span-2">
                 <Label htmlFor="phone">Phone</Label>
                 <div className="flex items-center">
-                  <span className="bg-muted text-foreground inline-flex items-center rounded-l-md border border-r-0 px-2 text-sm">
+                  <span className="text-foreground inline-flex items-center rounded-l-md px-2 text-sm">
                     +968
                   </span>
                   <Input
@@ -1152,15 +1270,37 @@ export default function YouthProfilePage(): ReactElement {
                           next.length === 9 ? "" : "Must be 9 digits",
                         );
                     }}
-                    className="rounded-l-none"
-                    placeholder="000000000"
+                    className="w-50 rounded-l-none"
+                    placeholder="912345678"
                   />
                 </div>
                 {phoneError ? (
                   <p className="mt-1 text-xs text-red-600">{phoneError}</p>
                 ) : null}
               </div>
-              <div className="space-y-1 sm:col-span-2">
+              <div className="space-y-2">
+                <Label>Gender</Label>
+                <RadioGroup
+                  value={identityForm.gender}
+                  onValueChange={(val) =>
+                    setIdentityForm((p) => ({
+                      ...p,
+                      gender: (val as Gender) || "",
+                    }))
+                  }
+                  className="flex gap-10"
+                >
+                  <div className="flex items-center gap-3">
+                    <RadioGroupItem value="male" id="r1" />
+                    <Label htmlFor="r1">Male</Label>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <RadioGroupItem value="female" id="r2" />
+                    <Label htmlFor="r2">Female</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
                 <Label>Collaboration status</Label>
                 <RadioGroup
                   value={identityForm.collaborationStatus}
@@ -1171,81 +1311,87 @@ export default function YouthProfilePage(): ReactElement {
                         (val as IdentityForm["collaborationStatus"]) || "",
                     }))
                   }
-                  className="grid grid-cols-1 gap-2 sm:grid-cols-3"
+                  className="flex gap-10"
                 >
-                  <RadioGroupItem value="open">🤝 Open</RadioGroupItem>
-                  <RadioGroupItem value="looking">👀 Looking</RadioGroupItem>
-                  <RadioGroupItem value="closed">🔒 Closed</RadioGroupItem>
+                  <div className="flex items-center gap-3">
+                    <RadioGroupItem value="open" id="r3" />
+                    <Label htmlFor="r3">🤝 Open</Label>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <RadioGroupItem value="looking" id="r4" />
+                    <Label htmlFor="r4">👀 Looking</Label>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <RadioGroupItem value="closed" id="r5" />
+                    <Label htmlFor="r5">🔒 Closed</Label>
+                  </div>
                 </RadioGroup>
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label>Profile Picture</Label>
-                {uploadedFileName || identityForm.pictureUrl ? (
-                  <div className="bg-muted text-foreground inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                    <span className="max-w-[260px] truncate">
-                      {uploadedFileName ?? "Profile picture uploaded"}
-                    </span>
-                    <button
-                      type="button"
-                      className="inline-flex items-center text-red-600 hover:text-red-700"
-                      onClick={async () => {
-                        try {
-                          await clearProfilePicture({});
-                          setUploadedFileName(null);
-                          setIdentityForm((p) => ({
-                            ...p,
-                            pictureUrl: undefined,
-                          }));
-                        } catch (err) {
-                          console.error(err);
-                        }
-                      }}
-                    >
-                      <XCircle className="size-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <FileUpload
-                    acceptedFileTypes={[
-                      "image/png",
-                      "image/jpeg",
-                      "image/webp",
-                    ]}
-                    onUploadSuccess={async (file: File) => {
-                      try {
-                        const { uploadUrl } = await generateUploadUrl({});
-                        const res = await fetch(uploadUrl, {
-                          method: "POST",
-                          headers: { "Content-Type": file.type },
-                          body: file,
-                        });
-                        if (!res.ok) throw new Error("UPLOAD_FAILED");
-                        const json = (await res.json()) as {
-                          storageId: string;
-                        };
-                        await setProfilePictureFromStorageId({
-                          storageId:
-                            json.storageId as unknown as Id<"_storage">,
-                        });
+                {(() => {
+                  const hasStaged = Boolean(stagedFile);
+                  const hasExisting =
+                    Boolean(identityForm.pictureUrl) &&
+                    !pendingPictureRemoval &&
+                    !hasStaged;
+                  if (hasStaged || hasExisting) {
+                    return (
+                      <div className="bg-muted text-foreground inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                        <span className="max-w-[260px] truncate">
+                          {uploadedFileName ??
+                            (hasExisting ? "Current profile picture" : "")}
+                        </span>
+                        <button
+                          type="button"
+                          className="inline-flex items-center text-red-600 hover:text-red-700"
+                          onClick={() => {
+                            if (hasStaged) {
+                              setStagedFile(null);
+                              setUploadedFileName(null);
+                            } else if (hasExisting) {
+                              setPendingPictureRemoval(true);
+                            }
+                            setIdentityForm((p) => ({
+                              ...p,
+                              pictureUrl: hasExisting
+                                ? p.pictureUrl
+                                : undefined,
+                            }));
+                          }}
+                        >
+                          <XCircle className="size-4" />
+                        </button>
+                      </div>
+                    );
+                  }
+                  return (
+                    <FileUpload
+                      acceptedFileTypes={[
+                        "image/png",
+                        "image/jpeg",
+                        "image/webp",
+                      ]}
+                      onUploadSuccess={(file: File) => {
+                        setStagedFile(file);
                         setUploadedFileName(file.name);
+                        setPendingPictureRemoval(false);
                         setIdentityForm((p) => ({
                           ...p,
                           pictureUrl: "uploaded",
                         }));
-                      } catch (err) {
-                        console.error(err);
-                      }
-                    }}
-                  />
-                )}
+                      }}
+                    />
+                  );
+                })()}
               </div>
             </div>
             <div className="flex items-center justify-end gap-2 pt-2">
-              <DialogClose>
+              <DialogClose asChild>
                 <Button variant="ghost">Cancel</Button>
               </DialogClose>
               <Button onClick={onSaveIdentity} className="gap-2">
-                <CheckCircle2 className="size-4" /> Save
+                Save changes
               </Button>
             </div>
           </div>
@@ -1257,7 +1403,7 @@ export default function YouthProfilePage(): ReactElement {
         open={openExperience.open}
         onOpenChange={(o) => setOpenExperience((p) => ({ ...p, open: o }))}
       >
-        <DialogContent className="w-[95vw] max-w-xl p-0">
+        <DialogContent className="max-h-[85vh] w-[95vw] max-w-xl overflow-y-auto p-0">
           <DialogHeader className="border-b p-4">
             <DialogTitle>
               {openExperience.mode === "create"
@@ -1292,7 +1438,7 @@ export default function YouthProfilePage(): ReactElement {
         open={openProject.open}
         onOpenChange={(o) => setOpenProject((p) => ({ ...p, open: o }))}
       >
-        <DialogContent className="w-[95vw] max-w-xl p-0">
+        <DialogContent className="max-h-[85vh] w-[95vw] max-w-xl overflow-y-auto p-0">
           <DialogHeader className="border-b p-4">
             <DialogTitle>
               {openProject.mode === "create" ? "Add project" : "Edit project"}
@@ -1322,7 +1468,7 @@ export default function YouthProfilePage(): ReactElement {
         open={openAward.open}
         onOpenChange={(o) => setOpenAward((p) => ({ ...p, open: o }))}
       >
-        <DialogContent className="w-[95vw] max-w-xl p-0">
+        <DialogContent className="max-h-[85vh] w-[95vw] max-w-xl overflow-y-auto p-0">
           <DialogHeader className="border-b p-4">
             <DialogTitle>
               {openAward.mode === "create"
@@ -1351,45 +1497,39 @@ export default function YouthProfilePage(): ReactElement {
 
       {/* Skills & Interests Dialog */}
       <Dialog open={openSkills} onOpenChange={setOpenSkills}>
-        <DialogContent className="w-[95vw] max-w-2xl p-0">
+        <DialogContent className="max-h-[85vh] w-[95vw] max-w-2xl overflow-y-auto p-0">
           <DialogHeader className="border-b p-4">
-            <DialogTitle>Edit skills & interests</DialogTitle>
+            <DialogTitle>
+              {taxonomyMode === "skills"
+                ? "Edit Skills & Talents"
+                : taxonomyMode === "interests"
+                  ? "Edit Interests & Hobbies"
+                  : "Edit skills & interests"}
+            </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 gap-6 p-4 sm:grid-cols-2">
-            <div>
-              <h4 className="mb-2 text-sm font-medium">Skills</h4>
-              <TaxonomySelector
-                kind="skill"
-                initialSelected={selectedSkillIds}
-                onChange={({ selectedIds }) =>
-                  setSelectedSkillIds(
-                    selectedIds.map(
-                      (id) => id as unknown as Id<"skills">,
-                    ) as readonly Id<"skills">[],
-                  )
+            <div className="sm:col-span-2">
+              <TaxonomySelectorGroup
+                layout="tabs"
+                mode={taxonomyMode}
+                titleSkills="Skills & Talents"
+                titleInterests="Interests & Hobbies"
+                skillInitialSelected={
+                  selectedSkillIds as unknown as readonly string[]
                 }
-              />
-            </div>
-            <div>
-              <h4 className="mb-2 text-sm font-medium">Interests</h4>
-              <TaxonomySelector
-                kind="interest"
-                initialSelected={selectedInterestIds}
-                onChange={({ selectedIds }) =>
-                  setSelectedInterestIds(
-                    selectedIds.map(
-                      (id) => id as unknown as Id<"interests">,
-                    ) as readonly Id<"interests">[],
-                  )
+                interestInitialSelected={
+                  selectedInterestIds as unknown as readonly string[]
                 }
+                onSkillsChange={handleSkillsChange}
+                onInterestsChange={handleInterestsChange}
               />
             </div>
             <div className="col-span-1 flex items-center justify-end gap-2 sm:col-span-2">
-              <DialogClose>
+              <DialogClose asChild>
                 <Button variant="ghost">Cancel</Button>
               </DialogClose>
               <Button onClick={onSaveSkills} className="gap-2">
-                <CheckCircle2 className="size-4" /> Save
+                Save
               </Button>
             </div>
           </div>
@@ -1401,7 +1541,7 @@ export default function YouthProfilePage(): ReactElement {
         open={openEducation.open}
         onOpenChange={(o) => setOpenEducation((p) => ({ ...p, open: o }))}
       >
-        <DialogContent className="w-[95vw] max-w-xl p-0">
+        <DialogContent className="max-h-[85vh] w-[95vw] max-w-xl overflow-y-auto p-0">
           <DialogHeader className="border-b p-4">
             <DialogTitle>
               {openEducation.mode === "create"
