@@ -46,23 +46,7 @@ export default function YouthOnboardingPage(): ReactElement {
     else if (status.currentStep === "taxonomies") setLocalStep(2);
   }, [status, router, locale]);
 
-  // Load existing draft values to prefill the form
-  useEffect(() => {
-    if (!draft) return;
-    if (draft.firstNameAr) setFirstNameAr(draft.firstNameAr);
-    if (draft.lastNameAr) setLastNameAr(draft.lastNameAr);
-    if (draft.firstNameEn) setFirstNameEn(draft.firstNameEn);
-    if (draft.lastNameEn) setLastNameEn(draft.lastNameEn);
-    if (draft.gender) setGender(draft.gender);
-    if (draft.region) setRegion(draft.region);
-    if (draft.city) setCity(draft.city);
-    if (draft.draftSkillIds)
-      setSelectedSkills(draft.draftSkillIds.map((s) => s as unknown as string));
-    if (draft.draftInterestIds)
-      setSelectedInterests(
-        draft.draftInterestIds.map((i) => i as unknown as string),
-      );
-  }, [draft]);
+  // (moved effects below after state/queries declarations)
 
   const progressVal = useMemo(() => ((step + 1) / 3) * 100, [step]);
 
@@ -72,175 +56,74 @@ export default function YouthOnboardingPage(): ReactElement {
   const [firstNameEn, setFirstNameEn] = useState<string>("");
   const [lastNameEn, setLastNameEn] = useState<string>("");
   const [gender, setGender] = useState<"male" | "female" | "">("");
-  const [city, setCity] = useState<string>("");
-  const [region, setRegion] = useState<string>("");
+  const [regionId, setRegionId] = useState<Id<"regions"> | undefined>(
+    undefined,
+  );
+  const [cityId, setCityId] = useState<Id<"cities"> | undefined>(undefined);
 
-  // Region/City mapping per requirement
-  const regionCityMap: Record<string, readonly string[]> = useMemo(
-    () => ({
-      "Ad Dakhiliyah": [
-        "Nizwa",
-        "Bahla",
-        "Samail",
-        "Izki",
-        "Bidbid",
-        "Adam",
-        "Al Hamra",
-        "Manah",
-        "Jebel Akhdar",
-      ],
-      "Ad Dhahirah": ["Ibri", "Yanqul", "Dhank"],
-      "Al Batinah North": [
-        "Sohar",
-        "Shinas",
-        "Liwa",
-        "Saham",
-        "Al Khabourah",
-        "Suwayq",
-      ],
-      "Al Batinah South": [
-        "Rustaq",
-        "Awabi",
-        "Nakhl",
-        "Wadi al Ma’awil",
-        "Barka",
-        "Musana’ah",
-      ],
-      "Al Buraimi": ["Al Buraimi", "Mahdah", "Al Sinainah"],
-      "Al Wusta": ["Haima", "others..."],
-      "Ash Sharqiyah North": [
-        "Ibra",
-        "Mudhaibi",
-        "Bidiyah",
-        "Al Qabil",
-        "Wadi Bani Khalid",
-        "Dima wa’l Ta’een",
-      ],
-      "Ash Sharqiyah South": [
-        "Sur",
-        "Al Kamil wa’l Wafi",
-        "Jalan Bani Bu Hassan",
-        "Jalan Bani Bu Ali",
-        "Masirah",
-      ],
-      Dhofar: [
-        "Salalah",
-        "Taqah",
-        "Mirbat",
-        "Thumrait",
-        "Sadah",
-        "Rakhyut",
-        "Dhalkut",
-        "Muqshin",
-        "Shalim and the Hallaniyat Islands",
-        "Al-Mazyūnah",
-      ],
-      Muscat: ["Muscat", "Muttrah", "Bawshar", "Seeb", "Al Amarat", "Qurayyat"],
-      Musandam: ["Khasab", "Dibba", "Bukha", "Madha"],
-    }),
-    [],
+  // Regions and Cities via taxonomy queries
+  const regionList = useQuery(api.locations.listRegions, { locale });
+  const cityList = useQuery(api.locations.listCitiesByRegion, {
+    regionId,
+    locale,
+  });
+
+  const regions = useMemo(
+    () => (regionList ?? []).map((r) => ({ id: String(r.id), label: r.name })),
+    [regionList],
+  );
+  const cities = useMemo(
+    () => (cityList ?? []).map((c) => ({ id: String(c.id), label: c.name })),
+    [cityList],
   );
 
-  const regions = useMemo(() => {
-    const arabicMap: Record<string, string> = {
-      "Ad Dakhiliyah": "الداخلية",
-      "Ad Dhahirah": "الظاهرة",
-      "Al Batinah North": "شمال الباطنة",
-      "Al Batinah South": "جنوب الباطنة",
-      "Al Buraimi": "البريمي",
-      "Al Wusta": "الوسطى",
-      "Ash Sharqiyah North": "شمال الشرقية",
-      "Ash Sharqiyah South": "جنوب الشرقية",
-      Dhofar: "ظفار",
-      Muscat: "مسقط",
-      Musandam: "مسندم",
-    };
-    return Object.keys(regionCityMap).map((r) => ({
-      id: r,
-      label: locale === "ar" ? (arabicMap[r] ?? r) : r,
-    }));
-  }, [regionCityMap, locale]);
+  // Type guards to safely access optional draft fields without using `any`
+  const hasRegionId = (
+    x: unknown,
+  ): x is { regionId?: Id<"regions"> | null | undefined } =>
+    typeof x === "object" &&
+    x !== null &&
+    "regionId" in (x as Record<string, unknown>);
+  const hasCityId = (
+    x: unknown,
+  ): x is { cityId?: Id<"cities"> | null | undefined } =>
+    typeof x === "object" &&
+    x !== null &&
+    "cityId" in (x as Record<string, unknown>);
 
-  const cities = useMemo(() => {
-    if (!region) return [] as { id: string; label: string }[];
-    const cityAr: Record<string, Record<string, string>> = {
-      "Ad Dakhiliyah": {
-        Nizwa: "نزوى",
-        Bahla: "بهلا",
-        Samail: "سمائل",
-        Izki: "إزكي",
-        Bidbid: "بدبد",
-        Adam: "آدم",
-        "Al Hamra": "الحمراء",
-        Manah: "منح",
-        "Jebel Akhdar": "الجبل الأخضر",
-      },
-      "Ad Dhahirah": { Ibri: "عبري", Yanqul: "ينقل", Dhank: "ضنك" },
-      "Al Batinah North": {
-        Sohar: "صحار",
-        Shinas: "شناص",
-        Liwa: "لوى",
-        Saham: "صحم",
-        "Al Khabourah": "الخابورة",
-        Suwayq: "السويق",
-      },
-      "Al Batinah South": {
-        Rustaq: "الرستاق",
-        Awabi: "العوابي",
-        Nakhl: "نخل",
-        "Wadi al Ma’awil": "وادي المعاول",
-        Barka: "بركاء",
-        "Musana’ah": "المصنعة",
-      },
-      "Al Buraimi": {
-        "Al Buraimi": "البريمي",
-        Mahdah: "محضة",
-        "Al Sinainah": "السنينة",
-      },
-      "Al Wusta": { Haima: "هيما", "others...": "أخرى" },
-      "Ash Sharqiyah North": {
-        Ibra: "إبراء",
-        Mudhaibi: "المضيبي",
-        Bidiyah: "بدية",
-        "Al Qabil": "القابل",
-        "Wadi Bani Khalid": "وادي بني خالد",
-        "Dima wa’l Ta’een": "دماء والطائيين",
-      },
-      "Ash Sharqiyah South": {
-        Sur: "صور",
-        "Al Kamil wa’l Wafi": "الكامل والوافي",
-        "Jalan Bani Bu Hassan": "جعلان بني بو حسن",
-        "Jalan Bani Bu Ali": "جعلان بني بو علي",
-        Masirah: "مصيرة",
-      },
-      Dhofar: {
-        Salalah: "صلالة",
-        Taqah: "طاقة",
-        Mirbat: "مرباط",
-        Thumrait: "ثمريت",
-        Sadah: "سدح",
-        Rakhyut: "رخيوت",
-        Dhalkut: "ضلكوت",
-        Muqshin: "مقشن",
-        "Shalim and the Hallaniyat Islands": "شليم وجزر الحلانيات",
-        "Al-Mazyūnah": "المزيونة",
-      },
-      Muscat: {
-        Muscat: "مسقط",
-        Muttrah: "مطرح",
-        Bawshar: "بوشر",
-        Seeb: "السيب",
-        "Al Amarat": "العامرات",
-        Qurayyat: "قريات",
-      },
-      Musandam: { Khasab: "خصب", Dibba: "دبا", Bukha: "بخا", Madha: "مدحاء" },
-    };
-    const list = regionCityMap[region] ?? [];
-    return list.map((c) => ({
-      id: c,
-      label: locale === "ar" ? (cityAr[region]?.[c] ?? c) : c,
-    }));
-  }, [region, regionCityMap, locale]);
+  // Load existing draft values to prefill the form (now that state and queries exist)
+  useEffect(() => {
+    if (!draft) return;
+    if (draft.firstNameAr) setFirstNameAr(draft.firstNameAr);
+    if (draft.lastNameAr) setLastNameAr(draft.lastNameAr);
+    if (draft.firstNameEn) setFirstNameEn(draft.firstNameEn);
+    if (draft.lastNameEn) setLastNameEn(draft.lastNameEn);
+    if (draft.gender) setGender(draft.gender);
+    if (hasRegionId(draft) && draft.regionId) setRegionId(draft.regionId);
+    if (hasCityId(draft) && draft.cityId) setCityId(draft.cityId);
+    if (draft.draftSkillIds)
+      setSelectedSkills(draft.draftSkillIds.map((s) => s as unknown as string));
+    if (draft.draftInterestIds)
+      setSelectedInterests(
+        draft.draftInterestIds.map((i) => i as unknown as string),
+      );
+  }, [draft]);
+
+  // Fallback: map legacy draft names to IDs when IDs are missing (after lists load)
+  useEffect(() => {
+    if (!draft) return;
+    if (!regionId && draft.region && regionList && regionList.length > 0) {
+      const byName = regionList.find((r) => r.name === draft.region);
+      if (byName) setRegionId(byName.id);
+    }
+  }, [draft, regionId, regionList]);
+  useEffect(() => {
+    if (!draft) return;
+    if (!cityId && draft.city && cityList && cityList.length > 0) {
+      const byName = cityList.find((c) => c.name === draft.city);
+      if (byName) setCityId(byName.id);
+    }
+  }, [draft, cityId, cityList]);
 
   // Taxonomy selections
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
@@ -252,8 +135,8 @@ export default function YouthOnboardingPage(): ReactElement {
     firstNameEn.trim() &&
     lastNameEn.trim() &&
     gender &&
-    city &&
-    region
+    cityId &&
+    regionId
       ? true
       : false;
   const canComplete = selectedSkills.length > 0 && selectedInterests.length > 0;
@@ -266,14 +149,22 @@ export default function YouthOnboardingPage(): ReactElement {
     }
     if (step === 1 && canNextFromDetails) {
       // Save only to onboarding draft here
+      const selectedRegionName =
+        (regionList ?? []).find((r) => String(r.id) === String(regionId))
+          ?.name ?? "";
+      const selectedCityName =
+        (cityList ?? []).find((c) => String(c.id) === String(cityId))?.name ??
+        "";
       await saveDraftDetails({
         firstNameAr,
         lastNameAr,
         firstNameEn,
         lastNameEn,
         gender: gender as "male" | "female",
-        city,
-        region,
+        city: selectedCityName,
+        region: selectedRegionName,
+        cityId: cityId ?? undefined,
+        regionId: regionId ?? undefined,
       });
       await setStep({ step: "taxonomies" });
       setLocalStep(2);
@@ -281,15 +172,23 @@ export default function YouthOnboardingPage(): ReactElement {
     }
     if (step === 2 && canComplete) {
       // On finish, persist details to user tables and taxonomies to user
+      const selectedRegionName =
+        (regionList ?? []).find((r) => String(r.id) === String(regionId))
+          ?.name ?? "";
+      const selectedCityName =
+        (cityList ?? []).find((c) => String(c.id) === String(cityId))?.name ??
+        "";
       await saveDetails({
         firstNameAr,
         lastNameAr,
         firstNameEn,
         lastNameEn,
         gender: gender as "male" | "female",
-        city,
-        region,
+        city: selectedCityName,
+        region: selectedRegionName,
         locale,
+        cityId: cityId ?? undefined,
+        regionId: regionId ?? undefined,
       });
       // Cast strings to Ids for Convex client
       await setTaxonomies({
@@ -394,10 +293,10 @@ export default function YouthOnboardingPage(): ReactElement {
                   <BasicDropdown
                     label={t("selectRegion")}
                     items={regions}
-                    selectedId={region}
+                    selectedId={regionId ? String(regionId) : ""}
                     onChange={(i) => {
-                      setRegion(String(i.id));
-                      setCity("");
+                      setRegionId(i.id as unknown as Id<"regions">);
+                      setCityId(undefined);
                     }}
                     className="w-full"
                   />
@@ -409,8 +308,8 @@ export default function YouthOnboardingPage(): ReactElement {
                   <BasicDropdown
                     label={t("selectCity")}
                     items={cities}
-                    selectedId={city}
-                    onChange={(i) => setCity(String(i.id))}
+                    selectedId={cityId ? String(cityId) : ""}
+                    onChange={(i) => setCityId(i.id as unknown as Id<"cities">)}
                     className="w-full"
                   />
                 </div>

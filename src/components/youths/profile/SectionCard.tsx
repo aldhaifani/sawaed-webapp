@@ -6,13 +6,15 @@ import { Pen, Plus } from "lucide-react";
 
 export type SectionCardProps = {
   readonly title: string;
-  readonly actionLabel?: "Add" | "Edit";
+  readonly actionType?: "Add" | "Edit";
+  readonly actionLabel?: string;
   readonly onAction?: () => void;
   readonly children: React.ReactNode;
 };
 
 export function SectionCard({
   title,
+  actionType,
   actionLabel,
   onAction,
   children,
@@ -21,19 +23,19 @@ export function SectionCard({
     <section className="bg-card rounded-xl border shadow-sm">
       <header className="flex items-center justify-between border-b px-4 py-3 sm:px-6">
         <h3 className="text-foreground text-base font-semibold">{title}</h3>
-        {actionLabel ? (
+        {actionType || actionLabel ? (
           <Button
             variant="outline"
             size="sm"
             className="gap-1"
             onClick={onAction}
           >
-            {actionLabel === "Add" ? (
+            {actionType === "Add" ? (
               <Plus className="size-3" />
-            ) : actionLabel === "Edit" ? (
+            ) : actionType === "Edit" ? (
               <Pen className="size-3" />
             ) : null}
-            {actionLabel}
+            {actionLabel ?? actionType}
           </Button>
         ) : null}
       </header>

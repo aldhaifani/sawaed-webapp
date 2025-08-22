@@ -2,6 +2,7 @@
 
 import type { ReactElement } from "react";
 import { useCallback, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +27,7 @@ export function ProjectForm({
   onCancel,
   onSubmit,
 }: ProjectFormProps): ReactElement {
+  const t = useTranslations("profile");
   const [title, setTitle] = useState<string>(defaults?.title ?? "");
   const [period, setPeriod] = useState<string>(defaults?.period ?? "");
   const [url, setUrl] = useState<string>(defaults?.url ?? "");
@@ -47,7 +49,7 @@ export function ProjectForm({
     <div className="space-y-3 px-4 pb-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="p-title">Title</Label>
+          <Label htmlFor="p-title">{t("form.title")}</Label>
           <Input
             id="p-title"
             value={title}
@@ -55,25 +57,25 @@ export function ProjectForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="p-period">Period</Label>
+          <Label htmlFor="p-period">{t("form.period")}</Label>
           <Input
             id="p-period"
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
-            placeholder="e.g. 2023 – 2024"
+            placeholder={t("form.egPeriod")}
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="p-url">URL</Label>
+          <Label htmlFor="p-url">{t("form.url")}</Label>
           <Input
             id="p-url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://..."
+            placeholder={t("form.egUrl")}
           />
         </div>
         <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="p-desc">Description</Label>
+          <Label htmlFor="p-desc">{t("form.description")}</Label>
           <Input
             id="p-desc"
             value={description}
@@ -84,7 +86,7 @@ export function ProjectForm({
       <div className="flex items-center justify-end gap-2 pt-2">
         <DialogClose asChild>
           <Button variant="ghost" onClick={onCancel}>
-            Cancel
+            {t("actions.cancel")}
           </Button>
         </DialogClose>
         <Button
@@ -92,7 +94,7 @@ export function ProjectForm({
           onClick={handleSubmit}
           disabled={!title.trim()}
         >
-          <CheckCircle2 className="size-4" /> Save
+          <CheckCircle2 className="size-4" /> {t("actions.save")}
         </Button>
       </div>
     </div>

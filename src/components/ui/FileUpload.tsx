@@ -10,6 +10,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { UploadCloud } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 type FileStatus = "idle" | "dragging" | "uploading" | "error";
 
@@ -54,16 +55,21 @@ const formatBytes = (bytes: number, decimals = 2): string => {
   return `${Number.parseFloat((bytes / k ** i).toFixed(dm))} ${unit}`;
 };
 
-const UploadIllustration = () => (
+interface UploadIllustrationProps {
+  readonly ariaLabel: string;
+  readonly title: string;
+}
+
+const UploadIllustration = ({ ariaLabel, title }: UploadIllustrationProps) => (
   <div className="relative h-16 w-16">
     <svg
       viewBox="0 0 100 100"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className="h-full w-full"
-      aria-label="Upload illustration"
+      aria-label={ariaLabel}
     >
-      <title>Upload File Illustration</title>
+      <title>{title}</title>
       <circle
         cx="50"
         cy="50"
@@ -142,16 +148,26 @@ const UploadIllustration = () => (
   </div>
 );
 
-const UploadingAnimation = ({ progress }: { progress: number }) => (
+interface UploadingAnimationProps {
+  readonly progress: number;
+  readonly ariaLabel: string;
+  readonly title: string;
+}
+
+const UploadingAnimation = ({
+  progress,
+  ariaLabel,
+  title,
+}: UploadingAnimationProps) => (
   <div className="relative h-16 w-16">
     <svg
       viewBox="0 0 240 240"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className="h-full w-full"
-      aria-label={`Upload progress: ${Math.round(progress)}%`}
+      aria-label={ariaLabel}
     >
-      <title>Upload Progress Indicator</title>
+      <title>{title}</title>
 
       <defs>
         <mask id="progress-mask">
@@ -238,6 +254,7 @@ export default function FileUpload({
   validateFile = () => null,
   className,
 }: FileUploadProps) {
+  const t = useTranslations("upload");
   const [file, setFile] = useState<File | null>(initialFile);
   const [status, setStatus] = useState<FileStatus>("idle");
   const [progress, setProgress] = useState(0);
@@ -257,13 +274,13 @@ export default function FileUpload({
     (file: File): FileError | null => {
       if (file.size > maxFileSize) {
         return {
-          message: `File size exceeds ${formatBytes(maxFileSize)}`,
+          message: t("errors.tooLarge", { size: formatBytes(maxFileSize) }),
           code: "FILE_TOO_LARGE",
         };
       }
       return null;
     },
-    [maxFileSize],
+    [maxFileSize, t],
   );
 
   const validateFileType = useCallback(
@@ -275,13 +292,15 @@ export default function FileUpload({
         !acceptedFileTypes.some((type) => fileType.match(type.toLowerCase()))
       ) {
         return {
-          message: `File type must be ${acceptedFileTypes.join(", ")}`,
+          message: t("errors.invalidType", {
+            types: acceptedFileTypes.join(", "),
+          }),
           code: "INVALID_FILE_TYPE",
         };
       }
       return null;
     },
-    [acceptedFileTypes],
+    [acceptedFileTypes, t],
   );
 
   const handleError = useCallback(
@@ -425,7 +444,7 @@ export default function FileUpload({
     <div
       className={cn("relative mx-auto w-full max-w-sm", className ?? "")}
       role="complementary"
-      aria-label="File upload"
+      aria-label={t("aria.fileUpload")}
     >
       <div className="group relative w-full rounded-xl bg-white p-0.5 ring-1 ring-gray-200 dark:bg-black dark:ring-white/10">
         <div className="absolute inset-x-0 -top-px h-px w-full bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
@@ -471,21 +490,32 @@ export default function FileUpload({
                     onDrop={handleDrop}
                   >
                     <div className="mb-4">
-                      <UploadIllustration />
+                      <UploadIllustration
+                        ariaLabel={t("aria.illustration")}
+                        title={t("titles.illustration")}
+                      />
                     </div>
 
                     <div className="mb-4 space-y-1.5 text-center">
                       <h3 className="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">
-                        Drag and drop or
+                        {t("dragDropOr")}
                       </h3>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {acceptedFileTypes?.length
-                          ? `${acceptedFileTypes
-                              .map((t) => t.split("/")[1])
-                              .join(", ")
-                              .toUpperCase()}`
-                          : "SVG, PNG, JPG or GIF"}{" "}
-                        {maxFileSize && `up to ${formatBytes(maxFileSize)}`}
+                        {(() => {
+                          const typesText = acceptedFileTypes?.length
+                            ? acceptedFileTypes
+                                .map((type) => type.split("/")[1])
+                                .join(", ")
+                                .toUpperCase()
+                            : t("defaultTypes");
+                          const sizeText = maxFileSize
+                            ? formatBytes(maxFileSize)
+                            : "";
+                          return t("typesAndMax", {
+                            types: typesText,
+                            size: sizeText,
+                          });
+                        })()}
                       </p>
                     </div>
 
@@ -494,12 +524,12 @@ export default function FileUpload({
                       onClick={triggerFileInput}
                       className="group flex w-4/5 items-center justify-center gap-2 rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-900 transition-all duration-200 hover:bg-gray-200 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
                     >
-                      <span>Upload File</span>
+                      <span>{t("uploadFile")}</span>
                       <UploadCloud className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
                     </button>
 
                     <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                      or drag and drop your file here
+                      {t("orDragHere")}
                     </p>
 
                     <input
@@ -508,7 +538,7 @@ export default function FileUpload({
                       className="sr-only"
                       onChange={handleFileInputChange}
                       accept={acceptedFileTypes?.join(",")}
-                      aria-label="File input"
+                      aria-label={t("aria.fileInput")}
                     />
                   </motion.div>
                 ) : status === "uploading" ? (
@@ -520,7 +550,13 @@ export default function FileUpload({
                     className="absolute inset-0 flex flex-col items-center justify-center p-6"
                   >
                     <div className="mb-4">
-                      <UploadingAnimation progress={progress} />
+                      <UploadingAnimation
+                        progress={progress}
+                        ariaLabel={t("aria.progress", {
+                          percent: Math.round(progress),
+                        })}
+                        title={t("titles.progress")}
+                      />
                     </div>
 
                     <div className="mb-4 space-y-1.5 text-center">
@@ -542,7 +578,7 @@ export default function FileUpload({
                       type="button"
                       className="flex w-4/5 items-center justify-center gap-2 rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-900 transition-all duration-200 hover:bg-gray-200 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
                     >
-                      Cancel
+                      {t("cancel")}
                     </button>
                   </motion.div>
                 ) : null}

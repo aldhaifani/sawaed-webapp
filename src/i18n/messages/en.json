@@ -96,5 +96,131 @@
     "profile": "Profile",
     "settings": "Settings",
     "logout": "Logout"
+  },
+  "profile": {
+    "title": "Profile",
+    "tabs": {
+      "identity": "Core Identity",
+      "education": "Education",
+      "skills": "Skills & Talents",
+      "interests": "Interests & Hobbies",
+      "experience": "Work & Volunteering",
+      "projects": "Projects",
+      "awards": "Awards & Certificates",
+      "activities": "Activities"
+    },
+    "section": {
+      "profileInfo": "Profile Information"
+    },
+    "actions": {
+      "edit": "Edit",
+      "add": "Add",
+      "view": "View",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saveChanges": "Save changes"
+    },
+    "empty": {
+      "noInfo": "No information yet.",
+      "noEducation": "No education added yet.",
+      "noSkills": "No skills selected yet.",
+      "noInterests": "No interests selected yet.",
+      "noExperience": "No experience added yet.",
+      "noProjects": "No projects added yet.",
+      "noAwards": "No awards added yet.",
+      "noActivities": "No activities yet."
+    },
+    "dialog": {
+      "editProfile": "Edit profile",
+      "addExperience": "Add experience",
+      "editExperience": "Edit experience",
+      "addProject": "Add project",
+      "editProject": "Edit project",
+      "addAward": "Add award/certificate",
+      "editAward": "Edit award/certificate",
+      "addEducation": "Add education",
+      "editEducation": "Edit education",
+      "editSkillsTalents": "Edit Skills & Talents",
+      "editInterestsHobbies": "Edit Interests & Hobbies",
+      "editSkillsInterests": "Edit skills & interests"
+    },
+    "labels": {
+      "headline": "Headline",
+      "bio": "Bio",
+      "region": "Region",
+      "city": "City",
+      "phone": "Phone",
+      "gender": "Gender",
+      "collaboration": "Collaboration status",
+      "profilePicture": "Profile Picture",
+      "currentProfilePicture": "Current profile picture",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "completion": "Profile Completion %"
+    },
+    "collab": {
+      "open": " Open",
+      "looking": " Looking",
+      "closed": " Closed"
+    },
+    "validation": {
+      "phoneNineDigits": "Must be 9 digits"
+    },
+    "activities": {
+      "title": "Activities (Opportunity Applications)",
+      "status": {
+        "accepted": "Accepted",
+        "pending": "Pending",
+        "rejected": "Rejected",
+        "cancelled": "Cancelled",
+        "waitlisted": "Waitlisted"
+      }
+    },
+    "present": "Present",
+    "form": {
+      "title": "Title",
+      "organization": "Organization",
+      "startYear": "Start Year",
+      "endYear": "End Year",
+      "endYearOrPresent": "End Year or Present",
+      "description": "Description",
+      "institution": "Institution",
+      "degree": "Degree",
+      "field": "Field",
+      "period": "Period",
+      "url": "URL",
+      "year": "Year",
+      "issuer": "Issuer",
+      "egVolunteerMentor": "e.g. Volunteer Mentor",
+      "egLocalNgo": "e.g. Local NGO",
+      "egYear": "e.g. 2023",
+      "egYear2": "e.g. 2024",
+      "egPeriod": "e.g. 2023 – 2024",
+      "egUrl": "https://...",
+      "egYearOrPresent": "e.g. 2025 or Present"
+    }
+  },
+  "upload": {
+    "dragDropOr": "Drag and drop or",
+    "defaultTypes": "SVG, PNG, JPG or GIF",
+    "typesAndMax": "{types} up to {size}",
+    "uploadFile": "Upload File",
+    "orDragHere": "or drag and drop your file here",
+    "cancel": "Cancel",
+    "errors": {
+      "tooLarge": "File size exceeds {size}",
+      "invalidType": "File type must be {types}"
+    },
+    "aria": {
+      "fileUpload": "File upload",
+      "illustration": "Upload illustration",
+      "fileInput": "File input",
+      "progress": "Upload progress: {percent}%"
+    },
+    "titles": {
+      "illustration": "Upload File Illustration",
+      "progress": "Upload Progress Indicator"
+    }
   }
 }

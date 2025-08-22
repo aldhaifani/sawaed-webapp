@@ -3,6 +3,7 @@
 import type { ReactElement } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -43,9 +44,6 @@ import type { LucideIcon as IconType } from "lucide-react";
 import {
   Pen,
   Eye,
-  Mail,
-  MapPin,
-  Phone,
   School,
   Shield,
   Trophy,
@@ -61,10 +59,12 @@ import {
   Send,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 
 export default function YouthProfilePage(): ReactElement {
   const locale = useLocale();
+  const tCommon = useTranslations("common");
+  const tProfile = useTranslations("profile");
+  const tOnboarding = useTranslations("onboarding");
 
   // Types
   type CollaborationStatus = "open" | "closed" | "looking" | "";
@@ -85,7 +85,7 @@ export default function YouthProfilePage(): ReactElement {
     readonly collaborationStatus: CollaborationStatus;
     readonly pictureUrl?: string;
     readonly phone?: string;
-    readonly gender: Gender;
+    readonly gender: "male" | "female" | "";
   };
   type Gender = "male" | "female" | "";
   type ExperienceDialogState = {
@@ -411,8 +411,6 @@ export default function YouthProfilePage(): ReactElement {
         await mutateBasics({
           headline: emptyToU(identityForm.headline),
           bio: emptyToU(identityForm.bio),
-          city: emptyToU(identityForm.city),
-          region: emptyToU(identityForm.region),
           pictureUrl: identityForm.pictureUrl ?? undefined,
           collaborationStatus: collaboration,
         });
@@ -506,49 +504,71 @@ export default function YouthProfilePage(): ReactElement {
   const tabs = useMemo(
     () =>
       [
-        { key: "identity", label: "Core Identity", icon: User2 },
-        { key: "education", label: "Education", icon: School },
-        { key: "skills", label: "Skills & Talents", icon: Layers },
-        { key: "interests", label: "Interests & Hobbies", icon: Heart },
-        { key: "experience", label: "Work & Volunteering", icon: Briefcase },
-        { key: "projects", label: "Projects", icon: FolderGit2 },
-        { key: "awards", label: "Awards & Certificates", icon: Trophy },
-        { key: "activities", label: "Activities", icon: Shield },
+        { key: "identity", label: tProfile("tabs.identity"), icon: User2 },
+        { key: "education", label: tProfile("tabs.education"), icon: School },
+        { key: "skills", label: tProfile("tabs.skills"), icon: Layers },
+        { key: "interests", label: tProfile("tabs.interests"), icon: Heart },
+        {
+          key: "experience",
+          label: tProfile("tabs.experience"),
+          icon: Briefcase,
+        },
+        { key: "projects", label: tProfile("tabs.projects"), icon: FolderGit2 },
+        { key: "awards", label: tProfile("tabs.awards"), icon: Trophy },
+        { key: "activities", label: tProfile("tabs.activities"), icon: Shield },
       ] as const,
-    [],
+    [tProfile],
   );
 
   // Derived identity fields from backend
   const identity: readonly FieldItem[] = useMemo(() => {
     if (data === undefined) return [];
     if (!data) return [];
-    const firstName = data.user.firstName ?? "";
-    const lastName = data.user.lastName ?? "";
     const email = data.user.email ?? "";
     const phone = data.user.phone ?? "";
     const gender =
       data.user.gender === "male"
-        ? "Male"
+        ? tOnboarding("male")
         : data.user.gender === "female"
-          ? "Female"
+          ? tOnboarding("female")
           : "";
-    const city = data.profile?.city ?? "";
-    const region = data.profile?.region ?? "";
+    const city = (() => {
+      const p = data.profile as unknown as {
+        city?: string | null;
+        cityAr?: string | null;
+        cityEn?: string | null;
+      } | null;
+      const ar = (p?.cityAr ?? "").trim();
+      const en = (p?.cityEn ?? "").trim();
+      const base = (p?.city ?? "").trim();
+      return locale === "ar" ? ar || base || en : en || base || ar;
+    })();
+    const region = (() => {
+      const p = data.profile as unknown as {
+        region?: string | null;
+        regionAr?: string | null;
+        regionEn?: string | null;
+      } | null;
+      const ar = (p?.regionAr ?? "").trim();
+      const en = (p?.regionEn ?? "").trim();
+      const base = (p?.region ?? "").trim();
+      return locale === "ar" ? ar || base || en : en || base || ar;
+    })();
     const headline = data.profile?.headline ?? "";
     const completion = `${data.profile?.completionPercentage ?? 0}%`;
+    const bio = data.profile?.bio ?? "";
     const items: FieldItem[] = [
-      { label: "First Name", value: firstName },
-      { label: "Last Name", value: lastName },
-      { label: "Email", value: email },
-      { label: "Phone", value: phone },
-      { label: "Gender", value: gender },
-      { label: "City", value: city },
-      { label: "Region", value: region },
-      { label: "Headline", value: headline },
-      { label: "Completion", value: completion },
+      { label: tProfile("labels.headline"), value: headline },
+      { label: tProfile("labels.bio"), value: bio },
+      { label: tProfile("labels.gender"), value: gender },
+      { label: tProfile("labels.email"), value: email },
+      { label: tProfile("labels.phone"), value: phone },
+      { label: tProfile("labels.region"), value: region },
+      { label: tProfile("labels.city"), value: city },
+      { label: tProfile("labels.completion"), value: completion },
     ];
     return items as readonly FieldItem[];
-  }, [data]);
+  }, [data, locale, tOnboarding, tProfile]);
 
   const educationItems: readonly (EducationItem & { _id: Id<"education"> })[] =
     useMemo(() => {
@@ -589,13 +609,13 @@ export default function YouthProfilePage(): ReactElement {
         endDate: e.endDate ?? undefined,
         period: [
           e.startDate ? new Date(e.startDate).getFullYear() : "",
-          e.endDate ? new Date(e.endDate).getFullYear() : "Present",
+          e.endDate ? new Date(e.endDate).getFullYear() : tProfile("present"),
         ]
           .filter(Boolean)
           .join(" – "),
         description: e.description ?? "",
       })),
-    [data],
+    [data, tProfile],
   ) as readonly {
     id: Id<"experiences">;
     title: string;
@@ -686,87 +706,10 @@ export default function YouthProfilePage(): ReactElement {
     <main className="bg-background min-h-screen w-full">
       <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
         <h1 className="text-foreground mb-4 text-3xl font-bold sm:text-4xl">
-          Profile
+          {tProfile("title")}
         </h1>
 
-        {/* Header Card */}
-        <section className="bg-card mb-6 overflow-hidden rounded-2xl border shadow-sm">
-          <div className="bg-muted h-28 w-full sm:h-32" />
-          <div className="flex flex-col gap-4 px-4 pb-4 sm:flex-row sm:items-end sm:justify-between sm:px-6 sm:pb-6">
-            <div className="-mt-10 flex items-end gap-4 sm:-mt-12">
-              <div className="relative shrink-0">
-                <div className="border-card bg-muted size-20 overflow-hidden rounded-full border-4 sm:size-24">
-                  {data?.profile?.pictureUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={data.profile.pictureUrl}
-                      alt="Profile picture"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="bg-muted flex h-full w-full items-center justify-center text-lg font-semibold">
-                      {(() => {
-                        const first = data?.user.firstName?.[0] ?? "";
-                        const last = data?.user.lastName?.[0] ?? "";
-                        const fallback = (data?.user.email ?? "")
-                          .slice(0, 1)
-                          .toUpperCase();
-                        const initials = `${first}${last}`.trim() || fallback;
-                        return initials;
-                      })()}
-                    </div>
-                  )}
-                </div>
-                {/* Collaboration status badge */}
-                {(() => {
-                  const status = data?.profile?.collaborationStatus;
-                  const emoji =
-                    status === "open"
-                      ? "🤝"
-                      : status === "looking"
-                        ? "👀"
-                        : status === "closed"
-                          ? "🔒"
-                          : "";
-                  return emoji ? (
-                    <div className="absolute right-0 bottom-0 z-10 -translate-x-1 -translate-y-1 sm:-translate-x-1 sm:-translate-y-1">
-                      <Badge
-                        variant="secondary"
-                        className="rounded-full px-1 py-[2px] text-[15px]"
-                      >
-                        {emoji}
-                      </Badge>
-                    </div>
-                  ) : null;
-                })()}
-              </div>
-              <div>
-                <h2 className="text-foreground text-xl font-semibold sm:text-2xl">
-                  {data === undefined
-                    ? "Loading..."
-                    : data
-                      ? `${data.user.firstName ?? ""} ${data.user.lastName ?? ""}`.trim() ||
-                        data.user.email
-                      : ""}
-                </h2>
-                <p className="text-muted-foreground text-sm">
-                  {data?.profile?.headline ?? ""}
-                </p>
-                <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-3">
-                  <span className="inline-flex items-center gap-1 text-xs">
-                    <Mail className="size-3" /> {data?.user.email ?? ""}
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-xs">
-                    <Phone className="size-3" /> {data?.user.phone ?? ""}
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-xs">
-                    <MapPin className="size-3" /> {data?.profile?.city ?? ""}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Header removed as requested */}
 
         {/* Responsive layout: sidebar on md+, horizontal tabs on mobile */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[260px_1fr]">
@@ -806,19 +749,75 @@ export default function YouthProfilePage(): ReactElement {
           <div className="space-y-6">
             {tab === "identity" && (
               <SectionCard
-                title="Profile Information"
-                actionLabel="Edit"
+                title={tProfile("section.profileInfo")}
+                actionType="Edit"
+                actionLabel={tProfile("actions.edit")}
                 onAction={onOpenIdentity}
               >
                 {data === undefined ? (
                   <div className="text-muted-foreground text-sm">
-                    Loading...
+                    {tCommon("loading")}
                   </div>
-                ) : identity.length > 0 ? (
-                  <InfoGrid items={identity} />
                 ) : (
-                  <div className="text-muted-foreground text-sm">
-                    No information yet.
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="relative shrink-0">
+                        <div className="border-card bg-muted size-16 overflow-hidden rounded-full border">
+                          {data?.profile?.pictureUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={data.profile.pictureUrl}
+                              alt="Profile picture"
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="bg-muted flex h-full w-full items-center justify-center text-base font-semibold">
+                              {(() => {
+                                const first = data?.user.firstName?.[0] ?? "";
+                                const last = data?.user.lastName?.[0] ?? "";
+                                const fallback = (data?.user.email ?? "")
+                                  .slice(0, 1)
+                                  .toUpperCase();
+                                const initials =
+                                  `${first}${last}`.trim() || fallback;
+                                return initials;
+                              })()}
+                            </div>
+                          )}
+                        </div>
+                        {(() => {
+                          const status = data?.profile?.collaborationStatus;
+                          const emoji =
+                            status === "open"
+                              ? "🤝"
+                              : status === "looking"
+                                ? "👀"
+                                : status === "closed"
+                                  ? "🔒"
+                                  : "";
+                          return emoji ? (
+                            <div className="absolute bottom-0 translate-y-1 ltr:right-0 ltr:translate-x-1 rtl:left-0 rtl:-translate-x-1">
+                              <span className="bg-secondary text-secondary-foreground rounded-full px-1 py-[1px] text-sm leading-none">
+                                {emoji}
+                              </span>
+                            </div>
+                          ) : null;
+                        })()}
+                      </div>
+                      <div>
+                        <h2 className="text-foreground text-lg font-semibold">
+                          {`${data?.user.firstName ?? ""} ${data?.user.lastName ?? ""}`.trim() ||
+                            (data?.user.email ?? "")}
+                        </h2>
+                      </div>
+                    </div>
+                    {identity.length > 0 ? (
+                      <InfoGrid items={identity} />
+                    ) : (
+                      <div className="text-muted-foreground text-sm">
+                        {tProfile("empty.noInfo")}
+                      </div>
+                    )}
                   </div>
                 )}
               </SectionCard>
@@ -826,15 +825,16 @@ export default function YouthProfilePage(): ReactElement {
 
             {tab === "education" && (
               <SectionCard
-                title="Education"
-                actionLabel="Add"
+                title={tProfile("tabs.education")}
+                actionType="Add"
+                actionLabel={tProfile("actions.add")}
                 onAction={() =>
                   setOpenEducation({ open: true, mode: "create" })
                 }
               >
                 {data === undefined ? (
                   <div className="text-muted-foreground text-sm">
-                    Loading...
+                    {tCommon("loading")}
                   </div>
                 ) : educationItems.length > 0 ? (
                   <ul className="space-y-3">
@@ -869,7 +869,8 @@ export default function YouthProfilePage(): ReactElement {
                                 })
                               }
                             >
-                              <Pen className="size-3" /> Edit
+                              <Pen className="size-3" />{" "}
+                              {tProfile("actions.edit")}
                             </Button>
                           </div>
                         </div>
@@ -883,7 +884,7 @@ export default function YouthProfilePage(): ReactElement {
                   </ul>
                 ) : (
                   <div className="text-muted-foreground text-sm">
-                    No education added yet.
+                    {tProfile("empty.noEducation")}
                   </div>
                 )}
               </SectionCard>
@@ -891,8 +892,9 @@ export default function YouthProfilePage(): ReactElement {
 
             {tab === "skills" && (
               <SectionCard
-                title="Skills & Talents"
-                actionLabel="Edit"
+                title={tProfile("tabs.skills")}
+                actionType="Edit"
+                actionLabel={tProfile("actions.edit")}
                 onAction={() => {
                   setTaxonomyMode("skills");
                   setOpenSkills(true);
@@ -900,7 +902,7 @@ export default function YouthProfilePage(): ReactElement {
               >
                 {data === undefined ? (
                   <div className="text-muted-foreground text-sm">
-                    Loading...
+                    {tCommon("loading")}
                   </div>
                 ) : skills.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
@@ -915,7 +917,7 @@ export default function YouthProfilePage(): ReactElement {
                   </div>
                 ) : (
                   <div className="text-muted-foreground text-sm">
-                    No skills selected yet.
+                    {tProfile("empty.noSkills")}
                   </div>
                 )}
               </SectionCard>
@@ -923,8 +925,9 @@ export default function YouthProfilePage(): ReactElement {
 
             {tab === "interests" && (
               <SectionCard
-                title="Interests & Hobbies"
-                actionLabel="Edit"
+                title={tProfile("tabs.interests")}
+                actionType="Edit"
+                actionLabel={tProfile("actions.edit")}
                 onAction={() => {
                   setTaxonomyMode("interests");
                   setOpenSkills(true);
@@ -932,7 +935,7 @@ export default function YouthProfilePage(): ReactElement {
               >
                 {data === undefined ? (
                   <div className="text-muted-foreground text-sm">
-                    Loading...
+                    {tCommon("loading")}
                   </div>
                 ) : interests.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
@@ -947,7 +950,7 @@ export default function YouthProfilePage(): ReactElement {
                   </div>
                 ) : (
                   <div className="text-muted-foreground text-sm">
-                    No interests selected yet.
+                    {tProfile("empty.noInterests")}
                   </div>
                 )}
               </SectionCard>
@@ -955,15 +958,16 @@ export default function YouthProfilePage(): ReactElement {
 
             {tab === "experience" && (
               <SectionCard
-                title="Work & Volunteering"
-                actionLabel="Add"
+                title={tProfile("tabs.experience")}
+                actionType="Add"
+                actionLabel={tProfile("actions.add")}
                 onAction={() =>
                   setOpenExperience({ open: true, mode: "create" })
                 }
               >
                 {data === undefined ? (
                   <div className="text-muted-foreground text-sm">
-                    Loading...
+                    {tCommon("loading")}
                   </div>
                 ) : experiences.length > 0 ? (
                   <ul className="space-y-3">
@@ -1003,7 +1007,8 @@ export default function YouthProfilePage(): ReactElement {
                                 })
                               }
                             >
-                              <Pen className="size-3" /> Edit
+                              <Pen className="size-3" />{" "}
+                              {tProfile("actions.edit")}
                             </button>
                           </div>
                         </div>
@@ -1015,7 +1020,7 @@ export default function YouthProfilePage(): ReactElement {
                   </ul>
                 ) : (
                   <div className="text-muted-foreground text-sm">
-                    No experience added yet.
+                    {tProfile("empty.noExperience")}
                   </div>
                 )}
               </SectionCard>
@@ -1023,13 +1028,14 @@ export default function YouthProfilePage(): ReactElement {
 
             {tab === "projects" && (
               <SectionCard
-                title="Projects"
-                actionLabel="Add"
+                title={tProfile("tabs.projects")}
+                actionType="Add"
+                actionLabel={tProfile("actions.add")}
                 onAction={() => setOpenProject({ open: true, mode: "create" })}
               >
                 {data === undefined ? (
                   <div className="text-muted-foreground text-sm">
-                    Loading...
+                    {tCommon("loading")}
                   </div>
                 ) : projects.length > 0 ? (
                   <ul className="space-y-3">
@@ -1061,7 +1067,8 @@ export default function YouthProfilePage(): ReactElement {
                                 })
                               }
                             >
-                              <Pen className="size-3" /> Edit
+                              <Pen className="size-3" />{" "}
+                              {tProfile("actions.edit")}
                             </button>
                           </span>
                         </div>
@@ -1073,7 +1080,7 @@ export default function YouthProfilePage(): ReactElement {
                   </ul>
                 ) : (
                   <div className="text-muted-foreground text-sm">
-                    No projects added yet.
+                    {tProfile("empty.noProjects")}
                   </div>
                 )}
               </SectionCard>
@@ -1081,13 +1088,14 @@ export default function YouthProfilePage(): ReactElement {
 
             {tab === "awards" && (
               <SectionCard
-                title="Awards & Certificates"
-                actionLabel="Add"
+                title={tProfile("tabs.awards")}
+                actionType="Add"
+                actionLabel={tProfile("actions.add")}
                 onAction={() => setOpenAward({ open: true, mode: "create" })}
               >
                 {data === undefined ? (
                   <div className="text-muted-foreground text-sm">
-                    Loading...
+                    {tCommon("loading")}
                   </div>
                 ) : awards.length > 0 ? (
                   <ul className="space-y-3">
@@ -1123,7 +1131,8 @@ export default function YouthProfilePage(): ReactElement {
                                 })
                               }
                             >
-                              <Pen className="size-3" /> Edit
+                              <Pen className="size-3" />{" "}
+                              {tProfile("actions.edit")}
                             </button>
                           </span>
                         </div>
@@ -1132,17 +1141,17 @@ export default function YouthProfilePage(): ReactElement {
                   </ul>
                 ) : (
                   <div className="text-muted-foreground text-sm">
-                    No awards added yet.
+                    {tProfile("empty.noAwards")}
                   </div>
                 )}
               </SectionCard>
             )}
 
             {tab === "activities" && (
-              <SectionCard title="Activities (Opportunity Applications)">
+              <SectionCard title={tProfile("activities.title")}>
                 {data === undefined ? (
                   <div className="text-muted-foreground text-sm">
-                    Loading...
+                    {tCommon("loading")}
                   </div>
                 ) : activities.length > 0 ? (
                   <ul className="space-y-3">
@@ -1159,21 +1168,23 @@ export default function YouthProfilePage(): ReactElement {
                             className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${a.tone}`}
                           >
                             <a.icon className="size-3" />
-                            <span>{a.status}</span>
+                            <span>
+                              {tProfile(`activities.status.${a.status}`)}
+                            </span>
                           </div>
                         </div>
                         <button
                           type="button"
                           className="bg-muted text-foreground inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-xs"
                         >
-                          <Eye className="size-3" /> View
+                          <Eye className="size-3" /> {tProfile("actions.view")}
                         </button>
                       </li>
                     ))}
                   </ul>
                 ) : (
                   <div className="text-muted-foreground text-sm">
-                    No activities yet.
+                    {tProfile("empty.noActivities")}
                   </div>
                 )}
               </SectionCard>
@@ -1194,14 +1205,17 @@ export default function YouthProfilePage(): ReactElement {
           setOpenIdentity(o);
         }}
       >
-        <DialogContent className="max-h-[85vh] w-[95vw] max-w-xl overflow-y-auto p-0">
+        <DialogContent
+          aria-describedby={undefined}
+          className="max-h-[85vh] w-[95vw] max-w-xl overflow-y-auto p-0"
+        >
           <DialogHeader className="border-b p-4">
-            <DialogTitle>Edit profile</DialogTitle>
+            <DialogTitle>{tProfile("dialog.editProfile")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 px-4 pb-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="w-full space-y-2 sm:col-span-2">
-                <Label htmlFor="headline">Headline</Label>
+                <Label htmlFor="headline">{tProfile("labels.headline")}</Label>
                 <Input
                   id="headline"
                   value={identityForm.headline}
@@ -1211,7 +1225,7 @@ export default function YouthProfilePage(): ReactElement {
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="bio">Bio</Label>
+                <Label htmlFor="bio">{tProfile("labels.bio")}</Label>
                 <Textarea
                   id="bio"
                   value={identityForm.bio}
@@ -1222,9 +1236,9 @@ export default function YouthProfilePage(): ReactElement {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="region">Region</Label>
+                <Label htmlFor="region">{tProfile("labels.region")}</Label>
                 <BasicDropdown
-                  label={identityForm.region || "Select region"}
+                  label={identityForm.region || tOnboarding("selectRegion")}
                   items={regions}
                   onChange={(i) =>
                     setIdentityForm((p) => ({
@@ -1237,9 +1251,9 @@ export default function YouthProfilePage(): ReactElement {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
+                <Label htmlFor="city">{tProfile("labels.city")}</Label>
                 <BasicDropdown
-                  label={identityForm.city || "Select city"}
+                  label={identityForm.city || tOnboarding("selectCity")}
                   items={cities}
                   onChange={(i) =>
                     setIdentityForm((p) => ({ ...p, city: String(i.id) }))
@@ -1249,8 +1263,8 @@ export default function YouthProfilePage(): ReactElement {
               </div>
 
               <div className="flex flex-col justify-center space-y-2 sm:col-span-2">
-                <Label htmlFor="phone">Phone</Label>
-                <div className="flex items-center">
+                <Label htmlFor="phone">{tProfile("labels.phone")}</Label>
+                <div className="flex items-center rtl:flex-row-reverse rtl:justify-end">
                   <span className="text-foreground inline-flex items-center rounded-l-md px-2 text-sm">
                     +968
                   </span>
@@ -1267,10 +1281,12 @@ export default function YouthProfilePage(): ReactElement {
                       if (next.length === 0) setPhoneError("");
                       else
                         setPhoneError(
-                          next.length === 9 ? "" : "Must be 9 digits",
+                          next.length === 9
+                            ? ""
+                            : tProfile("validation.phoneNineDigits"),
                         );
                     }}
-                    className="w-50 rounded-l-none"
+                    className="w-50 rounded-l-none text-left"
                     placeholder="912345678"
                   />
                 </div>
@@ -1279,7 +1295,7 @@ export default function YouthProfilePage(): ReactElement {
                 ) : null}
               </div>
               <div className="space-y-2">
-                <Label>Gender</Label>
+                <Label>{tProfile("labels.gender")}</Label>
                 <RadioGroup
                   value={identityForm.gender}
                   onValueChange={(val) =>
@@ -1288,20 +1304,20 @@ export default function YouthProfilePage(): ReactElement {
                       gender: (val as Gender) || "",
                     }))
                   }
-                  className="flex gap-10"
+                  className="flex gap-10 rtl:flex-row-reverse"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 rtl:flex-row-reverse">
                     <RadioGroupItem value="male" id="r1" />
-                    <Label htmlFor="r1">Male</Label>
+                    <Label htmlFor="r1">{tOnboarding("male")}</Label>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 rtl:flex-row-reverse">
                     <RadioGroupItem value="female" id="r2" />
-                    <Label htmlFor="r2">Female</Label>
+                    <Label htmlFor="r2">{tOnboarding("female")}</Label>
                   </div>
                 </RadioGroup>
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label>Collaboration status</Label>
+                <Label>{tProfile("labels.collaboration")}</Label>
                 <RadioGroup
                   value={identityForm.collaborationStatus}
                   onValueChange={(val) =>
@@ -1311,24 +1327,24 @@ export default function YouthProfilePage(): ReactElement {
                         (val as IdentityForm["collaborationStatus"]) || "",
                     }))
                   }
-                  className="flex gap-10"
+                  className="flex gap-10 rtl:flex-row-reverse"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 rtl:flex-row-reverse">
                     <RadioGroupItem value="open" id="r3" />
-                    <Label htmlFor="r3">🤝 Open</Label>
+                    <Label htmlFor="r3">{tProfile("collab.open")}</Label>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 rtl:flex-row-reverse">
                     <RadioGroupItem value="looking" id="r4" />
-                    <Label htmlFor="r4">👀 Looking</Label>
+                    <Label htmlFor="r4">{tProfile("collab.looking")}</Label>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 rtl:flex-row-reverse">
                     <RadioGroupItem value="closed" id="r5" />
-                    <Label htmlFor="r5">🔒 Closed</Label>
+                    <Label htmlFor="r5">{tProfile("collab.closed")}</Label>
                   </div>
                 </RadioGroup>
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label>Profile Picture</Label>
+                <Label>{tProfile("labels.profilePicture")}</Label>
                 {(() => {
                   const hasStaged = Boolean(stagedFile);
                   const hasExisting =
@@ -1340,7 +1356,9 @@ export default function YouthProfilePage(): ReactElement {
                       <div className="bg-muted text-foreground inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
                         <span className="max-w-[260px] truncate">
                           {uploadedFileName ??
-                            (hasExisting ? "Current profile picture" : "")}
+                            (hasExisting
+                              ? tProfile("labels.currentProfilePicture")
+                              : "")}
                         </span>
                         <button
                           type="button"
@@ -1388,10 +1406,10 @@ export default function YouthProfilePage(): ReactElement {
             </div>
             <div className="flex items-center justify-end gap-2 pt-2">
               <DialogClose asChild>
-                <Button variant="ghost">Cancel</Button>
+                <Button variant="ghost">{tProfile("actions.cancel")}</Button>
               </DialogClose>
               <Button onClick={onSaveIdentity} className="gap-2">
-                Save changes
+                {tProfile("actions.saveChanges")}
               </Button>
             </div>
           </div>
@@ -1403,12 +1421,15 @@ export default function YouthProfilePage(): ReactElement {
         open={openExperience.open}
         onOpenChange={(o) => setOpenExperience((p) => ({ ...p, open: o }))}
       >
-        <DialogContent className="max-h-[85vh] w-[95vw] max-w-xl overflow-y-auto p-0">
+        <DialogContent
+          aria-describedby={undefined}
+          className="max-h-[85vh] w-[95vw] max-w-xl overflow-y-auto p-0"
+        >
           <DialogHeader className="border-b p-4">
             <DialogTitle>
               {openExperience.mode === "create"
-                ? "Add experience"
-                : "Edit experience"}
+                ? tProfile("dialog.addExperience")
+                : tProfile("dialog.editExperience")}
             </DialogTitle>
           </DialogHeader>
           <ExperienceForm
@@ -1438,10 +1459,15 @@ export default function YouthProfilePage(): ReactElement {
         open={openProject.open}
         onOpenChange={(o) => setOpenProject((p) => ({ ...p, open: o }))}
       >
-        <DialogContent className="max-h-[85vh] w-[95vw] max-w-xl overflow-y-auto p-0">
+        <DialogContent
+          aria-describedby={undefined}
+          className="max-h-[85vh] w-[95vw] max-w-xl overflow-y-auto p-0"
+        >
           <DialogHeader className="border-b p-4">
             <DialogTitle>
-              {openProject.mode === "create" ? "Add project" : "Edit project"}
+              {openProject.mode === "create"
+                ? tProfile("dialog.addProject")
+                : tProfile("dialog.editProject")}
             </DialogTitle>
           </DialogHeader>
           <ProjectForm
@@ -1468,12 +1494,15 @@ export default function YouthProfilePage(): ReactElement {
         open={openAward.open}
         onOpenChange={(o) => setOpenAward((p) => ({ ...p, open: o }))}
       >
-        <DialogContent className="max-h-[85vh] w-[95vw] max-w-xl overflow-y-auto p-0">
+        <DialogContent
+          aria-describedby={undefined}
+          className="max-h-[85vh] w-[95vw] max-w-xl overflow-y-auto p-0"
+        >
           <DialogHeader className="border-b p-4">
             <DialogTitle>
               {openAward.mode === "create"
-                ? "Add award/certificate"
-                : "Edit award/certificate"}
+                ? tProfile("dialog.addAward")
+                : tProfile("dialog.editAward")}
             </DialogTitle>
           </DialogHeader>
           <AwardForm
@@ -1497,14 +1526,17 @@ export default function YouthProfilePage(): ReactElement {
 
       {/* Skills & Interests Dialog */}
       <Dialog open={openSkills} onOpenChange={setOpenSkills}>
-        <DialogContent className="max-h-[85vh] w-[95vw] max-w-2xl overflow-y-auto p-0">
+        <DialogContent
+          aria-describedby={undefined}
+          className="max-h-[85vh] w-[95vw] max-w-2xl overflow-y-auto p-0"
+        >
           <DialogHeader className="border-b p-4">
             <DialogTitle>
               {taxonomyMode === "skills"
-                ? "Edit Skills & Talents"
+                ? tProfile("dialog.editSkillsTalents")
                 : taxonomyMode === "interests"
-                  ? "Edit Interests & Hobbies"
-                  : "Edit skills & interests"}
+                  ? tProfile("dialog.editInterestsHobbies")
+                  : tProfile("dialog.editSkillsInterests")}
             </DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 gap-6 p-4 sm:grid-cols-2">
@@ -1512,8 +1544,8 @@ export default function YouthProfilePage(): ReactElement {
               <TaxonomySelectorGroup
                 layout="tabs"
                 mode={taxonomyMode}
-                titleSkills="Skills & Talents"
-                titleInterests="Interests & Hobbies"
+                titleSkills={tProfile("tabs.skills")}
+                titleInterests={tProfile("tabs.interests")}
                 skillInitialSelected={
                   selectedSkillIds as unknown as readonly string[]
                 }
@@ -1526,10 +1558,10 @@ export default function YouthProfilePage(): ReactElement {
             </div>
             <div className="col-span-1 flex items-center justify-end gap-2 sm:col-span-2">
               <DialogClose asChild>
-                <Button variant="ghost">Cancel</Button>
+                <Button variant="ghost">{tProfile("actions.cancel")}</Button>
               </DialogClose>
               <Button onClick={onSaveSkills} className="gap-2">
-                Save
+                {tProfile("actions.save")}
               </Button>
             </div>
           </div>
@@ -1541,12 +1573,15 @@ export default function YouthProfilePage(): ReactElement {
         open={openEducation.open}
         onOpenChange={(o) => setOpenEducation((p) => ({ ...p, open: o }))}
       >
-        <DialogContent className="max-h-[85vh] w-[95vw] max-w-xl overflow-y-auto p-0">
+        <DialogContent
+          aria-describedby={undefined}
+          className="max-h-[85vh] w-[95vw] max-w-xl overflow-y-auto p-0"
+        >
           <DialogHeader className="border-b p-4">
             <DialogTitle>
               {openEducation.mode === "create"
-                ? "Add education"
-                : "Edit education"}
+                ? tProfile("dialog.addEducation")
+                : tProfile("dialog.editEducation")}
             </DialogTitle>
           </DialogHeader>
           <EduForm

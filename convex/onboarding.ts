@@ -41,6 +41,8 @@ export const getDraft = query({
     gender?: "male" | "female";
     city?: string;
     region?: string;
+    regionId?: Id<"regions">;
+    cityId?: Id<"cities">;
     draftSkillIds?: Id<"skills">[];
     draftInterestIds?: Id<"interests">[];
   } | null> => {
@@ -66,6 +68,8 @@ export const getDraft = query({
       gender: existing.gender as "male" | "female" | undefined,
       city: existing.city,
       region: existing.region,
+      regionId: (existing as unknown as { regionId?: Id<"regions"> }).regionId,
+      cityId: (existing as unknown as { cityId?: Id<"cities"> }).cityId,
       draftSkillIds: existing.draftSkillIds as Id<"skills">[] | undefined,
       draftInterestIds: existing.draftInterestIds as
         | Id<"interests">[]
@@ -115,10 +119,22 @@ export const saveDraftDetails = mutation({
     gender: v.union(v.literal("male"), v.literal("female")),
     city: v.string(),
     region: v.string(),
+    cityId: v.optional(v.id("cities")),
+    regionId: v.optional(v.id("regions")),
   },
   handler: async (
     ctx,
-    { firstNameAr, lastNameAr, firstNameEn, lastNameEn, gender, city, region },
+    {
+      firstNameAr,
+      lastNameAr,
+      firstNameEn,
+      lastNameEn,
+      gender,
+      city,
+      region,
+      cityId,
+      regionId,
+    },
   ): Promise<boolean> => {
     const authUserId = await auth.getUserId(ctx);
     if (!authUserId) return false;
@@ -146,6 +162,8 @@ export const saveDraftDetails = mutation({
         gender,
         city,
         region,
+        cityId,
+        regionId,
         createdAt: now,
         updatedAt: now,
       });
@@ -159,6 +177,8 @@ export const saveDraftDetails = mutation({
       gender,
       city,
       region,
+      cityId,
+      regionId,
       updatedAt: now,
     });
     return true;
@@ -252,6 +272,8 @@ export const upsertBasicDetails = mutation({
     city: v.string(),
     region: v.string(),
     locale: v.union(v.literal("ar"), v.literal("en")),
+    cityId: v.optional(v.id("cities")),
+    regionId: v.optional(v.id("regions")),
   },
   handler: async (
     ctx,
@@ -264,6 +286,8 @@ export const upsertBasicDetails = mutation({
       city,
       region,
       locale,
+      cityId,
+      regionId,
     },
   ): Promise<boolean> => {
     const authUserId = await auth.getUserId(ctx);
@@ -293,8 +317,8 @@ export const upsertBasicDetails = mutation({
     if (!existingProfile) {
       await ctx.db.insert("profiles", {
         userId: appUser._id as Id<"appUsers">,
-        city,
-        region,
+        cityId,
+        regionId,
         createdAt: now,
         updatedAt: now,
         headline: undefined,
@@ -304,7 +328,11 @@ export const upsertBasicDetails = mutation({
         collaborationStatus: undefined,
       });
     } else {
-      await ctx.db.patch(existingProfile._id, { city, region, updatedAt: now });
+      await ctx.db.patch(existingProfile._id, {
+        cityId,
+        regionId,
+        updatedAt: now,
+      });
     }
     return true;
   },

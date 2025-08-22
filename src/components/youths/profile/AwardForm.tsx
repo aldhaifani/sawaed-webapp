@@ -2,6 +2,7 @@
 
 import type { ReactElement } from "react";
 import { useCallback, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +26,7 @@ export function AwardForm({
   onCancel,
   onSubmit,
 }: AwardFormProps): ReactElement {
+  const t = useTranslations("profile");
   const [title, setTitle] = useState<string>(defaults?.title ?? "");
   const [issuer, setIssuer] = useState<string>(defaults?.issuer ?? "");
   const [year, setYear] = useState<string>(
@@ -44,7 +46,7 @@ export function AwardForm({
     <div className="space-y-3 px-4 pb-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="a-title">Title</Label>
+          <Label htmlFor="a-title">{t("form.title")}</Label>
           <Input
             id="a-title"
             value={title}
@@ -52,7 +54,7 @@ export function AwardForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="a-issuer">Issuer</Label>
+          <Label htmlFor="a-issuer">{t("form.issuer")}</Label>
           <Input
             id="a-issuer"
             value={issuer}
@@ -60,20 +62,20 @@ export function AwardForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="a-year">Year</Label>
+          <Label htmlFor="a-year">{t("form.year")}</Label>
           <Input
             id="a-year"
             inputMode="numeric"
             value={year}
             onChange={(e) => setYear(e.target.value)}
-            placeholder="e.g. 2024"
+            placeholder={t("form.egYear2")}
           />
         </div>
       </div>
       <div className="flex items-center justify-end gap-2 pt-2">
         <DialogClose asChild>
           <Button variant="ghost" onClick={onCancel}>
-            Cancel
+            {t("actions.cancel")}
           </Button>
         </DialogClose>
         <Button
@@ -81,7 +83,7 @@ export function AwardForm({
           onClick={handleSubmit}
           disabled={!title.trim()}
         >
-          <CheckCircle2 className="size-4" /> Save
+          <CheckCircle2 className="size-4" /> {t("actions.save")}
         </Button>
       </div>
     </div>

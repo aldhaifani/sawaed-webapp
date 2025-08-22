@@ -73,19 +73,39 @@ async function recomputeProfileCompletion(
     .withIndex("by_user", (q) => q.eq("userId", userId))
     .first();
 
-  const identityFields = [
+  const nameFields = [
     (user as unknown as { firstNameAr?: string }).firstNameAr,
     (user as unknown as { lastNameAr?: string }).lastNameAr,
     (user as unknown as { firstNameEn?: string }).firstNameEn,
     (user as unknown as { lastNameEn?: string }).lastNameEn,
-    profile?.city,
-    profile?.region,
-    profile?.bio ?? profile?.headline,
   ];
-  const identityFilled = identityFields.filter(
+  const textFilled = nameFields.filter(
     (f) => typeof f === "string" && (f as string).trim().length > 0,
   ).length;
-  const identityScore = identityFilled / identityFields.length; // partial credit
+  const bioOrHeadline = profile?.bio ?? profile?.headline;
+  const bioHeadlineFilled =
+    typeof bioOrHeadline === "string" && bioOrHeadline.trim().length > 0
+      ? 1
+      : 0;
+  // Treat location as filled if either cityId or regionId is set
+  const locationFilled =
+    (
+      profile as unknown as {
+        cityId?: Id<"cities"> | null;
+        regionId?: Id<"regions"> | null;
+      }
+    )?.cityId ||
+    (
+      profile as unknown as {
+        cityId?: Id<"cities"> | null;
+        regionId?: Id<"regions"> | null;
+      }
+    )?.regionId
+      ? 1
+      : 0;
+  const identityPartsCount = 4 /*names*/ + 1 /*bio/headline*/ + 1; /*location*/
+  const identityScore =
+    (textFilled + bioHeadlineFilled + locationFilled) / identityPartsCount;
 
   const percent = weightedCompletion({
     identity: identityScore,
@@ -179,6 +199,27 @@ export const getMyProfileComposite = query({
       return locale === "ar" ? arVal || enVal : enVal || arVal;
     };
 
+    // Helper to localize a location name from taxonomy
+    const localizeName = (
+      doc: null | { nameAr?: string | null; nameEn?: string | null },
+    ) => choose(doc?.nameAr ?? null, doc?.nameEn ?? null);
+
+    // Resolve location display values from taxonomy IDs only
+    let resolvedCity: string | undefined = undefined;
+    let resolvedRegion: string | undefined = undefined;
+    const regionId = (profile as unknown as { regionId?: Id<"regions"> })
+      ?.regionId;
+    const cityId = (profile as unknown as { cityId?: Id<"cities"> })?.cityId;
+    if (regionId || cityId) {
+      const [regionDoc, cityDoc] = await Promise.all([
+        regionId ? ctx.db.get(regionId) : Promise.resolve(null),
+        cityId ? ctx.db.get(cityId) : Promise.resolve(null),
+      ]);
+      if (regionDoc)
+        resolvedRegion = localizeName(regionDoc as any) || resolvedRegion;
+      if (cityDoc) resolvedCity = localizeName(cityDoc as any) || resolvedCity;
+    }
+
     return {
       user: {
         id: appUser._id,
@@ -199,8 +240,8 @@ export const getMyProfileComposite = query({
             id: profile._id,
             headline: profile.headline ?? undefined,
             bio: profile.bio ?? undefined,
-            city: profile.city ?? undefined,
-            region: profile.region ?? undefined,
+            city: resolvedCity,
+            region: resolvedRegion,
             pictureUrl:
               pictureUrlFromStorage ?? profile.pictureUrl ?? undefined,
             collaborationStatus: profile.collaborationStatus ?? undefined,
@@ -242,8 +283,8 @@ export const updateProfileBasics = mutation({
   args: {
     headline: v.optional(v.string()),
     bio: v.optional(v.string()),
-    city: v.optional(v.string()),
-    region: v.optional(v.string()),
+    cityId: v.optional(v.id("cities")),
+    regionId: v.optional(v.id("regions")),
     pictureUrl: v.optional(v.string()),
     collaborationStatus: v.optional(
       v.union(v.literal("open"), v.literal("closed"), v.literal("looking")),
@@ -264,8 +305,8 @@ export const updateProfileBasics = mutation({
         userId,
         headline: args.headline,
         bio: args.bio,
-        city: args.city,
-        region: args.region,
+        cityId: args.cityId,
+        regionId: args.regionId,
         pictureUrl: args.pictureUrl,
         collaborationStatus: args.collaborationStatus,
         completionPercentage: 0,
@@ -280,8 +321,8 @@ export const updateProfileBasics = mutation({
     for (const k of [
       "headline",
       "bio",
-      "city",
-      "region",
+      "cityId",
+      "regionId",
       "pictureUrl",
       "collaborationStatus",
     ] as const) {

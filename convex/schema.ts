@@ -41,9 +41,9 @@ const schema = defineSchema({
     userId: v.id("appUsers"),
     headline: v.optional(v.string()),
     bio: v.optional(v.string()),
-    // Location broken into city and region (Oman). We'll enforce allowed values in mutations.
-    city: v.optional(v.string()),
-    region: v.optional(v.string()),
+    // Location via taxonomy references
+    regionId: v.optional(v.id("regions")),
+    cityId: v.optional(v.id("cities")),
     pictureUrl: v.optional(v.string()),
     pictureStorageId: v.optional(v.id("_storage")),
     completionPercentage: v.optional(v.number()), // 0-100, validate range in code
@@ -74,6 +74,25 @@ const schema = defineSchema({
   })
     .index("by_name_en", ["nameEn"])
     .index("by_category", ["category"]),
+
+  // Master taxonomy: Regions (bilingual)
+  regions: defineTable({
+    nameEn: v.string(),
+    nameAr: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_name_en", ["nameEn"]),
+
+  // Master taxonomy: Cities (bilingual), linked to a Region
+  cities: defineTable({
+    nameEn: v.string(),
+    nameAr: v.string(),
+    regionId: v.id("regions"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_name_en", ["nameEn"]) // search by English name
+    .index("by_region", ["regionId"]), // list by region
 
   // Junction table: User ↔ Skill
   userSkills: defineTable({
@@ -164,6 +183,9 @@ const schema = defineSchema({
     gender: v.optional(v.union(v.literal("male"), v.literal("female"))),
     city: v.optional(v.string()),
     region: v.optional(v.string()),
+    // New draft taxonomy references (Option B)
+    regionId: v.optional(v.id("regions")),
+    cityId: v.optional(v.id("cities")),
     draftSkillIds: v.optional(v.array(v.id("skills"))),
     draftInterestIds: v.optional(v.array(v.id("interests"))),
     createdAt: v.number(),
