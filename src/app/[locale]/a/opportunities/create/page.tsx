@@ -5,13 +5,14 @@ import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { MapPin, Save, UploadCloud, X } from "lucide-react";
+import { Save, UploadCloud, X } from "lucide-react";
 import { DateTimeField } from "@/components/ui/date-time-field";
 
 export default function AdminCreateOpportunityPage(): ReactElement {
@@ -38,6 +39,8 @@ export default function AdminCreateOpportunityPage(): ReactElement {
     useState<string>("");
   const [region, setRegion] = useState<string>("");
   const [city, setCity] = useState<string>("");
+  const [selectedRegionId, setSelectedRegionId] = useState<string>("");
+  const [selectedCityId, setSelectedCityId] = useState<string>("");
   const [venueName, setVenueName] = useState<string>("");
   const [venueAddress, setVenueAddress] = useState<string>("");
   const [googleMapUrl, setGoogleMapUrl] = useState<string>("");
@@ -93,6 +96,15 @@ export default function AdminCreateOpportunityPage(): ReactElement {
     endingDate,
     toMs,
   ]);
+
+  // Locations data
+  const regions = useQuery(api.locations.listRegions, { locale });
+  const cities = useQuery(
+    api.locations.listCitiesByRegion,
+    selectedRegionId
+      ? { regionId: selectedRegionId as unknown as Id<"regions">, locale }
+      : "skip",
+  );
 
   async function onSave(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
@@ -271,25 +283,50 @@ export default function AdminCreateOpportunityPage(): ReactElement {
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="region">{t("form.region")}</Label>
-                <Input
-                  id="region"
-                  value={region}
-                  onChange={(e) => setRegion(e.target.value)}
-                  placeholder={t("placeholders.region")}
-                />
+                <Label htmlFor="regionSelect">{t("form.region")}</Label>
+                <select
+                  id="regionSelect"
+                  value={selectedRegionId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setSelectedRegionId(id);
+                    const r = regions?.find((x) => String(x.id) === id);
+                    setRegion(r?.name ?? "");
+                    // reset city when region changes
+                    setSelectedCityId("");
+                    setCity("");
+                  }}
+                  className="bg-background text-foreground mt-1 w-full rounded-md border p-2 text-sm shadow-xs focus:ring-2 focus:outline-none"
+                >
+                  <option value="">{t("placeholders.region")}</option>
+                  {regions?.map((r) => (
+                    <option key={String(r.id)} value={String(r.id)}>
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="city">{t("form.city")}</Label>
-                <div className="relative">
-                  <MapPin className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                  <Input
-                    id="city"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
+                <Label htmlFor="citySelect">{t("form.city")}</Label>
+                <select
+                  id="citySelect"
+                  value={selectedCityId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setSelectedCityId(id);
+                    const c = cities?.find((x) => String(x.id) === id);
+                    setCity(c?.name ?? "");
+                  }}
+                  disabled={!selectedRegionId}
+                  className="bg-background text-foreground mt-1 w-full rounded-md border p-2 text-sm shadow-xs focus:ring-2 focus:outline-none disabled:opacity-50"
+                >
+                  <option value="">{t("placeholders.city")}</option>
+                  {cities?.map((c) => (
+                    <option key={String(c.id)} value={String(c.id)}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 

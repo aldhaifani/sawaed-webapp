@@ -369,7 +369,7 @@
         "testStrategy": "Test admin can create/edit events, verify bilingual content displays correctly, confirm registration system works and prevents duplicate registrations, and validate email notifications are sent.",
         "priority": "high",
         "dependencies": [3, 4],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -377,7 +377,7 @@
             "description": "Create an admin UI for posting events with bilingual fields including title, description, date, and location. Ensure seamless input and display in both Arabic and English.",
             "dependencies": [],
             "details": "Implement form validation, language toggle, and storage of bilingual event data in the database. Support editing and deleting events by admins.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -715,7 +715,7 @@
     ],
     "metadata": {
       "created": "2025-08-16T07:34:51.087Z",
-      "updated": "2025-08-22T21:16:12.746Z",
+      "updated": "2025-08-23T08:35:16.612Z",
       "description": "Tasks for master context"
     }
   }
