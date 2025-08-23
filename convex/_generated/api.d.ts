@@ -19,6 +19,7 @@ import type * as auth from "../auth.js";
 import type * as authz from "../authz.js";
 import type * as crons from "../crons.js";
 import type * as dev_seed from "../dev_seed.js";
+import type * as events from "../events.js";
 import type * as http from "../http.js";
 import type * as localization from "../localization.js";
 import type * as locations from "../locations.js";
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   authz: typeof authz;
   crons: typeof crons;
   dev_seed: typeof dev_seed;
+  events: typeof events;
   http: typeof http;
   localization: typeof localization;
   locations: typeof locations;

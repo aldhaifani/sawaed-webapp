@@ -276,5 +276,62 @@
         }
       }
     }
+  },
+  "opportunities": {
+    "createTitle": "Create opportunity",
+    "editTitle": "Edit opportunity",
+    "notFound": "Opportunity not found",
+    "confirmDelete": "Delete this event? This action cannot be undone.",
+    "form": {
+      "titleEn": "Title (EN)",
+      "titleAr": "Title (AR)",
+      "descriptionEn": "Description (EN)",
+      "descriptionAr": "Description (AR)",
+      "startsAt": "Starts at",
+      "endsAt": "Ends at",
+      "registrationsOpen": "Registrations open",
+      "registrationsClose": "Registrations close",
+      "region": "Region",
+      "city": "City",
+      "venueName": "Venue name",
+      "venueAddress": "Venue address",
+      "googleMapUrl": "Google Map URL",
+      "onlineUrl": "Online URL",
+      "posterUrl": "Poster URL",
+      "registrationPolicy": "Registration policy",
+      "isRegistrationRequired": "Registration required?",
+      "allowWaitlist": "Allow waitlist?",
+      "capacity": "Capacity",
+      "maxRegistrationsPerUser": "Max per user",
+      "externalRegistrationUrl": "External registration URL",
+      "termsUrl": "Terms URL",
+      "contact": "Contact"
+    },
+    "placeholders": {
+      "titleEn": "e.g. Digital Skills Bootcamp",
+      "titleAr": "مثال: معسكر المهارات الرقمية",
+      "region": "e.g. Muscat",
+      "contact": "email/phone",
+      "posterUrl": "https://...",
+      "onlineUrl": "https://...",
+      "googleMapUrl": "https://..."
+    },
+    "policyOptions": {
+      "open": "Open",
+      "approval": "Approval",
+      "inviteOnly": "Invite Only"
+    },
+    "booleanOptions": {
+      "yes": "Yes",
+      "no": "No"
+    },
+    "actions": {
+      "saveDraft": "Save draft",
+      "save": "Save",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "delete": "Delete",
+      "back": "Back"
+    }
   }
 }

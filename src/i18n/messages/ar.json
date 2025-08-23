@@ -276,5 +276,62 @@
         }
       }
     }
+  },
+  "opportunities": {
+    "createTitle": "إنشاء فرصة",
+    "editTitle": "تعديل فرصة",
+    "notFound": "لم يتم العثور على الفرصة",
+    "confirmDelete": "حذف هذه الفعالية؟ هذا الإجراء لا يمكن التراجع عنه.",
+    "form": {
+      "titleEn": "العنوان (إنجليزي)",
+      "titleAr": "العنوان (عربي)",
+      "descriptionEn": "الوصف (إنجليزي)",
+      "descriptionAr": "الوصف (عربي)",
+      "startsAt": "وقت البداية",
+      "endsAt": "وقت الانتهاء",
+      "registrationsOpen": "فتح التسجيل",
+      "registrationsClose": "إغلاق التسجيل",
+      "region": "المحافظة",
+      "city": "المدينة",
+      "venueName": "اسم المكان",
+      "venueAddress": "عنوان المكان",
+      "googleMapUrl": "رابط خرائط جوجل",
+      "onlineUrl": "رابط الفعالية عبر الإنترنت",
+      "posterUrl": "رابط الملصق",
+      "registrationPolicy": "سياسة التسجيل",
+      "isRegistrationRequired": "هل التسجيل مطلوب؟",
+      "allowWaitlist": "السماح بقائمة الانتظار؟",
+      "capacity": "السعة",
+      "maxRegistrationsPerUser": "الحد الأقصى لكل مستخدم",
+      "externalRegistrationUrl": "رابط تسجيل خارجي",
+      "termsUrl": "رابط الشروط",
+      "contact": "جهة التواصل"
+    },
+    "placeholders": {
+      "titleEn": "e.g. Digital Skills Bootcamp",
+      "titleAr": "مثال: معسكر المهارات الرقمية",
+      "region": "مثال: مسقط",
+      "contact": "البريد/الهاتف",
+      "posterUrl": "https://...",
+      "onlineUrl": "https://...",
+      "googleMapUrl": "https://..."
+    },
+    "policyOptions": {
+      "open": "متاح للجميع",
+      "approval": "يتطلب موافقة",
+      "inviteOnly": "بدعوة فقط"
+    },
+    "booleanOptions": {
+      "yes": "نعم",
+      "no": "لا"
+    },
+    "actions": {
+      "saveDraft": "حفظ كمسودة",
+      "save": "حفظ",
+      "publish": "نشر",
+      "unpublish": "إلغاء النشر",
+      "delete": "حذف",
+      "back": "رجوع"
+    }
   }
 }
