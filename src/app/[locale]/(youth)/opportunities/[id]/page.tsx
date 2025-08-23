@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
@@ -30,6 +30,9 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslations } from "next-intl";
+import * as Sentry from "@sentry/nextjs";
+import { toast } from "sonner";
+import { Confetti, type ConfettiRef } from "@/components/magicui/confetti";
 
 function dateRangeText(start: string, end: string): string {
   return start === end ? start : `${start} – ${end}`;
@@ -87,6 +90,18 @@ export default function OpportunityDetailsPage(): ReactElement {
 
   const [showApply, setShowApply] = useState<boolean>(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState<number>(1);
+  const [agree, setAgree] = useState<boolean>(false);
+  const confettiRef = useRef<ConfettiRef>(null);
+
+  type ApplyResult = {
+    readonly status:
+      | "pending"
+      | "accepted"
+      | "rejected"
+      | "cancelled"
+      | "waitlisted";
+  };
   const isApplied: boolean = useMemo(() => {
     if (!myRegistration) return false;
     return ["pending", "accepted", "waitlisted"].includes(
@@ -95,6 +110,18 @@ export default function OpportunityDetailsPage(): ReactElement {
   }, [myRegistration]);
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [showRevoke, setShowRevoke] = useState<boolean>(false);
+
+  // Compute status label before any early return to satisfy hooks rules
+  const currentStatusLabel: string = useMemo(() => {
+    const s = myRegistration?.status as string | undefined;
+    if (!s) return t("statusNotApplied");
+    if (s === "accepted") return t("statusAccepted" as never) ?? "Accepted";
+    if (s === "pending") return t("statusPending" as never) ?? "Pending";
+    if (s === "waitlisted")
+      return t("statusWaitlisted" as never) ?? "Waitlisted";
+    if (s === "rejected") return t("statusRejected" as never) ?? "Rejected";
+    return t("statusApplied");
+  }, [myRegistration?.status, t]);
 
   if (!item) {
     return (
@@ -133,9 +160,17 @@ export default function OpportunityDetailsPage(): ReactElement {
     if (close !== undefined && now > close) return false;
     return true;
   })();
+  const isInviteOnly: boolean = event?.registrationPolicy === "inviteOnly";
+
+  // moved above
 
   return (
     <main className="bg-background min-h-screen w-full">
+      <Confetti
+        ref={confettiRef}
+        className="pointer-events-none fixed inset-0"
+        manualstart
+      />
       <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
         {/* Breadcrumb / Back */}
         <div className="mb-4 flex items-center gap-2">
@@ -216,13 +251,15 @@ export default function OpportunityDetailsPage(): ReactElement {
               ) : (
                 <Button
                   className="bg-primary text-primary-foreground hover:opacity-95"
-                  disabled={!isWithinWindow}
+                  disabled={!isWithinWindow || isInviteOnly}
                   onClick={() => {
                     setActionError(null);
                     setShowApply(true);
                   }}
                 >
-                  {t("applyNow")}
+                  {isInviteOnly
+                    ? (t("inviteOnly" as never) ?? "Invite Only")
+                    : t("applyNow")}
                 </Button>
               )}
             </div>
@@ -275,9 +312,7 @@ export default function OpportunityDetailsPage(): ReactElement {
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="bg-background rounded-lg border p-3">
                   <div className="text-muted-foreground">{t("status")}</div>
-                  <div className="font-medium">
-                    {isApplied ? t("statusApplied") : t("statusNotApplied")}
-                  </div>
+                  <div className="font-medium">{currentStatusLabel}</div>
                 </div>
                 <div className="bg-background rounded-lg border p-3">
                   <div className="text-muted-foreground">{t("start")}</div>
@@ -325,13 +360,15 @@ export default function OpportunityDetailsPage(): ReactElement {
                 ) : (
                   <Button
                     className="bg-primary text-primary-foreground hover:opacity-95"
-                    disabled={!isWithinWindow}
+                    disabled={!isWithinWindow || isInviteOnly}
                     onClick={() => {
                       setActionError(null);
                       setShowApply(true);
                     }}
                   >
-                    {t("apply")}
+                    {isInviteOnly
+                      ? (t("inviteOnly" as never) ?? "Invite Only")
+                      : t("apply")}
                   </Button>
                 )}
               </div>
@@ -349,6 +386,54 @@ export default function OpportunityDetailsPage(): ReactElement {
           <p className="text-muted-foreground text-sm">
             {t("applyConfirmHint")}
           </p>
+          {/* Quantity */}
+          <div className="mt-3">
+            <label className="text-sm font-medium">
+              {t("quantity" as never) ?? "Quantity"}
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={
+                typeof event?.maxRegistrationsPerUser === "number"
+                  ? event.maxRegistrationsPerUser
+                  : undefined
+              }
+              value={quantity}
+              onChange={(e) =>
+                setQuantity(Math.max(1, Number(e.target.value) || 1))
+              }
+              className="bg-background mt-1 w-24 rounded-md border p-2 text-sm"
+            />
+            {typeof event?.maxRegistrationsPerUser === "number" ? (
+              <p className="text-muted-foreground mt-1 text-xs">
+                {t("maxPerUser" as never) ?? "Max per user"}:{" "}
+                {event.maxRegistrationsPerUser}
+              </p>
+            ) : null}
+          </div>
+          {/* Terms */}
+          {event?.termsUrl ? (
+            <label className="mt-3 flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={agree}
+                onChange={(e) => setAgree(e.target.checked)}
+                className="size-4"
+              />
+              <span>
+                {t("agreeToTerms" as never) ?? "I agree to the terms"}{" "}
+                <a
+                  href={event.termsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary underline"
+                >
+                  {t("terms" as never) ?? "Terms"}
+                </a>
+              </span>
+            </label>
+          ) : null}
           {actionError ? (
             <p className="text-destructive mt-2 text-sm">
               {t(`errors.${actionError}` as unknown as never)}
@@ -359,17 +444,38 @@ export default function OpportunityDetailsPage(): ReactElement {
               {t("cancel")}
             </Button>
             <Button
+              disabled={Boolean(event?.termsUrl) && !agree}
               onClick={async () => {
                 if (!id) return;
                 try {
                   setActionError(null);
-                  await applyToEvent({
-                    eventId: id as unknown as Id<"events">,
-                  });
+                  await Sentry.startSpan(
+                    { op: "ui.click", name: "Apply To Event" },
+                    async (span) => {
+                      span.setAttribute("eventId", String(id));
+                      span.setAttribute("quantity", quantity);
+                      const res = (await applyToEvent({
+                        eventId: id as unknown as Id<"events">,
+                        quantity,
+                      })) as ApplyResult;
+                      toast.success(
+                        t("appliedSuccess" as never) ?? "Applied successfully",
+                      );
+                      if (res.status === "accepted") {
+                        const fire = confettiRef.current?.fire;
+                        if (fire) {
+                          await fire({ particleCount: 120, spread: 70 });
+                        }
+                      }
+                      return res;
+                    },
+                  );
                   setShowApply(false);
                 } catch (e: unknown) {
                   const msg = (e as Error)?.message || "UNKNOWN";
                   setActionError(msg);
+                  toast.error(t(`errors.${msg}` as never) ?? "Action failed");
+                  Sentry.captureException(e);
                 }
               }}
             >
@@ -403,13 +509,25 @@ export default function OpportunityDetailsPage(): ReactElement {
                 if (!id) return;
                 try {
                   setActionError(null);
-                  await cancelMyRegistration({
-                    eventId: id as unknown as Id<"events">,
-                  });
+                  await Sentry.startSpan(
+                    { op: "ui.click", name: "Cancel Registration" },
+                    async (span) => {
+                      span.setAttribute("eventId", String(id));
+                      await cancelMyRegistration({
+                        eventId: id as unknown as Id<"events">,
+                      });
+                      toast.success(
+                        t("revokedSuccess" as never) ??
+                          "Registration cancelled",
+                      );
+                    },
+                  );
                   setShowRevoke(false);
                 } catch (e: unknown) {
                   const msg = (e as Error)?.message || "UNKNOWN";
                   setActionError(msg);
+                  toast.error(t(`errors.${msg}` as never) ?? "Action failed");
+                  Sentry.captureException(e);
                 }
               }}
             >

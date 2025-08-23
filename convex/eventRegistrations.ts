@@ -70,23 +70,50 @@ export const applyToEvent = mutation({
       throw new Error("ALREADY_REGISTERED");
     }
 
-    // Capacity check counts only accepted registrations
-    const acceptedCount = await ctx.db
+    // Resolve quantity (default to 1) and validate
+    const qty =
+      typeof quantity === "number" && !Number.isNaN(quantity) ? quantity : 1;
+    if (qty < 1) throw new Error("INVALID_QUANTITY");
+
+    // Enforce max registrations per user (interpreted as max seats per user)
+    if (typeof ev.maxRegistrationsPerUser === "number") {
+      if (qty > ev.maxRegistrationsPerUser) {
+        throw new Error("MAX_PER_USER_EXCEEDED");
+      }
+    }
+
+    // Capacity check sums quantities of accepted registrations
+    const acceptedSum = await ctx.db
       .query("eventRegistrations")
       .withIndex("by_event_status", (q) =>
         q.eq("eventId", eventId).eq("status", "accepted"),
       )
       .collect()
-      .then((r) => r.length);
+      .then((rows) =>
+        rows.reduce(
+          (acc, r) => acc + (typeof r.quantity === "number" ? r.quantity : 1),
+          0,
+        ),
+      );
 
     let status: RegistrationStatus = "pending";
     if (ev.registrationPolicy === "open") {
       const capacity =
         typeof ev.capacity === "number" ? ev.capacity : undefined;
-      if (capacity !== undefined && acceptedCount >= capacity) {
-        if (ev.allowWaitlist) status = "waitlisted";
-        else throw new Error("EVENT_FULL");
+      if (capacity !== undefined) {
+        const remaining = capacity - acceptedSum;
+        if (remaining <= 0) {
+          if (ev.allowWaitlist) status = "waitlisted";
+          else throw new Error("EVENT_FULL");
+        } else if (qty > remaining) {
+          // Not enough seats for immediate acceptance
+          if (ev.allowWaitlist) status = "waitlisted";
+          else throw new Error("EVENT_FULL");
+        } else {
+          status = "accepted";
+        }
       } else {
+        // No capacity specified => accept directly
         status = "accepted";
       }
     } else {
@@ -95,7 +122,7 @@ export const applyToEvent = mutation({
         typeof ev.capacity === "number" ? ev.capacity : undefined;
       if (
         capacity !== undefined &&
-        acceptedCount >= capacity &&
+        acceptedSum >= capacity &&
         ev.allowWaitlist
       ) {
         status = "waitlisted";
@@ -108,7 +135,7 @@ export const applyToEvent = mutation({
       userId: user._id as Id<"appUsers">,
       eventId,
       timestamp: now,
-      quantity,
+      quantity: qty,
       status,
       notes,
       decidedAt: undefined,

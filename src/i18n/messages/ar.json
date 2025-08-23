@@ -432,6 +432,17 @@
       "revokeConfirmHint": "يمكنك التقديم مرة أخرى طالما نافذة التقديم مفتوحة.",
       "applyConfirmTitle": "تأكيد تقديم الطلب؟",
       "applyConfirmHint": "قد لا تتمكن من تعديل الطلب بعد الإرسال.",
+      "inviteOnly": "بدعوة فقط",
+      "quantity": "العدد",
+      "maxPerUser": "الحد الأقصى لكل مستخدم",
+      "agreeToTerms": "أوافق على",
+      "terms": "الشروط",
+      "appliedSuccess": "تم التقديم بنجاح",
+      "revokedSuccess": "تم إلغاء التسجيل",
+      "statusAccepted": "مقبول",
+      "statusPending": "قيد الانتظار",
+      "statusWaitlisted": "قائمة الانتظار",
+      "statusRejected": "مرفوض",
       "confirm": "تأكيد",
       "errors": {
         "REGISTRATION_NOT_OPEN": "التقديم لم يبدأ بعد.",
@@ -440,6 +451,8 @@
         "ALREADY_REGISTERED": "لديك طلب نشط بالفعل.",
         "EVENT_FULL": "تم اكتمال السعة لهذه الفرصة.",
         "EVENT_NOT_AVAILABLE": "هذه الفرصة غير متاحة.",
+        "INVALID_QUANTITY": "يرجى إدخال عدد صالح (الحد الأدنى 1).",
+        "MAX_PER_USER_EXCEEDED": "العدد المطلوب يتجاوز الحد الأقصى لكل مستخدم.",
         "UNKNOWN": "حدث خطأ ما. حاول مرة أخرى."
       }
     },

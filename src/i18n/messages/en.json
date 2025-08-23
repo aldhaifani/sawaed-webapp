@@ -402,6 +402,17 @@
       "revokeConfirmHint": "You can apply again later while the application window is open.",
       "applyConfirmTitle": "Submit your application?",
       "applyConfirmHint": "You may not be able to edit after submitting.",
+      "inviteOnly": "Invite Only",
+      "quantity": "Quantity",
+      "maxPerUser": "Max per user",
+      "agreeToTerms": "I agree to the",
+      "terms": "Terms",
+      "appliedSuccess": "Applied successfully",
+      "revokedSuccess": "Registration cancelled",
+      "statusAccepted": "Accepted",
+      "statusPending": "Pending",
+      "statusWaitlisted": "Waitlisted",
+      "statusRejected": "Rejected",
       "confirm": "Confirm",
       "errors": {
         "REGISTRATION_NOT_OPEN": "Applications haven't opened yet.",
@@ -410,6 +421,8 @@
         "ALREADY_REGISTERED": "You already have an active application.",
         "EVENT_FULL": "This opportunity is full.",
         "EVENT_NOT_AVAILABLE": "This opportunity is not available.",
+        "INVALID_QUANTITY": "Please enter a valid quantity (minimum 1).",
+        "MAX_PER_USER_EXCEEDED": "The requested quantity exceeds the per-user limit.",
         "UNKNOWN": "Something went wrong. Please try again."
       }
     },

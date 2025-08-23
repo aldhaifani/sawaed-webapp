@@ -352,6 +352,7 @@ export const getPublicEventById = query({
       allowWaitlist: ev.allowWaitlist,
       capacity: ev.capacity,
       externalRegistrationUrl: ev.externalRegistrationUrl,
+      maxRegistrationsPerUser: ev.maxRegistrationsPerUser,
       termsUrl: ev.termsUrl,
       contact: ev.contact,
     } as const;
