@@ -8,6 +8,7 @@ import { type Metadata } from "next";
 import { Geist } from "next/font/google";
 import { cookies } from "next/headers";
 import { ThemeProvider } from "@/components/ui/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Sawaed",
@@ -39,7 +40,10 @@ export default async function RootLayout({
         <body>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
             <PostHogProvider>
-              <ConvexClientProvider>{children}</ConvexClientProvider>
+              <ConvexClientProvider>
+                {children}
+                <Toaster richColors position="top-center" />
+              </ConvexClientProvider>
             </PostHogProvider>
           </ThemeProvider>
         </body>

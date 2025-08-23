@@ -38,6 +38,15 @@ function dateRangeText(start: string, end: string): string {
   return start === end ? start : `${start} – ${end}`;
 }
 
+function buildContactHref(contact?: string): string | undefined {
+  if (!contact) return undefined;
+  const c = contact.trim();
+  if (c.includes("@")) return `mailto:${c}`;
+  const tel = c.replace(/[^+\d]/g, "");
+  if (tel.length >= 7) return `tel:${tel}`;
+  return `mailto:${c}`;
+}
+
 export default function OpportunityDetailsPage(): ReactElement {
   const params = useParams<{ id: string; locale: string }>();
   const id: string = params?.id ?? "";
@@ -123,6 +132,9 @@ export default function OpportunityDetailsPage(): ReactElement {
     return t("statusApplied");
   }, [myRegistration?.status, t]);
 
+  const isRejected: boolean =
+    (myRegistration?.status as string | undefined) === "rejected";
+
   if (!item) {
     return (
       <main className="bg-background min-h-screen w-full">
@@ -168,7 +180,9 @@ export default function OpportunityDetailsPage(): ReactElement {
     <main className="bg-background min-h-screen w-full">
       <Confetti
         ref={confettiRef}
-        className="pointer-events-none fixed inset-0"
+        className="pointer-events-none fixed inset-0 z-[2147483647]"
+        globalOptions={{ resize: true, useWorker: false }}
+        style={{ width: "100vw", height: "100vh" }}
         manualstart
       />
       <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
@@ -249,18 +263,33 @@ export default function OpportunityDetailsPage(): ReactElement {
                   {t("revokeApplication")}
                 </Button>
               ) : (
-                <Button
-                  className="bg-primary text-primary-foreground hover:opacity-95"
-                  disabled={!isWithinWindow || isInviteOnly}
-                  onClick={() => {
-                    setActionError(null);
-                    setShowApply(true);
-                  }}
-                >
-                  {isInviteOnly
-                    ? (t("inviteOnly" as never) ?? "Invite Only")
-                    : t("applyNow")}
-                </Button>
+                <>
+                  {isRejected ? (
+                    <Button variant="outline" asChild>
+                      <a
+                        href={buildContactHref(event?.contact) ?? "#"}
+                        target={event?.contact ? "_blank" : undefined}
+                        rel={event?.contact ? "noreferrer" : undefined}
+                      >
+                        {t("contactOrganizers" as never) ??
+                          "Contact organizers"}
+                      </a>
+                    </Button>
+                  ) : (
+                    <Button
+                      className="bg-primary text-primary-foreground hover:opacity-95"
+                      disabled={!isWithinWindow || isInviteOnly}
+                      onClick={() => {
+                        setActionError(null);
+                        setShowApply(true);
+                      }}
+                    >
+                      {isInviteOnly
+                        ? (t("inviteOnly" as never) ?? "Invite Only")
+                        : t("applyNow")}
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -358,18 +387,33 @@ export default function OpportunityDetailsPage(): ReactElement {
                     {t("revoke")}
                   </Button>
                 ) : (
-                  <Button
-                    className="bg-primary text-primary-foreground hover:opacity-95"
-                    disabled={!isWithinWindow || isInviteOnly}
-                    onClick={() => {
-                      setActionError(null);
-                      setShowApply(true);
-                    }}
-                  >
-                    {isInviteOnly
-                      ? (t("inviteOnly" as never) ?? "Invite Only")
-                      : t("apply")}
-                  </Button>
+                  <>
+                    {isRejected ? (
+                      <Button variant="outline" asChild>
+                        <a
+                          href={buildContactHref(event?.contact) ?? "#"}
+                          target={event?.contact ? "_blank" : undefined}
+                          rel={event?.contact ? "noreferrer" : undefined}
+                        >
+                          {t("contactOrganizers" as never) ??
+                            "Contact organizers"}
+                        </a>
+                      </Button>
+                    ) : (
+                      <Button
+                        className="bg-primary text-primary-foreground hover:opacity-95"
+                        disabled={!isWithinWindow || isInviteOnly}
+                        onClick={() => {
+                          setActionError(null);
+                          setShowApply(true);
+                        }}
+                      >
+                        {isInviteOnly
+                          ? (t("inviteOnly" as never) ?? "Invite Only")
+                          : t("apply")}
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -461,16 +505,38 @@ export default function OpportunityDetailsPage(): ReactElement {
                       toast.success(
                         t("appliedSuccess" as never) ?? "Applied successfully",
                       );
-                      if (res.status === "accepted") {
-                        const fire = confettiRef.current?.fire;
-                        if (fire) {
-                          await fire({ particleCount: 120, spread: 70 });
-                        }
+                      // Close dialog before firing confetti so it's visible above overlays
+                      setShowApply(false);
+                      if (
+                        res.status === "accepted" ||
+                        res.status === "pending" ||
+                        res.status === "waitlisted"
+                      ) {
+                        const tryFire = async () => {
+                          const fire = confettiRef.current?.fire;
+                          if (!fire) {
+                            await new Promise((r) => setTimeout(r, 80));
+                          }
+                          const fire2 = confettiRef.current?.fire;
+                          if (!fire2) return;
+                          await fire2({
+                            particleCount: 180,
+                            spread: 90,
+                            startVelocity: 35,
+                            scalar: 1,
+                            origin: { x: 0.5, y: 0.4 },
+                          });
+                        };
+                        await new Promise<void>((resolve) => {
+                          setTimeout(() => {
+                            void tryFire();
+                            resolve();
+                          }, 75);
+                        });
                       }
                       return res;
                     },
                   );
-                  setShowApply(false);
                 } catch (e: unknown) {
                   const msg = (e as Error)?.message || "UNKNOWN";
                   setActionError(msg);

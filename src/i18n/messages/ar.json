@@ -444,11 +444,13 @@
       "statusWaitlisted": "قائمة الانتظار",
       "statusRejected": "مرفوض",
       "confirm": "تأكيد",
+      "contactOrganizers": "التواصل مع المنظمين",
       "errors": {
         "REGISTRATION_NOT_OPEN": "التقديم لم يبدأ بعد.",
         "REGISTRATION_CLOSED": "التقديم مغلق.",
         "INVITE_ONLY": "هذه الفرصة بالدعوة فقط.",
         "ALREADY_REGISTERED": "لديك طلب نشط بالفعل.",
+        "REJECTED_CANNOT_REAPPLY": "تم رفض طلبك ولا يمكنك التقديم مرة أخرى. يُرجى التواصل مع المنظمين.",
         "EVENT_FULL": "تم اكتمال السعة لهذه الفرصة.",
         "EVENT_NOT_AVAILABLE": "هذه الفرصة غير متاحة.",
         "INVALID_QUANTITY": "يرجى إدخال عدد صالح (الحد الأدنى 1).",

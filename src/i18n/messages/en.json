@@ -414,11 +414,13 @@
       "statusWaitlisted": "Waitlisted",
       "statusRejected": "Rejected",
       "confirm": "Confirm",
+      "contactOrganizers": "Contact organizers",
       "errors": {
         "REGISTRATION_NOT_OPEN": "Applications haven't opened yet.",
         "REGISTRATION_CLOSED": "Applications are closed.",
         "INVITE_ONLY": "This opportunity is invite-only.",
         "ALREADY_REGISTERED": "You already have an active application.",
+        "REJECTED_CANNOT_REAPPLY": "You were rejected and cannot re-apply. Please contact the organizers.",
         "EVENT_FULL": "This opportunity is full.",
         "EVENT_NOT_AVAILABLE": "This opportunity is not available.",
         "INVALID_QUANTITY": "Please enter a valid quantity (minimum 1).",

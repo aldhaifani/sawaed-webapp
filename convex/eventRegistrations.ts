@@ -16,13 +16,22 @@ export const getMyRegistrationForEvent = query({
   args: { eventId: v.id("events") },
   handler: async (ctx, { eventId }) => {
     const user = await requireUser(ctx);
-    const existing = await ctx.db
+    const rows = await ctx.db
       .query("eventRegistrations")
       .withIndex("by_event_user", (q) =>
         q.eq("eventId", eventId).eq("userId", user._id),
       )
-      .unique();
-    return existing ?? null;
+      .collect();
+    if (!rows.length) return null;
+    // Prefer latest by timestamp; if ties, arbitrary
+    const latest = rows.reduce(
+      (acc, r) =>
+        !acc || (typeof r.timestamp === "number" && r.timestamp > acc.timestamp)
+          ? r
+          : acc,
+      null as (typeof rows)[number] | null,
+    );
+    return latest ?? null;
   },
 });
 
@@ -57,17 +66,26 @@ export const applyToEvent = mutation({
     if (ev.registrationPolicy === "inviteOnly") throw new Error("INVITE_ONLY");
 
     // Prevent duplicate active registrations
-    const existing = await ctx.db
+    const existingRows = await ctx.db
       .query("eventRegistrations")
       .withIndex("by_event_user", (q) =>
         q.eq("eventId", eventId).eq("userId", user._id),
       )
-      .unique();
-    if (
-      existing &&
-      ["pending", "accepted", "waitlisted"].includes(existing.status)
-    ) {
-      throw new Error("ALREADY_REGISTERED");
+      .collect();
+    const latest = existingRows.reduce(
+      (acc, r) =>
+        !acc || (typeof r.timestamp === "number" && r.timestamp > acc.timestamp)
+          ? r
+          : acc,
+      null as (typeof existingRows)[number] | null,
+    );
+    if (latest) {
+      if (["pending", "accepted", "waitlisted"].includes(latest.status)) {
+        throw new Error("ALREADY_REGISTERED");
+      }
+      if (latest.status === "rejected") {
+        throw new Error("REJECTED_CANNOT_REAPPLY");
+      }
     }
 
     // Resolve quantity (default to 1) and validate
@@ -131,6 +149,20 @@ export const applyToEvent = mutation({
       }
     }
 
+    // If there is a previous cancelled, upsert by patching it
+    if (latest && latest.status === "cancelled") {
+      await ctx.db.patch(latest._id, {
+        timestamp: now,
+        quantity: qty,
+        status,
+        notes,
+        decidedAt: undefined,
+        decidedByAdminId: undefined,
+      });
+      return { id: latest._id, status } as const;
+    }
+
+    // Otherwise, insert a new registration
     const id = await ctx.db.insert("eventRegistrations", {
       userId: user._id as Id<"appUsers">,
       eventId,

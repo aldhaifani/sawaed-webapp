@@ -16,6 +16,7 @@ import React, {
   useMemo,
   useRef,
 } from "react";
+import { createPortal } from "react-dom";
 
 import { Button } from "@/components/ui/button";
 
@@ -28,6 +29,7 @@ type Props = React.ComponentPropsWithRef<"canvas"> & {
   globalOptions?: ConfettiGlobalOptions;
   manualstart?: boolean;
   children?: ReactNode;
+  portalToBody?: boolean;
 };
 
 export type ConfettiRef = Api | null;
@@ -41,6 +43,7 @@ const ConfettiComponent = forwardRef<ConfettiRef, Props>((props, ref) => {
     globalOptions = { resize: true, useWorker: true },
     manualstart = false,
     children,
+    portalToBody = true,
     ...rest
   } = props;
   const instanceRef = useRef<ConfettiInstance | null>(null);
@@ -66,7 +69,20 @@ const ConfettiComponent = forwardRef<ConfettiRef, Props>((props, ref) => {
   const fire = useCallback(
     async (opts = {}) => {
       try {
-        await instanceRef.current?.({ ...options, ...opts });
+        // wait up to ~200ms for instance to attach if needed
+        let tries = 0;
+        while (!instanceRef.current && tries < 5) {
+          // retry shortly in case the canvas is not yet ready
+          // 40ms x 5 ~= 200ms
+
+          await new Promise((r) => setTimeout(r, 40));
+          tries += 1;
+        }
+        const merged = { ...options, ...opts } as ConfettiOptions;
+        if (!("origin" in merged)) {
+          merged.origin = { x: 0.5, y: 0.35 } as ConfettiOptions["origin"];
+        }
+        await instanceRef.current?.(merged);
       } catch (error) {
         console.error("Confetti error:", error);
       }
@@ -91,12 +107,17 @@ const ConfettiComponent = forwardRef<ConfettiRef, Props>((props, ref) => {
     }
   }, [manualstart, fire]);
 
-  return (
+  const content = (
     <ConfettiContext.Provider value={api}>
       <canvas ref={canvasRef} {...rest} />
       {children}
     </ConfettiContext.Provider>
   );
+
+  if (portalToBody && typeof window !== "undefined" && document?.body) {
+    return createPortal(content, document.body);
+  }
+  return content;
 });
 
 // Set display name immediately
