@@ -2,6 +2,8 @@
 
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import {
   Filter,
   Search,
@@ -43,7 +45,13 @@ function Pill({ children }: { children: React.ReactNode }): ReactElement {
   );
 }
 
-function OpportunityCard({ item }: { item: Opportunity }): ReactElement {
+function OpportunityCard({
+  item,
+  locale,
+}: {
+  item: Opportunity;
+  locale: string;
+}): ReactElement {
   const tagList = item.tags.length ? item.tags : [sourceLabel(item.source)];
   return (
     <article
@@ -102,10 +110,13 @@ function OpportunityCard({ item }: { item: Opportunity }): ReactElement {
           <Star className="size-3" /> {item.source.replace("-", " ")}
         </span>
         <Button
+          asChild
           variant="secondary"
           className="inline-flex items-center gap-1 text-xs md:text-sm"
         >
-          View Details <ExternalLink className="size-4" />
+          <Link href={`/${locale}/opportunities/${item.id}`}>
+            View Details <ExternalLink className="size-4" />
+          </Link>
         </Button>
       </div>
       <span className="group-hover:ring-ring/30 pointer-events-none absolute inset-0 rounded-xl ring-1 ring-transparent transition-[box-shadow,ring-color]" />
@@ -114,6 +125,8 @@ function OpportunityCard({ item }: { item: Opportunity }): ReactElement {
 }
 
 export default function OpportunitiesPage(): ReactElement {
+  const params = useParams<{ locale: string }>();
+  const locale: string = params.locale ?? "ar";
   const [query, setQuery] = useState<string>("");
   const [tab, setTab] = useState<SourceKey>("all");
 
@@ -270,7 +283,7 @@ export default function OpportunitiesPage(): ReactElement {
         {/* Grid */}
         <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((op) => (
-            <OpportunityCard key={op.id} item={op} />
+            <OpportunityCard key={op.id} item={op} locale={locale} />
           ))}
         </section>
 

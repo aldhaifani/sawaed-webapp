@@ -30,7 +30,12 @@ export default async function RootLayout({
   const dir = locale === "ar" ? "rtl" : "ltr";
   return (
     <ConvexAuthNextjsServerProvider>
-      <html lang={locale} dir={dir} className={`${geist.variable}`}>
+      <html
+        lang={locale}
+        dir={dir}
+        className={`${geist.variable}`}
+        suppressHydrationWarning
+      >
         <body>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
             <PostHogProvider>
