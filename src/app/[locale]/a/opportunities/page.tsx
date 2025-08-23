@@ -13,12 +13,14 @@ import { DateTimePicker } from "@/components/ui/date-time-picker";
 import BasicDropdown from "@/components/ui/BasicDropdown";
 import { Plus, Search, CalendarDays, MapPin, Edit, Filter } from "lucide-react";
 import Link from "next/link";
+import { useConvexAuth } from "convex/react";
 
 type StatusFilter = "All" | "Published" | "Draft";
 
 export default function AdminOpportunitiesPage(): ReactElement {
   const locale = (useLocale() as "ar" | "en") ?? "en";
   const t = useTranslations("opportunities.adminList");
+  const { isAuthenticated } = useConvexAuth();
   const [query, setQuery] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
   const [regionId, setRegionId] = useState<string>("");
@@ -43,44 +45,46 @@ export default function AdminOpportunitiesPage(): ReactElement {
       : "skip",
   );
 
+  const eventQueryArgs = useMemo(
+    () => ({
+      searchText: query || undefined,
+      status: statusFilter,
+      locale,
+      regionId: regionId ? (regionId as unknown as Id<"regions">) : undefined,
+      cityId: cityId ? (cityId as unknown as Id<"cities">) : undefined,
+      startingDateFrom: dateFromMs,
+      startingDateTo: dateToMs,
+      registrationPolicy: policy || undefined,
+      isRegistrationRequired: registrationRequired
+        ? registrationRequired === "yes"
+          ? true
+          : false
+        : undefined,
+      allowWaitlist: waitlistAllowed
+        ? waitlistAllowed === "yes"
+          ? true
+          : false
+        : undefined,
+      capacityMin: capacityMin ? Number(capacityMin) || 0 : undefined,
+    }),
+    [
+      query,
+      statusFilter,
+      locale,
+      regionId,
+      cityId,
+      dateFromMs,
+      dateToMs,
+      policy,
+      registrationRequired,
+      waitlistAllowed,
+      capacityMin,
+    ],
+  );
+
   const { results, status, loadMore } = usePaginatedQuery(
     api.events.listAdminEventsPaginated,
-    useMemo(
-      () => ({
-        searchText: query || undefined,
-        status: statusFilter,
-        locale,
-        regionId: regionId ? (regionId as unknown as Id<"regions">) : undefined,
-        cityId: cityId ? (cityId as unknown as Id<"cities">) : undefined,
-        startingDateFrom: dateFromMs,
-        startingDateTo: dateToMs,
-        registrationPolicy: policy || undefined,
-        isRegistrationRequired: registrationRequired
-          ? registrationRequired === "yes"
-            ? true
-            : false
-          : undefined,
-        allowWaitlist: waitlistAllowed
-          ? waitlistAllowed === "yes"
-            ? true
-            : false
-          : undefined,
-        capacityMin: capacityMin ? Number(capacityMin) || 0 : undefined,
-      }),
-      [
-        query,
-        statusFilter,
-        locale,
-        regionId,
-        cityId,
-        dateFromMs,
-        dateToMs,
-        policy,
-        registrationRequired,
-        waitlistAllowed,
-        capacityMin,
-      ],
-    ),
+    isAuthenticated ? eventQueryArgs : "skip",
     { initialNumItems: 12 },
   );
 

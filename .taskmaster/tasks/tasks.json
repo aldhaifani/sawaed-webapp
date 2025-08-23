@@ -386,7 +386,7 @@
             "description": "Build a user-facing event listing page that supports searching by keywords, filtering by date/location, and paginating results for performance and usability.",
             "dependencies": ["7.1"],
             "details": "Ensure bilingual content displays correctly. Optimize queries for fast filtering and pagination. Include UI components for search input, filter selectors, and pagination controls.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -715,7 +715,7 @@
     ],
     "metadata": {
       "created": "2025-08-16T07:34:51.087Z",
-      "updated": "2025-08-23T08:35:16.612Z",
+      "updated": "2025-08-23T10:12:52.398Z",
       "description": "Tasks for master context"
     }
   }
