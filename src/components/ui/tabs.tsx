@@ -5,14 +5,23 @@ import * as TabsPrimitive from "@radix-ui/react-tabs";
 
 import { cn } from "@/lib/utils";
 
+type Direction = "ltr" | "rtl";
+function getDocumentDir(): Direction | undefined {
+  if (typeof document === "undefined") return undefined;
+  const dir = (document.dir as Direction) || undefined;
+  return dir === "rtl" ? "rtl" : dir === "ltr" ? "ltr" : undefined;
+}
 function Tabs({
   className,
+  dir,
   ...props
-}: React.ComponentProps<typeof TabsPrimitive.Root>) {
+}: React.ComponentProps<typeof TabsPrimitive.Root> & { dir?: Direction }) {
+  const resolvedDir: Direction | undefined = dir ?? getDocumentDir();
   return (
     <TabsPrimitive.Root
       data-slot="tabs"
       className={cn("flex flex-col gap-2", className)}
+      dir={resolvedDir}
       {...props}
     />
   );

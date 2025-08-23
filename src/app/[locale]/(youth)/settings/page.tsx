@@ -295,7 +295,7 @@ export default function SettingsPage(): ReactElement {
             title={t("sections.account.title")}
             description={t("sections.account.description")}
             footer={
-              <div className="flex justify-end">
+              <div className="flex ltr:justify-end rtl:justify-start">
                 <Button
                   variant="destructive"
                   className="inline-flex items-center gap-2 text-xs"
@@ -331,7 +331,7 @@ export default function SettingsPage(): ReactElement {
           <p className="text-muted-foreground text-sm">
             {t("sections.account.delete.confirmMessage")}
           </p>
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex gap-2 pt-2 ltr:justify-end rtl:justify-start">
             <DialogClose asChild>
               <Button variant="secondary">
                 {t("sections.account.delete.cancel")}

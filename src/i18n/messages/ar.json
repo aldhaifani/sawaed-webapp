@@ -318,14 +318,137 @@
       "waitlistLabel": "قائمة الانتظار",
       "waitlistAllowed": "مسموح",
       "waitlistNotAllowed": "غير مسموح",
-      "minCapacityLabel": "الحد الأدنى للسعة"
+      "minCapacityLabel": "الحد الأدنى للسعة",
+      "manage": "إدارة"
+    },
+    "manage": {
+      "title": "إدارة الفرصة",
+      "subtitle": "تعديل التفاصيل ومراجعة الطلبات",
+      "back": "العودة إلى القائمة",
+      "tabs": {
+        "header": "الإدارة",
+        "opportunity": "الفرصة",
+        "applications": "الطلبات"
+      }
+    },
+    "adminApplications": {
+      "title": "الطلبات",
+      "empty": "لا توجد طلبات",
+      "filter": {
+        "status": "الحالة",
+        "all": "الكل",
+        "searchPlaceholder": "تصفية المتقدّمين..."
+      },
+      "status": {
+        "accepted": "مقبول",
+        "pending": "قيد الانتظار",
+        "rejected": "مرفوض",
+        "cancelled": "ملغي",
+        "waitlisted": "قائمة الانتظار"
+      },
+      "actions": {
+        "reset": "إعادة تعيين",
+        "accept": "قبول",
+        "reject": "رفض",
+        "waitlist": "إضافة إلى الانتظار",
+        "viewProfile": "عرض الملف"
+      },
+      "table": {
+        "applicant": "المتقدّم",
+        "registrationId": "رقم الطلب",
+        "userId": "رقم المستخدم",
+        "timestamp": "تاريخ التقديم",
+        "status": "الحالة",
+        "notes": "ملاحظات",
+        "actions": "إجراءات",
+        "columns": "الأعمدة"
+      },
+      "pagination": {
+        "prev": "السابق",
+        "next": "التالي"
+      }
+    },
+    "youthList": {
+      "title": "الفرص",
+      "subtitle": "اكتشف ورش العمل والفعاليات والبرامج الموجهة للشباب.",
+      "searchPlaceholder": "ابحث عن الفرص",
+      "filters": "التصفية",
+      "resetFilters": "مسح جميع عوامل التصفية",
+      "done": "تم",
+      "regionLabel": "المحافظة",
+      "cityLabel": "المدينة",
+      "allOption": "الكل",
+      "selectRegionFirst": "اختر المحافظة أولاً",
+      "dateStartFrom": "تاريخ البدء من",
+      "dateStartTo": "تاريخ البدء إلى",
+      "policyLabel": "السياسة",
+      "policyOpen": "متاح",
+      "policyApproval": "يتطلب موافقة",
+      "policyInviteOnly": "بدعوة فقط",
+      "registrationLabel": "التسجيل",
+      "registrationRequired": "مطلوب",
+      "registrationOptional": "اختياري",
+      "waitlistLabel": "قائمة الانتظار",
+      "waitlistAllowed": "مسموح",
+      "waitlistNotAllowed": "غير مسموح",
+      "minCapacityLabel": "الحد الأدنى للسعة",
+      "resultsCount": "{count} نتيجة",
+      "emptyTitle": "لا توجد فرص",
+      "emptyHint": "جرّب مسح البحث أو تعديل عوامل التصفية.",
+      "viewDetails": "عرض التفاصيل",
+      "loadMore": "عرض المزيد"
+    },
+    "youthDetails": {
+      "notFoundTitle": "لم يتم العثور على الفرصة",
+      "notFoundHint": "قد تكون نُقلت أو حُذفت.",
+      "backToList": "العودة إلى الفرص",
+      "back": "رجوع",
+      "details": "تفاصيل الفرصة",
+      "saved": "تم الحفظ",
+      "save": "حفظ",
+      "share": "مشاركة",
+      "revokeApplication": "إلغاء الطلب",
+      "applyNow": "قدّم الآن",
+      "tabs": {
+        "overview": "نظرة عامة",
+        "timeline": "الجدول الزمني"
+      },
+      "eventDates": "تواريخ الفعالية",
+      "appliedCount": "{count} متقدم",
+      "capacity": "السعة",
+      "notSet": "غير محدد",
+      "status": "الحالة",
+      "statusApplied": "تم التقديم",
+      "statusNotApplied": "لم يتم التقديم",
+      "start": "البدء",
+      "end": "الانتهاء",
+      "officialPage": "الصفحة الرسمية",
+      "takeActionTitle": "اتخاذ إجراء",
+      "takeActionHint": "قدّم، احفظ، أو شارك هذه الفرصة.",
+      "revoke": "إلغاء",
+      "apply": "تقديم",
+      "cancel": "إلغاء",
+      "revokeConfirmTitle": "هل تريد إلغاء طلبك؟",
+      "revokeConfirmHint": "يمكنك التقديم مرة أخرى طالما نافذة التقديم مفتوحة.",
+      "applyConfirmTitle": "تأكيد تقديم الطلب؟",
+      "applyConfirmHint": "قد لا تتمكن من تعديل الطلب بعد الإرسال.",
+      "confirm": "تأكيد",
+      "errors": {
+        "REGISTRATION_NOT_OPEN": "التقديم لم يبدأ بعد.",
+        "REGISTRATION_CLOSED": "التقديم مغلق.",
+        "INVITE_ONLY": "هذه الفرصة بالدعوة فقط.",
+        "ALREADY_REGISTERED": "لديك طلب نشط بالفعل.",
+        "EVENT_FULL": "تم اكتمال السعة لهذه الفرصة.",
+        "EVENT_NOT_AVAILABLE": "هذه الفرصة غير متاحة.",
+        "UNKNOWN": "حدث خطأ ما. حاول مرة أخرى."
+      }
     },
     "form": {
       "titleEn": "العنوان (إنجليزي)",
       "titleAr": "العنوان (عربي)",
       "descriptionEn": "الوصف (إنجليزي)",
       "descriptionAr": "الوصف (عربي)",
-      "startsAt": "وقت البداية",
+      "startsAt": "وقت البدء",
       "endsAt": "وقت الانتهاء",
       "registrationsOpen": "فتح التسجيل",
       "registrationsClose": "إغلاق التسجيل",

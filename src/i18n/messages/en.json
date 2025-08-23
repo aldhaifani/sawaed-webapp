@@ -318,7 +318,100 @@
       "waitlistLabel": "Waitlist",
       "waitlistAllowed": "Allowed",
       "waitlistNotAllowed": "Not allowed",
-      "minCapacityLabel": "Min capacity"
+      "minCapacityLabel": "Min capacity",
+      "manage": "Manage"
+    },
+    "manage": {
+      "title": "Manage Opportunity",
+      "subtitle": "Edit details and review applications",
+      "back": "Back to list",
+      "tabs": {
+        "header": "Manage",
+        "opportunity": "Opportunity",
+        "applications": "Applications"
+      }
+    },
+    "adminApplications": {
+      "title": "Applications",
+      "empty": "No applications found",
+      "filter": {
+        "status": "Status",
+        "all": "All",
+        "searchPlaceholder": "Filter applicants..."
+      },
+      "status": {
+        "accepted": "Accepted",
+        "pending": "Pending",
+        "rejected": "Rejected",
+        "cancelled": "Cancelled",
+        "waitlisted": "Waitlisted"
+      },
+      "actions": {
+        "reset": "Reset",
+        "accept": "Accept",
+        "reject": "Reject",
+        "waitlist": "Waitlist",
+        "viewProfile": "View profile"
+      },
+      "table": {
+        "applicant": "Applicant",
+        "registrationId": "Registration ID",
+        "userId": "User ID",
+        "timestamp": "Submitted at",
+        "status": "Status",
+        "notes": "Notes",
+        "actions": "Actions",
+        "columns": "Columns"
+      },
+      "pagination": {
+        "prev": "Previous",
+        "next": "Next"
+      }
+    },
+    "youthDetails": {
+      "notFoundTitle": "Opportunity not found",
+      "notFoundHint": "It may have been moved or removed.",
+      "backToList": "Back to Opportunities",
+      "back": "Back",
+      "details": "Opportunity Details",
+      "saved": "Saved",
+      "save": "Save",
+      "share": "Share",
+      "revokeApplication": "Revoke Application",
+      "applyNow": "Apply Now",
+      "tabs": {
+        "overview": "Overview",
+        "timeline": "Timeline"
+      },
+      "eventDates": "Event Dates",
+      "appliedCount": "{count} applied",
+      "capacity": "Capacity",
+      "notSet": "Not set",
+      "status": "Status",
+      "statusApplied": "Applied",
+      "statusNotApplied": "Not Applied",
+      "start": "Start",
+      "end": "End",
+      "officialPage": "Official Page",
+      "takeActionTitle": "Take Action",
+      "takeActionHint": "Apply, save, or share this opportunity.",
+      "revoke": "Revoke",
+      "apply": "Apply",
+      "cancel": "Cancel",
+      "revokeConfirmTitle": "Revoke your application?",
+      "revokeConfirmHint": "You can apply again later while the application window is open.",
+      "applyConfirmTitle": "Submit your application?",
+      "applyConfirmHint": "You may not be able to edit after submitting.",
+      "confirm": "Confirm",
+      "errors": {
+        "REGISTRATION_NOT_OPEN": "Applications haven't opened yet.",
+        "REGISTRATION_CLOSED": "Applications are closed.",
+        "INVITE_ONLY": "This opportunity is invite-only.",
+        "ALREADY_REGISTERED": "You already have an active application.",
+        "EVENT_FULL": "This opportunity is full.",
+        "EVENT_NOT_AVAILABLE": "This opportunity is not available.",
+        "UNKNOWN": "Something went wrong. Please try again."
+      }
     },
     "form": {
       "titleEn": "Title (EN)",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
@@ -28,6 +28,9 @@ export default function BasicDropdown({
   const [isOpen, setIsOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<DropdownItem | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [openUpwards, setOpenUpwards] = useState(false);
 
   const handleItemSelect = (item: DropdownItem) => {
     setSelectedItem(item);
@@ -61,10 +64,36 @@ export default function BasicDropdown({
     setSelectedItem(found);
   }, [selectedId, items]);
 
+  // Decide whether to open upwards based on available viewport space
+  useLayoutEffect(() => {
+    function recompute() {
+      if (!isOpen || !buttonRef.current) return;
+      const rect = buttonRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const estimatedMenuHeight = Math.min(
+        320,
+        Math.max(200, items.length * 40),
+      );
+      const shouldOpenUp =
+        spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow;
+      setOpenUpwards(shouldOpenUp);
+    }
+    recompute();
+    window.addEventListener("resize", recompute);
+    window.addEventListener("scroll", recompute, true);
+    return () => {
+      window.removeEventListener("resize", recompute);
+      window.removeEventListener("scroll", recompute, true);
+    };
+  }, [isOpen, items.length]);
+
   return (
     <div ref={dropdownRef} className={`relative inline-block ${className}`}>
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
+        type="button"
         className="bg-background hover:bg-secondary flex w-full items-center justify-between gap-2 rounded-lg border px-4 py-2 text-start transition-colors"
       >
         <span className="block truncate">
@@ -81,7 +110,12 @@ export default function BasicDropdown({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="bg-background absolute left-0 z-10 mt-1 w-full origin-top rounded-lg border shadow-lg"
+            ref={menuRef}
+            className={`bg-background absolute z-50 w-full rounded-lg border shadow-lg ltr:left-0 rtl:right-0 ${
+              openUpwards
+                ? "bottom-full mb-1 origin-bottom"
+                : "top-full mt-1 origin-top"
+            }`}
             initial={{ opacity: 0, y: -10, scaleY: 0.8 }}
             animate={{ opacity: 1, y: 0, scaleY: 1 }}
             exit={{
@@ -111,18 +145,21 @@ export default function BasicDropdown({
                 >
                   <button
                     onClick={() => handleItemSelect(item)}
+                    type="button"
                     className={`flex w-full items-center px-4 py-2 text-start text-sm ${
                       selectedItem?.id === item.id
                         ? "text-brand font-medium"
                         : ""
                     }`}
                   >
-                    {item.icon && <span className="mr-2">{item.icon}</span>}
+                    {item.icon && (
+                      <span className="ltr:mr-2 rtl:ml-2">{item.icon}</span>
+                    )}
                     {item.label}
 
                     {selectedItem?.id === item.id && (
                       <motion.span
-                        className="ml-auto"
+                        className="ltr:ml-auto rtl:mr-auto"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{

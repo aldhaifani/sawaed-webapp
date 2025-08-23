@@ -452,10 +452,11 @@ export default function AdminOpportunitiesPage(): ReactElement {
                   {ev.canEdit ? (
                     <Button variant="secondary" size="sm" asChild>
                       <Link
-                        href={`/${locale}/a/opportunities/${(ev._id as unknown as string) ?? ""}/edit`}
+                        href={`/${locale}/a/opportunities/${(ev._id as unknown as string) ?? ""}/manage`}
                         className="inline-flex items-center gap-1"
                       >
-                        <Edit className="size-4" /> {t("edit")}
+                        <Edit className="size-4" />{" "}
+                        {t("manage", { defaultMessage: "Manage" })}
                       </Link>
                     </Button>
                   ) : (

@@ -265,6 +265,142 @@ export const getMyProfileComposite = query({
   },
 });
 
+export const getProfileCompositeByUserId = query({
+  args: { userId: v.id("appUsers"), locale: AppLocale },
+  handler: async (ctx, { userId, locale }) => {
+    // Ensure caller is authenticated (admin checks happen at router level)
+    await requireUser(ctx);
+
+    const appUser = await ctx.db.get(userId);
+    if (!appUser) return null;
+
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .unique();
+    let pictureUrlFromStorage: string | undefined = undefined;
+    if (
+      (profile as unknown as { pictureStorageId?: Id<"_storage"> })
+        ?.pictureStorageId
+    ) {
+      const sid = (profile as unknown as { pictureStorageId: Id<"_storage"> })
+        .pictureStorageId;
+      pictureUrlFromStorage = (await ctx.storage.getUrl(sid)) ?? undefined;
+    }
+
+    const skills = await ctx.db
+      .query("userSkills")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    const skillIds = skills.map((s) => s.skillId as Id<"skills">);
+    const skillDocs = await Promise.all(skillIds.map((id) => ctx.db.get(id)));
+
+    const interests = await ctx.db
+      .query("userInterests")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    const interestIds = interests.map((i) => i.interestId as Id<"interests">);
+    const interestDocs = await Promise.all(
+      interestIds.map((id) => ctx.db.get(id)),
+    );
+
+    const education = await ctx.db
+      .query("education")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .order("asc")
+      .collect();
+    const experiences = await ctx.db
+      .query("experiences")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .order("asc")
+      .collect();
+    const projects = await ctx.db
+      .query("projects")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .order("asc")
+      .collect();
+    const awards = await ctx.db
+      .query("awards")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .order("asc")
+      .collect();
+
+    const activities = await ctx.db
+      .query("eventRegistrations")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .order("desc")
+      .collect();
+
+    const choose = (ar?: string | null, en?: string | null): string => {
+      const arVal = (ar ?? "").trim();
+      const enVal = (en ?? "").trim();
+      return locale === "ar" ? arVal || enVal : enVal || arVal;
+    };
+
+    const localizeName = (
+      doc: null | { nameAr?: string | null; nameEn?: string | null },
+    ) => choose(doc?.nameAr ?? null, doc?.nameEn ?? null);
+
+    let resolvedCity: string | undefined = undefined;
+    let resolvedRegion: string | undefined = undefined;
+    const regionId = (profile as unknown as { regionId?: Id<"regions"> })
+      ?.regionId;
+    const cityId = (profile as unknown as { cityId?: Id<"cities"> })?.cityId;
+    if (regionId || cityId) {
+      const [regionDoc, cityDoc] = await Promise.all([
+        regionId ? ctx.db.get(regionId) : Promise.resolve(null),
+        cityId ? ctx.db.get(cityId) : Promise.resolve(null),
+      ]);
+      if (regionDoc)
+        resolvedRegion = localizeName(regionDoc as any) || resolvedRegion;
+      if (cityDoc) resolvedCity = localizeName(cityDoc as any) || resolvedCity;
+    }
+
+    return {
+      user: {
+        id: appUser._id,
+        email: (appUser as any).email,
+        firstName: choose(
+          (appUser as unknown as { firstNameAr?: string }).firstNameAr,
+          (appUser as unknown as { firstNameEn?: string }).firstNameEn,
+        ),
+        lastName: choose(
+          (appUser as unknown as { lastNameAr?: string }).lastNameAr,
+          (appUser as unknown as { lastNameEn?: string }).lastNameEn,
+        ),
+        phone: (appUser as unknown as { phone?: string }).phone ?? undefined,
+        gender: (appUser as unknown as { gender?: "male" | "female" }).gender,
+      },
+      profile: profile
+        ? {
+            id: profile._id,
+            headline: profile.headline ?? undefined,
+            bio: profile.bio ?? undefined,
+            city: resolvedCity,
+            region: resolvedRegion,
+            pictureUrl:
+              pictureUrlFromStorage ?? profile.pictureUrl ?? undefined,
+            collaborationStatus: profile.collaborationStatus ?? undefined,
+            completionPercentage: profile.completionPercentage ?? 0,
+          }
+        : null,
+      skills: skillDocs.filter(Boolean).map((d) => ({
+        id: d!._id as Id<"skills">,
+        name: choose(d!.nameAr, d!.nameEn),
+      })),
+      interests: interestDocs.filter(Boolean).map((d) => ({
+        id: d!._id as Id<"interests">,
+        name: choose(d!.nameAr, d!.nameEn),
+      })),
+      education,
+      experiences,
+      projects,
+      awards,
+      activities,
+    };
+  },
+});
+
 export const updateUserGender = mutation({
   args: { gender: v.union(v.literal("male"), v.literal("female")) },
   handler: async (ctx, { gender }) => {

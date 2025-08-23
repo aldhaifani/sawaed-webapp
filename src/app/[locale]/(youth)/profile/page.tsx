@@ -1404,7 +1404,7 @@ export default function YouthProfilePage(): ReactElement {
                 })()}
               </div>
             </div>
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex items-center gap-2 pt-2 ltr:justify-end rtl:justify-start">
               <DialogClose asChild>
                 <Button variant="ghost">{tProfile("actions.cancel")}</Button>
               </DialogClose>
@@ -1556,7 +1556,7 @@ export default function YouthProfilePage(): ReactElement {
                 onInterestsChange={handleInterestsChange}
               />
             </div>
-            <div className="col-span-1 flex items-center justify-end gap-2 sm:col-span-2">
+            <div className="col-span-1 flex items-center gap-2 sm:col-span-2 ltr:justify-end rtl:justify-start">
               <DialogClose asChild>
                 <Button variant="ghost">{tProfile("actions.cancel")}</Button>
               </DialogClose>

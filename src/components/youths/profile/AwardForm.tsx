@@ -72,7 +72,7 @@ export function AwardForm({
           />
         </div>
       </div>
-      <div className="flex items-center justify-end gap-2 pt-2">
+      <div className="flex items-center gap-2 pt-2 ltr:justify-end rtl:justify-start">
         <DialogClose asChild>
           <Button variant="ghost" onClick={onCancel}>
             {t("actions.cancel")}

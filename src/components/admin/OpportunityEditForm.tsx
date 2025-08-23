@@ -3,8 +3,8 @@
 import type { ReactElement, FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -12,22 +12,48 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Save, UploadCloud, X } from "lucide-react";
+import { Save, Trash2, X } from "lucide-react";
 import { DateTimeField } from "@/components/ui/date-time-field";
 import BasicDropdown from "@/components/ui/BasicDropdown";
 
-export default function AdminCreateOpportunityPage(): ReactElement {
+type RegistrationPolicy = "open" | "approval" | "inviteOnly";
+
+export function OpportunityEditForm(): ReactElement {
   const rawLocale = useLocale();
   const locale: "ar" | "en" = rawLocale === "ar" ? "ar" : "en";
   const t = useTranslations("opportunities");
+  const tCommon = useTranslations("common");
+  const params = useParams<{ id: string }>();
   const router = useRouter();
-
-  // Mutations
-  const createDraft = useMutation(api.events.createEventDraft);
+  const rawId = params.id;
+  const isLikelyConvexId = useMemo(() => /^[a-z0-9]+$/i.test(rawId), [rawId]);
+  const event = useQuery(
+    api.events.getEventById,
+    isLikelyConvexId
+      ? ({ id: rawId as unknown as Id<"events"> } as const)
+      : "skip",
+  );
+  const updateEvent = useMutation(api.events.updateEvent);
   const publishEvent = useMutation(api.events.publishEvent);
+  const deleteEvent = useMutation(api.events.deleteEvent);
 
-  // Form state
-  type RegistrationPolicy = "open" | "approval" | "inviteOnly";
+  const toMs = useCallback((iso: string): number | undefined => {
+    if (!iso) return undefined;
+    const ms = new Date(iso).getTime();
+    return Number.isFinite(ms) ? ms : undefined;
+  }, []);
+  const toLocalInput = useCallback((ms?: number): string => {
+    if (!ms) return "";
+    const d = new Date(ms);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    const mm = pad(d.getMonth() + 1);
+    const dd = pad(d.getDate());
+    const hh = pad(d.getHours());
+    const mi = pad(d.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+  }, []);
+
   const [titleEn, setTitleEn] = useState<string>("");
   const [titleAr, setTitleAr] = useState<string>("");
   const [descriptionEn, setDescriptionEn] = useState<string>("");
@@ -59,25 +85,48 @@ export default function AdminCreateOpportunityPage(): ReactElement {
     useState<string>("");
   const [termsUrl, setTermsUrl] = useState<string>("");
   const [contact, setContact] = useState<string>("");
+  const [isPublished, setIsPublished] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  const toMs = useCallback((iso: string): number | undefined => {
-    if (!iso) return undefined;
-    const ms = new Date(iso).getTime();
-    return Number.isFinite(ms) ? ms : undefined;
-  }, []);
+  useEffect(() => {
+    if (!event) return;
+    setTitleEn(event.titleEn);
+    setTitleAr(event.titleAr);
+    setDescriptionEn(event.descriptionEn);
+    setDescriptionAr(event.descriptionAr);
+    setStartingDate(toLocalInput(event.startingDate));
+    setEndingDate(toLocalInput(event.endingDate));
+    setRegistrationsOpenDate(toLocalInput(event.registrationsOpenDate));
+    setRegistrationsCloseDate(toLocalInput(event.registrationsCloseDate));
+    setRegion(event.region ?? "");
+    setCity(event.city ?? "");
+    setVenueName(event.venueName ?? "");
+    setVenueAddress(event.venueAddress ?? "");
+    setGoogleMapUrl(event.googleMapUrl ?? "");
+    setOnlineUrl(event.onlineUrl ?? "");
+    setPosterUrl(event.posterUrl ?? "");
+    setRegistrationPolicy(event.registrationPolicy as RegistrationPolicy);
+    setIsRegistrationRequired(event.isRegistrationRequired);
+    setAllowWaitlist(event.allowWaitlist);
+    setCapacity(event.capacity ? String(event.capacity) : "");
+    setExternalRegistrationUrl(event.externalRegistrationUrl ?? "");
+    setMaxRegistrationsPerUser(
+      event.maxRegistrationsPerUser
+        ? String(event.maxRegistrationsPerUser)
+        : "",
+    );
+    setTermsUrl(event.termsUrl ?? "");
+    setContact(event.contact ?? "");
+    setIsPublished(event.isPublished);
+  }, [event, toLocalInput]);
 
-  const toLocalInput = useCallback((ms?: number): string => {
-    if (!ms) return "";
-    const d = new Date(ms);
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const yyyy = d.getFullYear();
-    const mm = pad(d.getMonth() + 1);
-    const dd = pad(d.getDate());
-    const hh = pad(d.getHours());
-    const mi = pad(d.getMinutes());
-    return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
-  }, []);
+  const regions = useQuery(api.locations.listRegions, { locale });
+  const cities = useQuery(
+    api.locations.listCitiesByRegion,
+    selectedRegionId
+      ? { regionId: selectedRegionId as unknown as Id<"regions">, locale }
+      : "skip",
+  );
 
   const canSubmit = useMemo(() => {
     return (
@@ -98,27 +147,19 @@ export default function AdminCreateOpportunityPage(): ReactElement {
     toMs,
   ]);
 
-  // Locations data
-  const regions = useQuery(api.locations.listRegions, { locale });
-  const cities = useQuery(
-    api.locations.listCitiesByRegion,
-    selectedRegionId
-      ? { regionId: selectedRegionId as unknown as Id<"regions">, locale }
-      : "skip",
-  );
-
   async function onSave(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
-    if (!canSubmit) return;
+    if (!event || !canSubmit) return;
     setSubmitting(true);
     try {
-      const res = await createDraft({
+      await updateEvent({
+        id: event._id,
         titleEn,
         titleAr,
         descriptionEn,
         descriptionAr,
-        startingDate: toMs(startingDate)!,
-        endingDate: toMs(endingDate)!,
+        startingDate: toMs(startingDate),
+        endingDate: toMs(endingDate),
         registrationsOpenDate: toMs(registrationsOpenDate),
         registrationsCloseDate: toMs(registrationsCloseDate),
         region: region || undefined,
@@ -139,52 +180,6 @@ export default function AdminCreateOpportunityPage(): ReactElement {
         termsUrl: termsUrl || undefined,
         contact: contact || undefined,
       });
-      if (res?.id) {
-        router.push(`/${locale}/a/opportunities`);
-      } else {
-        router.push(`/${locale}/a/opportunities`);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function onPublishNow(): Promise<void> {
-    if (!canSubmit) return;
-    setSubmitting(true);
-    try {
-      const res = await createDraft({
-        titleEn,
-        titleAr,
-        descriptionEn,
-        descriptionAr,
-        startingDate: toMs(startingDate)!,
-        endingDate: toMs(endingDate)!,
-        registrationsOpenDate: toMs(registrationsOpenDate),
-        registrationsCloseDate: toMs(registrationsCloseDate),
-        region: region || undefined,
-        city: city || undefined,
-        venueName: venueName || undefined,
-        venueAddress: venueAddress || undefined,
-        googleMapUrl: googleMapUrl || undefined,
-        onlineUrl: onlineUrl || undefined,
-        posterUrl: posterUrl || undefined,
-        registrationPolicy,
-        isRegistrationRequired,
-        allowWaitlist,
-        capacity: capacity ? Number(capacity) : undefined,
-        externalRegistrationUrl: externalRegistrationUrl || undefined,
-        maxRegistrationsPerUser: maxRegistrationsPerUser
-          ? Number(maxRegistrationsPerUser)
-          : undefined,
-        termsUrl: termsUrl || undefined,
-        contact: contact || undefined,
-      });
-      if (res?.id) {
-        await publishEvent({ id: res.id });
-      }
       router.push(`/${locale}/a/opportunities`);
     } catch (err) {
       console.error(err);
@@ -193,18 +188,86 @@ export default function AdminCreateOpportunityPage(): ReactElement {
     }
   }
 
+  async function onTogglePublish(): Promise<void> {
+    if (!event) return;
+    setSubmitting(true);
+    try {
+      if (!isPublished) {
+        await publishEvent({ id: event._id });
+      } else {
+        await updateEvent({ id: event._id, isPublished: false });
+      }
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function onDelete(): Promise<void> {
+    if (!event) return;
+    const confirmed = window.confirm(t("confirmDelete"));
+    if (!confirmed) return;
+    setSubmitting(true);
+    try {
+      await deleteEvent({ id: event._id });
+      router.push(`/${locale}/a/opportunities`);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (!isLikelyConvexId) {
+    return (
+      <main className="bg-background min-h-screen w-full">
+        <div className="mx-auto max-w-3xl px-4 py-10 text-center">
+          <p className="text-foreground text-lg font-semibold">
+            {t("notFound")}
+          </p>
+          <Button asChild className="mt-4">
+            <Link href={`/${locale}/a/opportunities`}>{t("actions.back")}</Link>
+          </Button>
+        </div>
+      </main>
+    );
+  }
+
+  if (event === undefined) {
+    return (
+      <main className="bg-background min-h-screen w-full">
+        <div className="mx-auto max-w-3xl px-4 py-10 text-center">
+          <p className="text-foreground text-sm">{tCommon("loading")}</p>
+        </div>
+      </main>
+    );
+  }
+  if (event === null) {
+    return (
+      <main className="bg-background min-h-screen w-full">
+        <div className="mx-auto max-w-3xl px-4 py-10 text-center">
+          <p className="text-foreground text-lg font-semibold">
+            {t("notFound")}
+          </p>
+          <Button asChild className="mt-4">
+            <Link href={`/${locale}/a/opportunities`}>{t("actions.back")}</Link>
+          </Button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="bg-background min-h-screen w-full">
       <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8">
         <header className="mb-6 sm:mb-8">
           <h1 className="text-foreground text-2xl font-bold sm:text-3xl">
-            {t("createTitle")}
+            {t("editTitle")}
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            {/* TODO: localize subtitle if needed */}
-          </p>
+          <p className="text-muted-foreground mt-1 text-sm"></p>
         </header>
-
         <form
           onSubmit={onSave}
           className="bg-card rounded-2xl border p-5 shadow-sm"
@@ -217,7 +280,6 @@ export default function AdminCreateOpportunityPage(): ReactElement {
                   id="titleEn"
                   value={titleEn}
                   onChange={(e) => setTitleEn(e.target.value)}
-                  placeholder={t("placeholders.titleEn")}
                 />
               </div>
               <div className="space-y-2">
@@ -226,11 +288,9 @@ export default function AdminCreateOpportunityPage(): ReactElement {
                   id="titleAr"
                   value={titleAr}
                   onChange={(e) => setTitleAr(e.target.value)}
-                  placeholder={t("placeholders.titleAr")}
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="descriptionEn">{t("form.descriptionEn")}</Label>
@@ -251,7 +311,6 @@ export default function AdminCreateOpportunityPage(): ReactElement {
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <DateTimeField
                 label={t("form.startsAt")}
@@ -266,7 +325,6 @@ export default function AdminCreateOpportunityPage(): ReactElement {
                 onChangeMs={(ms) => setEndingDate(toLocalInput(ms))}
               />
             </div>
-
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <DateTimeField
                 label={t("form.registrationsOpen")}
@@ -281,7 +339,6 @@ export default function AdminCreateOpportunityPage(): ReactElement {
                 onChangeMs={(ms) => setRegistrationsCloseDate(toLocalInput(ms))}
               />
             </div>
-
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="regionSelect">{t("form.region")}</Label>
@@ -302,6 +359,9 @@ export default function AdminCreateOpportunityPage(): ReactElement {
                   }}
                   className="mt-1 w-full"
                 />
+                {region && !selectedRegionId ? (
+                  <p className="text-muted-foreground mt-1 text-xs">{region}</p>
+                ) : null}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="citySelect">{t("form.city")}</Label>
@@ -320,9 +380,11 @@ export default function AdminCreateOpportunityPage(): ReactElement {
                   }}
                   className={`mt-1 w-full ${!selectedRegionId ? "pointer-events-none opacity-50" : ""}`}
                 />
+                {city && !selectedCityId ? (
+                  <p className="text-muted-foreground mt-1 text-xs">{city}</p>
+                ) : null}
               </div>
             </div>
-
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="venueName">{t("form.venueName")}</Label>
@@ -341,7 +403,6 @@ export default function AdminCreateOpportunityPage(): ReactElement {
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="googleMapUrl">{t("form.googleMapUrl")}</Label>
@@ -363,19 +424,14 @@ export default function AdminCreateOpportunityPage(): ReactElement {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="posterUrl">{t("form.posterUrl")}</Label>
-                <div className="relative">
-                  <UploadCloud className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                  <Input
-                    id="posterUrl"
-                    value={posterUrl}
-                    onChange={(e) => setPosterUrl(e.target.value)}
-                    placeholder={t("placeholders.posterUrl")}
-                    className="pl-9"
-                  />
-                </div>
+                <Input
+                  id="posterUrl"
+                  value={posterUrl}
+                  onChange={(e) => setPosterUrl(e.target.value)}
+                  placeholder={t("placeholders.posterUrl")}
+                />
               </div>
             </div>
-
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="registrationPolicy">
@@ -426,7 +482,6 @@ export default function AdminCreateOpportunityPage(): ReactElement {
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="capacity">{t("form.capacity")}</Label>
@@ -461,7 +516,6 @@ export default function AdminCreateOpportunityPage(): ReactElement {
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="termsUrl">{t("form.termsUrl")}</Label>
@@ -481,32 +535,43 @@ export default function AdminCreateOpportunityPage(): ReactElement {
                 />
               </div>
             </div>
-
-            <div className="mt-2 flex flex-wrap items-center gap-3 ltr:justify-end rtl:justify-start">
-              <Button type="button" variant="outline" asChild>
-                <Link
-                  href={`/${locale}/a/opportunities`}
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex gap-3">
+                <Button type="button" variant="outline" asChild>
+                  <Link
+                    href={`/${locale}/a/opportunities`}
+                    className="inline-flex items-center gap-1"
+                  >
+                    <X className="size-4" /> {t("actions.back")}
+                  </Link>
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
                   className="inline-flex items-center gap-1"
+                  onClick={onDelete}
+                  disabled={submitting}
                 >
-                  <X className="size-4" /> {t("actions.back")}
-                </Link>
-              </Button>
-              <Button
-                type="submit"
-                className="inline-flex items-center gap-1"
-                disabled={!canSubmit || submitting}
-              >
-                <Save className="size-4" /> {t("actions.saveDraft")}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                className="inline-flex items-center gap-1"
-                onClick={onPublishNow}
-                disabled={!canSubmit || submitting}
-              >
-                <Save className="size-4" /> {t("actions.publish")}
-              </Button>
+                  <Trash2 className="size-4" /> {t("actions.delete")}
+                </Button>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={onTogglePublish}
+                  disabled={submitting}
+                >
+                  {isPublished ? t("actions.unpublish") : t("actions.publish")}
+                </Button>
+                <Button
+                  type="submit"
+                  className="inline-flex items-center gap-1"
+                  disabled={!canSubmit || submitting}
+                >
+                  <Save className="size-4" /> {t("actions.save")}
+                </Button>
+              </div>
             </div>
           </div>
         </form>

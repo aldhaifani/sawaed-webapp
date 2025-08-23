@@ -78,6 +78,286 @@ export const createEventDraft = mutation({
   },
 });
 
+/**
+ * Public paginated listing of published events with optional filters.
+ * - Only returns events where `isPublished` is true.
+ * - Supports the same localization logic for region/city as admin list.
+ * - Results ordered by `startingDate` descending.
+ */
+export const listPublicEventsPaginated = query({
+  args: {
+    searchText: v.optional(v.string()),
+    paginationOpts: paginationOptsValidator,
+    locale: v.union(v.literal("ar"), v.literal("en")),
+    regionId: v.optional(v.id("regions")),
+    cityId: v.optional(v.id("cities")),
+    // Advanced filters (same as admin minus status)
+    startingDateFrom: v.optional(v.number()),
+    startingDateTo: v.optional(v.number()),
+    registrationPolicy: v.optional(
+      v.union(
+        v.literal("open"),
+        v.literal("approval"),
+        v.literal("inviteOnly"),
+      ),
+    ),
+    isRegistrationRequired: v.optional(v.boolean()),
+    allowWaitlist: v.optional(v.boolean()),
+    capacityMin: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const {
+      paginationOpts,
+      locale,
+      regionId,
+      cityId,
+      startingDateFrom,
+      startingDateTo,
+      registrationPolicy,
+      isRegistrationRequired,
+      allowWaitlist,
+      capacityMin,
+    } = args;
+
+    // Start from published index
+    const page = await ctx.db
+      .query("events")
+      .withIndex("by_published_start", (idx) => idx.eq("isPublished", true))
+      .order("desc")
+      .paginate(paginationOpts);
+
+    // Helper to choose localized text
+    const choose = (
+      loc: "ar" | "en",
+      ar?: string | null,
+      en?: string | null,
+    ): string | undefined => {
+      const a = (ar ?? "").trim();
+      const e = (en ?? "").trim();
+      const val = loc === "ar" ? a || e : e || a;
+      return val || undefined;
+    };
+
+    // Load all regions once (small dataset)
+    const allRegions = await ctx.db.query("regions").collect();
+    // Resolve filter target bilingual names
+    let filterRegionNames: { ar?: string; en?: string } | null = null;
+    let filterCityNames: { ar?: string; en?: string } | null = null;
+    if (regionId) {
+      const r = await ctx.db.get(regionId);
+      if (r)
+        filterRegionNames = {
+          ar: (r as any).nameAr as string | undefined,
+          en: (r as any).nameEn as string | undefined,
+        };
+    }
+    if (cityId) {
+      const c = await ctx.db.get(cityId);
+      if (c)
+        filterCityNames = {
+          ar: (c as any).nameAr as string | undefined,
+          en: (c as any).nameEn as string | undefined,
+        };
+    }
+
+    // Optionally filter by resolved bilingual names and advanced filters
+    const filtered = page.page.filter((ev) => {
+      const regionOk = !filterRegionNames
+        ? true
+        : ev.region === filterRegionNames.ar ||
+          ev.region === filterRegionNames.en;
+      const cityOk = !filterCityNames
+        ? true
+        : ev.city === filterCityNames.ar || ev.city === filterCityNames.en;
+      if (!regionOk || !cityOk) return false;
+
+      if (
+        typeof startingDateFrom === "number" &&
+        ev.startingDate < startingDateFrom
+      )
+        return false;
+      if (
+        typeof startingDateTo === "number" &&
+        ev.startingDate > startingDateTo
+      )
+        return false;
+      if (registrationPolicy && ev.registrationPolicy !== registrationPolicy)
+        return false;
+      if (
+        typeof isRegistrationRequired === "boolean" &&
+        ev.isRegistrationRequired !== isRegistrationRequired
+      )
+        return false;
+      if (
+        typeof allowWaitlist === "boolean" &&
+        ev.allowWaitlist !== allowWaitlist
+      )
+        return false;
+      if (typeof capacityMin === "number" && (ev.capacity ?? 0) < capacityMin)
+        return false;
+
+      return true;
+    });
+
+    const localizedPage = await Promise.all(
+      filtered.map(async (ev) => {
+        let regionName: string | undefined = ev.region ?? undefined;
+        let cityName: string | undefined = ev.city ?? undefined;
+
+        if (ev.region) {
+          const regionDoc = allRegions.find(
+            (r) =>
+              (r as Value & { nameAr?: string; nameEn?: string }).nameAr ===
+                ev.region ||
+              (r as Value & { nameAr?: string; nameEn?: string }).nameEn ===
+                ev.region,
+          );
+          if (regionDoc) {
+            const nameAr = (regionDoc as any).nameAr as string | undefined;
+            const nameEn = (regionDoc as any).nameEn as string | undefined;
+            regionName = choose(locale, nameAr ?? null, nameEn ?? null);
+          }
+        }
+
+        if (ev.city) {
+          let citiesInRegion: Array<
+            Value & { _id: Id<"cities">; nameAr?: string; nameEn?: string }
+          > | null = null;
+          const regionDoc = allRegions.find(
+            (r) =>
+              (r as any).nameAr === ev.region ||
+              (r as any).nameEn === ev.region,
+          );
+          if (regionDoc) {
+            citiesInRegion = await ctx.db
+              .query("cities")
+              .withIndex("by_region", (q) =>
+                q.eq("regionId", (regionDoc as any)._id as Id<"regions">),
+              )
+              .collect();
+          }
+          const candidateCities = citiesInRegion ?? [];
+          const cityDoc = candidateCities.find(
+            (c) =>
+              (c as any).nameAr === ev.city || (c as any).nameEn === ev.city,
+          );
+          if (cityDoc) {
+            const nameAr = (cityDoc as any).nameAr as string | undefined;
+            const nameEn = (cityDoc as any).nameEn as string | undefined;
+            cityName = choose(locale, nameAr ?? null, nameEn ?? null);
+          }
+        }
+
+        return {
+          _id: ev._id,
+          titleEn: ev.titleEn,
+          titleAr: ev.titleAr,
+          descriptionEn: ev.descriptionEn,
+          descriptionAr: ev.descriptionAr,
+          startingDate: ev.startingDate,
+          endingDate: ev.endingDate,
+          city: cityName,
+          region: regionName,
+          isPublished: ev.isPublished,
+        } as const;
+      }),
+    );
+
+    return { ...page, page: localizedPage };
+  },
+});
+
+/**
+ * Public get-by-id for a published event. Returns null if not published or not found.
+ */
+export const getPublicEventById = query({
+  args: {
+    id: v.id("events"),
+    locale: v.union(v.literal("ar"), v.literal("en")),
+  },
+  handler: async (ctx, { id, locale }) => {
+    const ev = await ctx.db.get(id);
+    if (!ev || !ev.isPublished) return null;
+
+    // Localize region/city similar to list
+    const choose = (
+      loc: "ar" | "en",
+      ar?: string | null,
+      en?: string | null,
+    ): string | undefined => {
+      const a = (ar ?? "").trim();
+      const e = (en ?? "").trim();
+      const val = loc === "ar" ? a || e : e || a;
+      return val || undefined;
+    };
+
+    let regionName: string | undefined = ev.region ?? undefined;
+    let cityName: string | undefined = ev.city ?? undefined;
+
+    const allRegions = await ctx.db.query("regions").collect();
+    if (ev.region) {
+      const regionDoc = allRegions.find(
+        (r) =>
+          (r as any).nameAr === ev.region || (r as any).nameEn === ev.region,
+      );
+      if (regionDoc) {
+        const nameAr = (regionDoc as any).nameAr as string | undefined;
+        const nameEn = (regionDoc as any).nameEn as string | undefined;
+        regionName = choose(locale, nameAr ?? null, nameEn ?? null);
+      }
+    }
+    if (ev.city) {
+      let citiesInRegion: Array<
+        Value & { _id: Id<"cities">; nameAr?: string; nameEn?: string }
+      > | null = null;
+      const regionDoc = allRegions.find(
+        (r) =>
+          (r as any).nameAr === ev.region || (r as any).nameEn === ev.region,
+      );
+      if (regionDoc) {
+        citiesInRegion = await ctx.db
+          .query("cities")
+          .withIndex("by_region", (q) =>
+            q.eq("regionId", (regionDoc as any)._id as Id<"regions">),
+          )
+          .collect();
+      }
+      const candidateCities = citiesInRegion ?? [];
+      const cityDoc = candidateCities.find(
+        (c) => (c as any).nameAr === ev.city || (c as any).nameEn === ev.city,
+      );
+      if (cityDoc) {
+        const nameAr = (cityDoc as any).nameAr as string | undefined;
+        const nameEn = (cityDoc as any).nameEn as string | undefined;
+        cityName = choose(locale, nameAr ?? null, nameEn ?? null);
+      }
+    }
+
+    return {
+      _id: ev._id,
+      titleEn: ev.titleEn,
+      titleAr: ev.titleAr,
+      descriptionEn: ev.descriptionEn,
+      descriptionAr: ev.descriptionAr,
+      startingDate: ev.startingDate,
+      endingDate: ev.endingDate,
+      registrationsOpenDate: ev.registrationsOpenDate,
+      registrationsCloseDate: ev.registrationsCloseDate,
+      city: cityName,
+      region: regionName,
+      isPublished: ev.isPublished,
+      posterUrl: ev.posterUrl,
+      registrationPolicy: ev.registrationPolicy,
+      isRegistrationRequired: ev.isRegistrationRequired,
+      allowWaitlist: ev.allowWaitlist,
+      capacity: ev.capacity,
+      externalRegistrationUrl: ev.externalRegistrationUrl,
+      termsUrl: ev.termsUrl,
+      contact: ev.contact,
+    } as const;
+  },
+});
+
 export const updateEvent = mutation({
   args: {
     id: v.id("events"),

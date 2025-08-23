@@ -195,7 +195,7 @@ export default function SuperAdminSettingsPage(): ReactElement {
             </div>
           </section>
 
-          <div className="flex items-center justify-end gap-3">
+          <div className="flex items-center gap-3 ltr:justify-end rtl:justify-start">
             <Button type="button" variant="outline" asChild>
               <Link
                 href={`/${locale}/sa`}
