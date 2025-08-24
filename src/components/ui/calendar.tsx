@@ -6,6 +6,7 @@ import { DayPicker } from "react-day-picker";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
+import { useLocale, useTranslations } from "next-intl";
 
 function Calendar({
   className,
@@ -14,6 +15,12 @@ function Calendar({
   components: userComponents,
   ...props
 }: React.ComponentProps<typeof DayPicker>) {
+  const locale: string = useLocale();
+  const t = useTranslations("calendar");
+  const isRTL: boolean = React.useMemo(
+    () => locale.toLowerCase().startsWith("ar"),
+    [locale],
+  );
   const defaultClassNames = {
     months: "relative flex flex-col sm:flex-row gap-4",
     month: "w-full",
@@ -66,12 +73,21 @@ function Calendar({
       disabled?: boolean;
       orientation?: "left" | "right" | "up" | "down";
     }) => {
+      // Swap chevrons for RTL so that "previous" points right and "next" points left
       if (props.orientation === "left") {
-        return <ChevronLeftIcon size={16} {...props} aria-hidden="true" />;
+        return isRTL ? (
+          <ChevronRightIcon size={16} {...props} aria-hidden="true" />
+        ) : (
+          <ChevronLeftIcon size={16} {...props} aria-hidden="true" />
+        );
       }
-      return <ChevronRightIcon size={16} {...props} aria-hidden="true" />;
+      return isRTL ? (
+        <ChevronLeftIcon size={16} {...props} aria-hidden="true" />
+      ) : (
+        <ChevronRightIcon size={16} {...props} aria-hidden="true" />
+      );
     },
-  };
+  } as const;
 
   const mergedComponents = {
     ...defaultComponents,
@@ -84,6 +100,18 @@ function Calendar({
       className={cn("w-fit", className)}
       classNames={mergedClassNames}
       components={mergedComponents}
+      // Ensure correct text direction in the calendar
+      dir={isRTL ? "rtl" : "ltr"}
+      // Localize month caption using i18n month names
+      formatters={{
+        formatCaption: (date: Date) => {
+          const monthIndex: number = date.getMonth(); // 0-11
+          // Expect keys: calendar.months.0 .. calendar.months.11
+          const monthName: string = t(`months.${monthIndex}`);
+          const year: number = date.getFullYear();
+          return `${monthName} ${year}`;
+        },
+      }}
       {...props}
     />
   );

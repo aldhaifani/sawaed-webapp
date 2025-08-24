@@ -1,4 +1,5 @@
-import { mutation, query } from "./_generated/server";
+import { action, mutation, query } from "./_generated/server";
+import { api } from "./_generated/api";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { requireRole, requireUser } from "./authz";
@@ -238,23 +239,38 @@ export const listEventRegistrationsForAdminPaged = query({
         v.literal("waitlisted"),
       ),
     ),
+    // Optional server-side filters
+    searchText: v.optional(v.string()),
+    dateFrom: v.optional(v.number()), // inclusive ms epoch
+    dateTo: v.optional(v.number()), // inclusive ms epoch
     cursor: v.optional(v.string()),
     pageSize: v.optional(v.number()),
   },
-  handler: async (ctx, { eventId, status, cursor, pageSize }) => {
+  handler: async (
+    ctx,
+    { eventId, status, searchText, dateFrom, dateTo, cursor, pageSize },
+  ) => {
     await requireRole(ctx, [ROLES.ADMIN, ROLES.SUPER_ADMIN]);
     const size = pageSize && pageSize > 0 && pageSize <= 100 ? pageSize : 20;
-    let q = ctx.db
+    // Fetch all registrations for event, then filter server-side before paginating
+    const allForEvent = await ctx.db
       .query("eventRegistrations")
-      .withIndex("by_event", (ix) => ix.eq("eventId", eventId));
-    const page = await q.paginate({ cursor: cursor ?? null, numItems: size });
-    const filtered = status
-      ? page.page.filter((r) => r.status === status)
-      : page.page;
-    const enriched = await Promise.all(
-      filtered.map(async (r) => {
+      .withIndex("by_event", (ix) => ix.eq("eventId", eventId))
+      .collect();
+
+    // Apply status and date range filters
+    const afterStatusDate = allForEvent.filter((r) => {
+      if (status && r.status !== status) return false;
+      if (typeof dateFrom === "number" && r.timestamp < dateFrom) return false;
+      if (typeof dateTo === "number" && r.timestamp > dateTo) return false;
+      return true;
+    });
+
+    // Enrich with user minimal fields to support search and display
+    const enrichedAll = await Promise.all(
+      afterStatusDate.map(async (r) => {
         const user = await ctx.db.get(r.userId as Id<"appUsers">);
-        return {
+        const enriched = {
           registration: r,
           user: user
             ? {
@@ -267,13 +283,229 @@ export const listEventRegistrationsForAdminPaged = query({
               }
             : null,
         } as const;
+        return enriched;
       }),
     );
+
+    // Apply searchText on user fields (first/last names in both langs, email)
+    const normalizedSearch = (searchText ?? "").trim().toLowerCase();
+    const filteredEnriched = normalizedSearch
+      ? enrichedAll.filter((e) => {
+          const u = e.user;
+          if (!u) return false;
+          const parts = [
+            u.firstNameAr ?? "",
+            u.lastNameAr ?? "",
+            u.firstNameEn ?? "",
+            u.lastNameEn ?? "",
+            u.email ?? "",
+          ]
+            .join(" ")
+            .toLowerCase();
+          return parts.includes(normalizedSearch);
+        })
+      : enrichedAll;
+
+    // Cursor-based pagination over filtered array using numeric string index
+    const decodeCursor = (c: string | null | undefined): number => {
+      if (!c) return 0;
+      const n = Number(c);
+      return Number.isFinite(n) && n >= 0 ? n : 0;
+    };
+    const start = decodeCursor(cursor);
+    const end = start + size;
+    const page = filteredEnriched.slice(start, end);
+    const nextCursor = end < filteredEnriched.length ? String(end) : null;
+
     return {
-      page: enriched,
-      isDone: page.isDone,
-      continueCursor: page.continueCursor ?? null,
+      page,
+      isDone: nextCursor === null,
+      continueCursor: nextCursor,
     } as const;
+  },
+});
+
+/**
+ * Aggregate counts of registrations per status and accepted seats sum.
+ */
+export const getEventRegistrationCounts = query({
+  args: {
+    eventId: v.id("events"),
+    // Optional same filters as list to match UI state
+    searchText: v.optional(v.string()),
+    dateFrom: v.optional(v.number()),
+    dateTo: v.optional(v.number()),
+    status: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("accepted"),
+        v.literal("rejected"),
+        v.literal("cancelled"),
+        v.literal("waitlisted"),
+      ),
+    ),
+  },
+  handler: async (ctx, { eventId, status, searchText, dateFrom, dateTo }) => {
+    await requireRole(ctx, [ROLES.ADMIN, ROLES.SUPER_ADMIN]);
+    const regs = await ctx.db
+      .query("eventRegistrations")
+      .withIndex("by_event", (ix) => ix.eq("eventId", eventId))
+      .collect();
+    // Filter by status/date
+    const filtered = regs.filter((r) => {
+      if (status && r.status !== status) return false;
+      if (typeof dateFrom === "number" && r.timestamp < dateFrom) return false;
+      if (typeof dateTo === "number" && r.timestamp > dateTo) return false;
+      return true;
+    });
+
+    // If searchText present, need to fetch users for matching
+    let afterSearch = filtered;
+    const s = (searchText ?? "").trim().toLowerCase();
+    if (s) {
+      const enriched = await Promise.all(
+        filtered.map(async (r) => {
+          const u = await ctx.db.get(r.userId as Id<"appUsers">);
+          return { r, u } as const;
+        }),
+      );
+      afterSearch = enriched
+        .filter(({ u }) => {
+          if (!u) return false;
+          const hay = [
+            u.firstNameAr ?? "",
+            u.lastNameAr ?? "",
+            u.firstNameEn ?? "",
+            u.lastNameEn ?? "",
+            u.email ?? "",
+          ]
+            .join(" ")
+            .toLowerCase();
+          return hay.includes(s);
+        })
+        .map(({ r }) => r);
+    }
+
+    const counts = {
+      total: afterSearch.length,
+      pending: 0,
+      accepted: 0,
+      rejected: 0,
+      cancelled: 0,
+      waitlisted: 0,
+      acceptedSeats: 0,
+    } as const;
+    // Use mutable temp to compute then spread into return const
+    const acc = { ...counts } as any;
+    for (const r of afterSearch) {
+      acc[r.status] = (acc[r.status] ?? 0) + 1;
+      if (r.status === "accepted") {
+        acc.acceptedSeats += typeof r.quantity === "number" ? r.quantity : 1;
+      }
+    }
+    return acc as typeof counts;
+  },
+});
+
+/**
+ * Export filtered registrations to CSV and return a temporary download URL.
+ */
+export const exportEventRegistrationsCsv = action({
+  args: {
+    eventId: v.id("events"),
+    status: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("accepted"),
+        v.literal("rejected"),
+        v.literal("cancelled"),
+        v.literal("waitlisted"),
+      ),
+    ),
+    searchText: v.optional(v.string()),
+    dateFrom: v.optional(v.number()),
+    dateTo: v.optional(v.number()),
+  },
+  handler: async (ctx, { eventId, status, searchText, dateFrom, dateTo }) => {
+    // Enforce RBAC by calling a query that already checks roles, or add a lightweight role check via a query
+    // We'll call the paged query to stream all rows with filters applied server-side.
+    const pageSize = 500;
+    let cursor: string | null = null;
+    const all: Array<{
+      registration: any;
+      user: {
+        _id: string;
+        firstNameAr: string | null;
+        lastNameAr: string | null;
+        firstNameEn: string | null;
+        lastNameEn: string | null;
+        email: string;
+      } | null;
+    }> = [];
+    do {
+      const res: { page: any[]; continueCursor: string | null } =
+        await ctx.runQuery(
+          api.eventRegistrations.listEventRegistrationsForAdminPaged,
+          {
+            eventId,
+            status,
+            searchText,
+            dateFrom,
+            dateTo,
+            cursor: cursor ?? undefined,
+            pageSize,
+          },
+        );
+      all.push(...(res.page as any[]));
+      cursor = res.continueCursor;
+    } while (cursor);
+
+    const header = [
+      "registration_id",
+      "user_id",
+      "first_name_ar",
+      "last_name_ar",
+      "first_name_en",
+      "last_name_en",
+      "email",
+      "timestamp",
+      "status",
+      "quantity",
+      "notes",
+    ];
+    const lines = [header.join(",")];
+    // CSV escaping helper: wrap in double quotes and escape existing quotes
+    const esc = (val: unknown): string => {
+      const s = String(val ?? "");
+      // Escape double quotes by doubling them per RFC 4180
+      const escaped = s.replace(/"/g, '""');
+      return `"${escaped}"`;
+    };
+    for (const entry of all) {
+      const r = entry.registration as any;
+      const u = entry.user as any;
+      const values = [
+        esc((r as any)._id),
+        esc((r as any).userId),
+        esc(u?.firstNameAr),
+        esc(u?.lastNameAr),
+        esc(u?.firstNameEn),
+        esc(u?.lastNameEn),
+        esc(u?.email),
+        esc(r.timestamp),
+        esc(r.status),
+        esc(typeof r.quantity === "number" ? r.quantity : 1),
+        esc(r.notes ?? ""),
+      ];
+      lines.push(values.join(","));
+    }
+    const csv = lines.join("\n");
+    // Prepend UTF-8 BOM to ensure Excel and other tools detect UTF-8 (Arabic)
+    const bom = "\uFEFF";
+    const blob = new Blob([bom, csv], { type: "text/csv;charset=utf-8" });
+    const storageId = await ctx.storage.store(blob);
+    const url = await ctx.storage.getUrl(storageId);
+    return { url, storageId } as const;
   },
 });
 

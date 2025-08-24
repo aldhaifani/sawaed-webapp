@@ -3,7 +3,7 @@
 import type { ReactElement } from "react";
 import { useMemo, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { useTranslations } from "next-intl";
@@ -38,12 +38,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ApplicantProfileDialog } from "@/components/admin/ApplicantProfileDialog";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 function formatDate(ts: number, locale: string): string {
   return new Date(ts).toLocaleString(locale, { hour12: false });
@@ -76,6 +70,9 @@ export function AdminEventApplications(): ReactElement {
   const [statusFilter, setStatusFilter] = useState<
     "all" | "pending" | "accepted" | "rejected" | "cancelled" | "waitlisted"
   >("all");
+  const [searchText, setSearchText] = useState<string>("");
+  const [dateFrom] = useState<string>("");
+  const [dateTo] = useState<string>("");
   const [cursor, setCursor] = useState<string | null>(null);
   const [prevCursors, setPrevCursors] = useState<(string | null)[]>([null]);
   const pageSize = 20;
@@ -91,14 +88,33 @@ export function AdminEventApplications(): ReactElement {
       ? {
           eventId: eventId as unknown as Id<"events">,
           status: statusFilter === "all" ? undefined : statusFilter,
+          searchText: searchText.trim() || undefined,
+          dateFrom: dateFrom ? new Date(dateFrom).getTime() : undefined,
+          dateTo: dateTo ? new Date(dateTo).getTime() : undefined,
           cursor: cursor ?? undefined,
           pageSize,
         }
       : "skip",
   );
 
+  const counts = useQuery(
+    api.eventRegistrations.getEventRegistrationCounts,
+    eventId
+      ? {
+          eventId: eventId as unknown as Id<"events">,
+          status: statusFilter === "all" ? undefined : statusFilter,
+          searchText: searchText.trim() || undefined,
+          dateFrom: dateFrom ? new Date(dateFrom).getTime() : undefined,
+          dateTo: dateTo ? new Date(dateTo).getTime() : undefined,
+        }
+      : "skip",
+  );
+
   const updateStatus = useMutation(
     api.eventRegistrations.updateRegistrationStatus,
+  );
+  const exportCsv = useAction(
+    api.eventRegistrations.exportEventRegistrationsCsv,
   );
 
   const rows: AdminRow[] = useMemo(() => {
@@ -310,6 +326,56 @@ export function AdminEventApplications(): ReactElement {
         <CardHeader>
           <CardTitle className="flex items-center justify-between gap-2">
             <span>{title}</span>
+            <Button
+              onClick={async () => {
+                try {
+                  const res = await exportCsv({
+                    eventId: eventId as unknown as Id<"events">,
+                    status: statusFilter === "all" ? undefined : statusFilter,
+                    searchText: searchText.trim() || undefined,
+                    dateFrom: dateFrom
+                      ? new Date(dateFrom).getTime()
+                      : undefined,
+                    dateTo: dateTo ? new Date(dateTo).getTime() : undefined,
+                  });
+                  const url = res?.url as string | undefined;
+                  if (url) {
+                    // Fetch and trigger a direct download with a filename
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const objectUrl = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    const date = new Date().toISOString().slice(0, 10);
+                    const fname = `event-registrations-${eventId}-${date}.csv`;
+                    a.href = objectUrl;
+                    a.download = fname;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(objectUrl);
+                  } else {
+                    toast.error("Export failed");
+                  }
+                } catch (err) {
+                  toast.error(String(err));
+                }
+              }}
+            >
+              {t("export.button")}
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-2 py-2">
+            <Input
+              placeholder={t("filter.searchPlaceholder")}
+              value={searchText}
+              onChange={(e) => {
+                setSearchText(e.target.value);
+                resetPaging();
+              }}
+              className="max-w-sm"
+            />
             <div className="flex items-center gap-2">
               <div dir={locale === "ar" ? "rtl" : "ltr"}>
                 <BasicDropdown
@@ -337,63 +403,52 @@ export function AdminEventApplications(): ReactElement {
                   className="w-40 text-sm"
                 />
               </div>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setStatusFilter("all");
-                  resetPaging();
-                }}
-              >
-                {t("actions.reset")}
-              </Button>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap items-center justify-between gap-2 py-2">
-            <Input
-              placeholder={t("filter.searchPlaceholder", {
-                defaultMessage: "Filter applicants...",
-              })}
-              value={
-                (table.getColumn("applicant")?.getFilterValue() as string) ?? ""
-              }
-              onChange={(e) =>
-                table.getColumn("applicant")?.setFilterValue(e.target.value)
-              }
-              className="max-w-sm"
-            />
-            <div dir={locale === "ar" ? "rtl" : "ltr"}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    {t("table.columns", { defaultMessage: "Columns" })}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align={locale === "ar" ? "start" : "end"}>
-                  {table
-                    .getAllColumns()
-                    .filter((column) => column.getCanHide())
-                    .map((column) => {
-                      const id = column.id;
-                      const checked = column.getIsVisible();
-                      return (
-                        <DropdownMenuCheckboxItem
-                          key={id}
-                          className="capitalize"
-                          checked={checked}
-                          onCheckedChange={(v) =>
-                            column.toggleVisibility(Boolean(v))
-                          }
-                        >
-                          {id}
-                        </DropdownMenuCheckboxItem>
-                      );
-                    })}
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
           </div>
+          {counts ? (
+            <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-6">
+              <div className="rounded-md border p-2 text-center text-sm">
+                <div className="text-muted-foreground">{t("counts.total")}</div>
+                <div className="font-semibold">{counts.total}</div>
+              </div>
+              <div className="rounded-md border p-2 text-center text-sm">
+                <div className="text-muted-foreground">
+                  {t("counts.pending")}
+                </div>
+                <div className="font-semibold">{counts.pending}</div>
+              </div>
+              <div className="rounded-md border p-2 text-center text-sm">
+                <div className="text-muted-foreground">
+                  {t("counts.accepted")}
+                </div>
+                <div className="font-semibold">{counts.accepted}</div>
+              </div>
+              <div className="rounded-md border p-2 text-center text-sm">
+                <div className="text-muted-foreground">
+                  {t("counts.rejected")}
+                </div>
+                <div className="font-semibold">{counts.rejected}</div>
+              </div>
+              <div className="rounded-md border p-2 text-center text-sm">
+                <div className="text-muted-foreground">
+                  {t("counts.cancelled")}
+                </div>
+                <div className="font-semibold">{counts.cancelled}</div>
+              </div>
+              <div className="rounded-md border p-2 text-center text-sm">
+                <div className="text-muted-foreground">
+                  {t("counts.waitlisted")}
+                </div>
+                <div className="font-semibold">{counts.waitlisted}</div>
+              </div>
+              <div className="col-span-2 rounded-md border p-2 text-center text-sm sm:col-span-6">
+                <div className="text-muted-foreground">
+                  {t("counts.acceptedSeats")}
+                </div>
+                <div className="font-semibold">{counts.acceptedSeats}</div>
+              </div>
+            </div>
+          ) : null}
           <div className="rounded-md border">
             <Table>
               <TableHeader>

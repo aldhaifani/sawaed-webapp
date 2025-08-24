@@ -7,6 +7,22 @@
     "english": "English",
     "loading": "Loading..."
   },
+  "calendar": {
+    "months": {
+      "0": "January",
+      "1": "February",
+      "2": "March",
+      "3": "April",
+      "4": "May",
+      "5": "June",
+      "6": "July",
+      "7": "August",
+      "8": "September",
+      "9": "October",
+      "10": "November",
+      "11": "December"
+    }
+  },
   "auth": {
     "headWelcome": "Welcome to Sawaed",
     "headSubHeading": "Sign in to Continue",
@@ -337,7 +353,23 @@
       "filter": {
         "status": "Status",
         "all": "All",
-        "searchPlaceholder": "Filter applicants..."
+        "searchPlaceholder": "Search applicants...",
+        "dateFrom": "Date from",
+        "dateTo": "Date to"
+      },
+      "counts": {
+        "title": "Summary",
+        "total": "Total",
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "rejected": "Rejected",
+        "cancelled": "Cancelled",
+        "waitlisted": "Waitlisted",
+        "acceptedSeats": "Accepted seats"
+      },
+      "export": {
+        "button": "Export CSV",
+        "exporting": "Exporting..."
       },
       "status": {
         "accepted": "Accepted",
