@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@auth/core": "^0.37.0",
+    "@convex-dev/aggregate": "^0.1.23",
     "@convex-dev/auth": "^0.0.88",
     "@radix-ui/react-checkbox": "^1.3.3",
     "@radix-ui/react-dialog": "^1.1.15",

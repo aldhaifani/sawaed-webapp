@@ -4,6 +4,13 @@ import type { Id } from "./_generated/dataModel";
 import { requireUser } from "./authz";
 import { auth } from "./auth";
 import type { MutationCtx } from "./_generated/server";
+import {
+  insertSkillSelection,
+  deleteSkillSelection,
+  insertInterestSelection,
+  deleteInterestSelection,
+  upsertRegionPresenceSnapshot,
+} from "./aggregates";
 
 // ---------- Types ----------
 export const AppLocale = v.union(v.literal("ar"), v.literal("en"));
@@ -449,6 +456,8 @@ export const updateProfileBasics = mutation({
         createdAt: now,
         updatedAt: now,
       });
+      // Maintain region distribution snapshot aggregate (current snapshot approach)
+      await upsertRegionPresenceSnapshot(ctx, userId);
       await recomputeProfileCompletion(ctx, userId);
       return { id } as const;
     }
@@ -466,7 +475,15 @@ export const updateProfileBasics = mutation({
         patch[k] = (args as any)[k];
       }
     }
+    const prevRegionId =
+      (existing as unknown as { regionId?: Id<"regions"> | null })?.regionId ??
+      null;
     await ctx.db.patch(existing._id, patch);
+    const nextRegionId =
+      (patch as { regionId?: Id<"regions"> | null })?.regionId ?? prevRegionId;
+    if (prevRegionId !== nextRegionId) {
+      await upsertRegionPresenceSnapshot(ctx, userId);
+    }
     const completion = await recomputeProfileCompletion(ctx, userId);
     return { id: existing._id, completion } as const;
   },
@@ -539,17 +556,31 @@ export const setUserTaxonomies = mutation({
     // Delete removed
     for (const row of existingSkills) {
       if (!nextSkillIds.has(row.skillId as Id<"skills">)) {
+        // Maintain aggregates before deleting row
+        await deleteSkillSelection(ctx, {
+          userId,
+          skillId: row.skillId as Id<"skills">,
+          createdAt: row.createdAt as number,
+        });
         await ctx.db.delete(row._id);
       }
     }
     // Add new
     for (const sid of nextSkillIds) {
       if (!existingSkillIds.has(sid)) {
-        await ctx.db.insert("userSkills", {
+        const id = await ctx.db.insert("userSkills", {
           userId,
           skillId: sid,
           createdAt: now,
         });
+        const doc = await ctx.db.get(id);
+        if (doc) {
+          await insertSkillSelection(ctx, {
+            userId,
+            skillId: sid,
+            createdAt: doc.createdAt as number,
+          });
+        }
       }
     }
 
@@ -565,16 +596,29 @@ export const setUserTaxonomies = mutation({
 
     for (const row of existingInterests) {
       if (!nextInterestIds.has(row.interestId as Id<"interests">)) {
+        await deleteInterestSelection(ctx, {
+          userId,
+          interestId: row.interestId as Id<"interests">,
+          createdAt: row.createdAt as number,
+        });
         await ctx.db.delete(row._id);
       }
     }
     for (const iid of nextInterestIds) {
       if (!existingInterestIds.has(iid)) {
-        await ctx.db.insert("userInterests", {
+        const id = await ctx.db.insert("userInterests", {
           userId,
           interestId: iid,
           createdAt: now,
         });
+        const doc = await ctx.db.get(id);
+        if (doc) {
+          await insertInterestSelection(ctx, {
+            userId,
+            interestId: iid,
+            createdAt: doc.createdAt as number,
+          });
+        }
       }
     }
 

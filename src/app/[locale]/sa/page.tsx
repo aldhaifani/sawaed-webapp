@@ -1,9 +1,17 @@
 "use client";
 
 import type { ReactElement } from "react";
+import { useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Users2,
   UserCheck,
@@ -11,7 +19,6 @@ import {
   Activity,
   MapPin,
   BarChart3,
-  Clock,
   HelpCircle,
   Timer,
 } from "lucide-react";
@@ -208,7 +215,80 @@ function SimpleLineChart({
   );
 }
 
+import { useQuery } from "convex/react";
+import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
+import { useParams } from "next/navigation";
+import * as Sentry from "@sentry/nextjs";
+
 export default function SuperAdminPage(): ReactElement {
+  const params = useParams<{ locale: "ar" | "en" }>();
+  const locale: "ar" | "en" = params?.locale ?? "en";
+  const filtersEnabled: boolean =
+    (process.env.NEXT_PUBLIC_SA_FILTERS_ENABLED ?? "true") !== "false";
+  // Filters state
+  const [fromMs, setFromMs] = useState<number | undefined>(undefined);
+  const [toMs, setToMs] = useState<number | undefined>(undefined);
+  const [gender, setGender] = useState<"all" | "male" | "female">("all");
+  const [regionId, setRegionId] = useState<Id<"regions"> | undefined>(
+    undefined,
+  );
+  // i18n labels
+  const t = useMemo(
+    () =>
+      locale === "ar"
+        ? {
+            header: "لوحة تحكم المشرف العام",
+            subheader: "نظرة عامة وطنية للشباب والمهارات والفرص",
+            from: "من",
+            to: "إلى",
+            gender: "الجنس",
+            region: "المنطقة",
+            all: "الكل",
+            male: "ذكر",
+            female: "أنثى",
+            allRegions: "كل المناطق",
+            export: "تصدير",
+          }
+        : {
+            header: "Super Admin Dashboard",
+            subheader: "National overview of youth, skills, and opportunities",
+            from: "From",
+            to: "To",
+            gender: "Gender",
+            region: "Region",
+            all: "All",
+            male: "Male",
+            female: "Female",
+            allRegions: "All Regions",
+            export: "Export",
+          },
+    [locale],
+  );
+
+  // Handlers with Sentry spans
+  function handleFromChange(value?: number): void {
+    Sentry.startSpan({ op: "ui.change", name: "Filter: From" }, () => {
+      setFromMs(value);
+    });
+  }
+  function handleToChange(value?: number): void {
+    Sentry.startSpan({ op: "ui.change", name: "Filter: To" }, () => {
+      setToMs(value);
+    });
+  }
+  function handleGenderChange(value: "all" | "male" | "female"): void {
+    Sentry.startSpan({ op: "ui.change", name: "Filter: Gender" }, (span) => {
+      span.setAttribute("gender", value);
+      setGender(value);
+    });
+  }
+  function handleRegionChange(value?: Id<"regions">): void {
+    Sentry.startSpan({ op: "ui.change", name: "Filter: Region" }, (span) => {
+      span.setAttribute("regionId", value ?? "all");
+      setRegionId(value);
+    });
+  }
   // Dummy stats
   const kpis = useMemo(
     () => [
@@ -305,18 +385,6 @@ export default function SuperAdminPage(): ReactElement {
     [],
   );
 
-  const topCities = useMemo(
-    () =>
-      [
-        { city: "Muscat", youths: 15230 },
-        { city: "Salalah", youths: 6840 },
-        { city: "Sohar", youths: 5320 },
-        { city: "Nizwa", youths: 4130 },
-        { city: "Sur", youths: 3020 },
-      ] as const,
-    [],
-  );
-
   // Small sparkline data for knowledge tiles
   const knowledgeSpark1 = useMemo(
     () => [10, 12, 13, 12, 14, 15, 16, 17, 16, 18],
@@ -331,6 +399,33 @@ export default function SuperAdminPage(): ReactElement {
     [],
   );
 
+  // Regions for filter
+  const regions = useQuery(api.locations.listRegions, { locale });
+
+  // Live data from Convex aggregates (with filters)
+  const topSkills = useQuery(api.saAnalytics.topSkills, {
+    locale,
+    limit: 5,
+    from: filtersEnabled ? fromMs : undefined,
+    to: filtersEnabled ? toMs : undefined,
+    gender: filtersEnabled && gender !== "all" ? gender : undefined,
+    regionId: filtersEnabled ? regionId : undefined,
+  });
+  const topInterests = useQuery(api.saAnalytics.topInterests, {
+    locale,
+    limit: 5,
+    from: filtersEnabled ? fromMs : undefined,
+    to: filtersEnabled ? toMs : undefined,
+    gender: filtersEnabled && gender !== "all" ? gender : undefined,
+    regionId: filtersEnabled ? regionId : undefined,
+  });
+  const youthByGov = useQuery(api.saAnalytics.youthDistributionByGovernorate, {
+    locale,
+    from: filtersEnabled ? fromMs : undefined,
+    to: filtersEnabled ? toMs : undefined,
+    gender: filtersEnabled && gender !== "all" ? gender : undefined,
+  });
+
   return (
     <main className="bg-background min-h-screen w-full">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
@@ -338,18 +433,66 @@ export default function SuperAdminPage(): ReactElement {
         <header className="mb-6 flex flex-col items-start justify-between gap-3 sm:mb-8 sm:flex-row sm:items-center">
           <div>
             <h1 className="text-foreground text-2xl font-bold sm:text-3xl">
-              Super Admin Dashboard
+              {t.header}
             </h1>
-            <p className="text-muted-foreground mt-1 text-sm">
-              National overview of youth, skills, and opportunities (dummy data)
-            </p>
+            <p className="text-muted-foreground mt-1 text-sm">{t.subheader}</p>
           </div>
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-            <Button variant="outline" className="gap-2 text-xs sm:text-sm">
-              <Clock className="size-4" /> Last 30 days
-            </Button>
-            <Button className="text-xs sm:text-sm">Export</Button>
-          </div>
+          {filtersEnabled ? (
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+              {/* From */}
+              <DateTimePicker
+                label={t.from}
+                valueMs={fromMs}
+                onChange={handleFromChange}
+              />
+              {/* To */}
+              <DateTimePicker
+                label={t.to}
+                valueMs={toMs}
+                onChange={handleToChange}
+              />
+              {/* Gender */}
+              <Select
+                value={gender}
+                onValueChange={(v) =>
+                  handleGenderChange(v as "all" | "male" | "female")
+                }
+              >
+                <SelectTrigger size="sm">
+                  <SelectValue placeholder={t.gender} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t.all}</SelectItem>
+                  <SelectItem value="male">{t.male}</SelectItem>
+                  <SelectItem value="female">{t.female}</SelectItem>
+                </SelectContent>
+              </Select>
+              {/* Region */}
+              <Select
+                value={regionId ?? "all"}
+                onValueChange={(v) =>
+                  handleRegionChange(
+                    v === "all" ? undefined : (v as Id<"regions">),
+                  )
+                }
+              >
+                <SelectTrigger size="sm">
+                  <SelectValue placeholder={t.region} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t.allRegions}</SelectItem>
+                  {(regions ?? []).map(
+                    (r: { id: Id<"regions">; name: string }) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.name}
+                      </SelectItem>
+                    ),
+                  )}
+                </SelectContent>
+              </Select>
+              <Button className="text-xs sm:text-sm">{t.export}</Button>
+            </div>
+          ) : null}
         </header>
 
         {/* KPI Grid styled like reference (6 tiles) */}
@@ -466,24 +609,51 @@ export default function SuperAdminPage(): ReactElement {
               </div>
             </SectionCard>
 
-            <SectionCard title="Top Cities">
+            <SectionCard title="Top Skills">
               <ul className="space-y-2 text-sm">
-                {topCities.map((c) => (
-                  <li
-                    key={c.city}
-                    className="hover:bg-muted flex items-center justify-between rounded-lg px-3 py-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="bg-muted text-muted-foreground grid size-7 place-items-center rounded-md">
-                        <MapPin className="size-4" />
+                {(topSkills ?? []).map(
+                  (s: { id: string; name: string; count: number }) => (
+                    <li
+                      key={s.id}
+                      className="hover:bg-muted flex items-center justify-between rounded-lg px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="bg-muted text-muted-foreground grid size-7 place-items-center rounded-md">
+                          <BarChart3 className="size-4" />
+                        </div>
+                        <span className="text-foreground">{s.name}</span>
                       </div>
-                      <span className="text-foreground">{c.city}</span>
-                    </div>
-                    <span className="text-muted-foreground">
-                      {c.youths.toLocaleString()}
-                    </span>
-                  </li>
-                ))}
+                      <span className="text-muted-foreground">{s.count}</span>
+                    </li>
+                  ),
+                )}
+                {topSkills && topSkills.length === 0 ? (
+                  <li className="text-muted-foreground px-3 py-2">No data</li>
+                ) : null}
+              </ul>
+            </SectionCard>
+
+            <SectionCard title="Top Interests">
+              <ul className="space-y-2 text-sm">
+                {(topInterests ?? []).map(
+                  (i: { id: string; name: string; count: number }) => (
+                    <li
+                      key={i.id}
+                      className="hover:bg-muted flex items-center justify-between rounded-lg px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="bg-muted text-muted-foreground grid size-7 place-items-center rounded-md">
+                          <BarChart3 className="size-4" />
+                        </div>
+                        <span className="text-foreground">{i.name}</span>
+                      </div>
+                      <span className="text-muted-foreground">{i.count}</span>
+                    </li>
+                  ),
+                )}
+                {topInterests && topInterests.length === 0 ? (
+                  <li className="text-muted-foreground px-3 py-2">No data</li>
+                ) : null}
               </ul>
             </SectionCard>
           </aside>
@@ -561,6 +731,30 @@ export default function SuperAdminPage(): ReactElement {
             <p className="text-muted-foreground mt-2 text-xs">
               Monthly share of top skill mentions across profiles
             </p>
+          </SectionCard>
+
+          <SectionCard title="Youth by Governorate">
+            <ul className="space-y-2 text-sm">
+              {(youthByGov ?? []).map(
+                (r: { id: string; name: string; count: number }) => (
+                  <li
+                    key={r.id}
+                    className="hover:bg-muted flex items-center justify-between rounded-lg px-3 py-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="bg-muted text-muted-foreground grid size-7 place-items-center rounded-md">
+                        <MapPin className="size-4" />
+                      </div>
+                      <span className="text-foreground">{r.name}</span>
+                    </div>
+                    <span className="text-muted-foreground">{r.count}</span>
+                  </li>
+                ),
+              )}
+              {youthByGov && youthByGov.length === 0 ? (
+                <li className="text-muted-foreground px-3 py-2">No data</li>
+              ) : null}
+            </ul>
           </SectionCard>
         </section>
       </div>

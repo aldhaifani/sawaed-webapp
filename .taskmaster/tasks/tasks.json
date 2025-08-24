@@ -413,7 +413,7 @@
             "description": "Set up automated email notifications to inform registered users about event updates, reminders, and changes.",
             "dependencies": ["7.3", "7.4"],
             "details": "Integrate email service provider, design notification templates, and trigger emails on event creation, updates, and cancellations. Ensure bilingual email content.",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": ""
           },
           {
@@ -422,7 +422,7 @@
             "description": "Conduct comprehensive testing of the admin posting UI, event listing, registration system, dashboard, and email notifications to ensure functionality and bilingual correctness.",
             "dependencies": ["7.1", "7.2", "7.3", "7.4", "7.5"],
             "details": "Perform functional, usability, and integration tests. Verify prevention of duplicate registrations, correct bilingual display, and successful email delivery.",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": ""
           }
         ]
@@ -435,7 +435,7 @@
         "testStrategy": "Verify aggregated data is accurate and anonymous, test chart rendering with different data sets, confirm filters work correctly, and validate export functionality produces correct reports.",
         "priority": "medium",
         "dependencies": [6, 7],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -443,7 +443,7 @@
             "description": "Develop Convex query functions to aggregate anonymous user data including top skills, top interests, and youth distribution by governorate, ensuring efficient aggregation and anonymization.",
             "dependencies": [],
             "details": "Use Convex's TableAggregate and query streaming features to aggregate data by skill, interest, and geographic location. Ensure queries support filtering by date ranges and demographic segments. Follow best practices for anonymization and aggregation to protect user privacy.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -715,7 +715,7 @@
     ],
     "metadata": {
       "created": "2025-08-16T07:34:51.087Z",
-      "updated": "2025-08-24T12:52:15.650Z",
+      "updated": "2025-08-24T18:44:58.047Z",
       "description": "Tasks for master context"
     }
   }
