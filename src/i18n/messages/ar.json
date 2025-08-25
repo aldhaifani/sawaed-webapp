@@ -5,7 +5,9 @@
     "language": "اللغة",
     "arabic": "العربية",
     "english": "الإنجليزية",
-    "loading": "جارٍ التحميل..."
+    "loading": "جارٍ التحميل...",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد"
   },
   "calendar": {
     "months": {
@@ -515,33 +517,121 @@
       "externalRegistrationUrl": "رابط تسجيل خارجي",
       "termsUrl": "رابط الشروط",
       "contact": "جهة التواصل"
-    },
-    "placeholders": {
-      "titleEn": "e.g. Digital Skills Bootcamp",
-      "titleAr": "مثال: معسكر المهارات الرقمية",
-      "region": "اختار المحافظة",
-      "city": "اختار المدينة",
-      "contact": "البريد/الهاتف",
-      "posterUrl": "https://...",
-      "onlineUrl": "https://...",
-      "googleMapUrl": "https://..."
-    },
-    "policyOptions": {
-      "open": "متاح للجميع",
-      "approval": "يتطلب موافقة",
-      "inviteOnly": "بدعوة فقط"
-    },
-    "booleanOptions": {
-      "yes": "نعم",
-      "no": "لا"
+    }
+  },
+  "placeholders": {
+    "titleEn": "e.g. Digital Skills Bootcamp",
+    "titleAr": "مثال: معسكر المهارات الرقمية",
+    "region": "اختار المحافظة",
+    "city": "اختار المدينة",
+    "contact": "البريد/الهاتف",
+    "posterUrl": "https://...",
+    "onlineUrl": "https://...",
+    "googleMapUrl": "https://..."
+  },
+  "policyOptions": {
+    "open": "متاح للجميع",
+    "approval": "يتطلب موافقة",
+    "inviteOnly": "بدعوة فقط"
+  },
+  "booleanOptions": {
+    "yes": "نعم",
+    "no": "لا"
+  },
+  "actions": {
+    "saveDraft": "حفظ كمسودة",
+    "save": "حفظ",
+    "publish": "نشر",
+    "unpublish": "إلغاء النشر",
+    "delete": "حذف",
+    "back": "رجوع"
+  },
+  "adminProfile": {
+    "title": "ملف المشرف",
+    "subtitle": "اعرض تفاصيل حسابك ونشاطك الأخير.",
+    "sections": {
+      "quickActions": "إجراءات سريعة",
+      "overview": "نظرة عامة",
+      "profileDetails": "تفاصيل الملف"
     },
     "actions": {
-      "saveDraft": "حفظ كمسودة",
+      "newOpportunity": "فرصة جديدة",
+      "manageOpportunities": "إدارة الفرص",
+      "accountSettings": "إعدادات الحساب",
+      "backfillAdmins": "استكمال ملفات المشرفين",
+      "backfilling": "جارٍ الاستكمال...",
+      "saving": "جارٍ الحفظ...",
       "save": "حفظ",
-      "publish": "نشر",
-      "unpublish": "إلغاء النشر",
-      "delete": "حذف",
-      "back": "رجوع"
-    }
+      "cancel": "إلغاء",
+      "changeAvatar": "تغيير الصورة",
+      "removeAvatar": "إزالة"
+    },
+    "stats": {
+      "total": "الإجمالي",
+      "published": "منشور",
+      "drafted": "مسودة"
+    },
+    "fields": {
+      "organizationEn": "المنظمة (إنجليزي)",
+      "organizationAr": "المنظمة (عربي)",
+      "departmentEn": "القسم (إنجليزي)",
+      "departmentAr": "القسم (عربي)",
+      "jobTitleEn": "المسمى الوظيفي (إنجليزي)",
+      "jobTitleAr": "المسمى الوظيفي (عربي)",
+      "employeeId": "رقم الموظف",
+      "contactEmailPrivate": "البريد للتواصل (خاص)",
+      "contactPhonePrivate": "الهاتف للتواصل (خاص)",
+      "avatar": "الصورة"
+    },
+    "aria": {
+      "avatar": "صورة الملف"
+    },
+    "labels": {
+      "currentProfilePicture": "الصورة الحالية للملف",
+      "noProfilePicture": "لا توجد صورة"
+    },
+    "confirmDeleteAvatar": {
+      "title": "إزالة صورة الملف؟",
+      "hint": "سيتم حذف صورتك الحالية.",
+      "confirm": "إزالة",
+      "cancel": "إلغاء"
+    },
+    "joined": "انضم بتاريخ {date}"
+  },
+  "superAdminProfile": {
+    "title": "ملف المشرف الأعلى",
+    "subtitle": "اعرض وأدِر حساب المشرف الأعلى الخاص بك.",
+    "sections": {
+      "quickActions": "إجراءات سريعة",
+      "profileDetails": "تفاصيل الملف"
+    },
+    "actions": {
+      "accountSettings": "إعدادات الحساب",
+      "saving": "جارٍ الحفظ...",
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "changeAvatar": "تغيير الصورة",
+      "removeAvatar": "إزالة"
+    },
+    "fields": {
+      "email": "البريد الإلكتروني",
+      "department": "القسم",
+      "employeeId": "رقم الموظف",
+      "avatar": "الصورة"
+    },
+    "aria": {
+      "avatar": "صورة الملف"
+    },
+    "labels": {
+      "currentProfilePicture": "الصورة الحالية للملف",
+      "noProfilePicture": "لا توجد صورة"
+    },
+    "confirmDeleteAvatar": {
+      "title": "إزالة صورة الملف؟",
+      "hint": "سيتم حذف صورتك الحالية.",
+      "confirm": "إزالة",
+      "cancel": "إلغاء"
+    },
+    "joined": "انضم بتاريخ {date}"
   }
 }

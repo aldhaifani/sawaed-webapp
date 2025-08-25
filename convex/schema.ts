@@ -53,6 +53,41 @@ const schema = defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_user", ["userId"]), // fetch a user's profile
+
+  // Minimal Admin Profile linked to `appUsers` (private)
+  adminProfiles: defineTable({
+    userId: v.id("appUsers"),
+    // Basic employee info (bilingual where applicable)
+    organizationNameEn: v.optional(v.string()),
+    organizationNameAr: v.optional(v.string()),
+    departmentEn: v.optional(v.string()),
+    departmentAr: v.optional(v.string()),
+    jobTitleEn: v.optional(v.string()),
+    jobTitleAr: v.optional(v.string()),
+    // Optional internal employee identifier
+    employeeId: v.optional(v.string()),
+    // Private contact info
+    contactEmail: v.optional(v.string()),
+    contactPhone: v.optional(v.string()),
+    // Avatar
+    pictureUrl: v.optional(v.string()),
+    pictureStorageId: v.optional(v.id("_storage")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user", ["userId"]),
+
+  // Minimal Super Admin Profile linked to `appUsers` (private)
+  superAdminProfiles: defineTable({
+    userId: v.id("appUsers"),
+    email: v.string(),
+    department: v.optional(v.string()),
+    employeeId: v.optional(v.string()),
+    // Avatar
+    pictureUrl: v.optional(v.string()),
+    pictureStorageId: v.optional(v.id("_storage")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user", ["userId"]),
   // Master taxonomy: Skills (bilingual)
   skills: defineTable({
     nameEn: v.string(),
@@ -193,6 +228,27 @@ const schema = defineSchema({
   })
     .index("by_user", ["userId"]) // fetch onboarding by user
     .index("by_completed", ["completed"]), // list users by completion state
+
+  // Minimal Admin Onboarding state (private)
+  adminOnboarding: defineTable({
+    userId: v.id("appUsers"),
+    currentStep: v.optional(v.string()), // e.g., "basic", "org", "contact"
+    completed: v.boolean(),
+    // Draft fields persisted during onboarding
+    organizationNameEn: v.optional(v.string()),
+    organizationNameAr: v.optional(v.string()),
+    departmentEn: v.optional(v.string()),
+    departmentAr: v.optional(v.string()),
+    jobTitleEn: v.optional(v.string()),
+    jobTitleAr: v.optional(v.string()),
+    employeeId: v.optional(v.string()),
+    contactEmail: v.optional(v.string()),
+    contactPhone: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"]) // fetch admin onboarding by user
+    .index("by_completed", ["completed"]),
 
   // Events posted by admins (bilingual content)
   events: defineTable({

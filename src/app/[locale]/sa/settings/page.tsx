@@ -1,215 +1,342 @@
 "use client";
 
-import type { FormEvent, ReactElement } from "react";
-import { useLocale } from "next-intl";
-import { useState } from "react";
-import Link from "next/link";
+import type { ReactElement } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { usePathname, useRouter } from "next/navigation";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/../convex/_generated/api";
+import { Mail, Globe, Bell, Shield, Trash2, User2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import BasicDropdown from "@/components/ui/BasicDropdown";
-import { Save, X, LockKeyhole, Bell, Globe2, User2 } from "lucide-react";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+function SectionCard({
+  title,
+  description,
+  children,
+  footer,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+}): ReactElement {
+  return (
+    <section className="bg-card rounded-xl border shadow-sm">
+      <header className="flex items-center justify-between border-b px-4 py-3 sm:px-6">
+        <div>
+          <h3 className="text-foreground text-base font-semibold">{title}</h3>
+          {description ? (
+            <p className="text-muted-foreground mt-0.5 text-xs">
+              {description}
+            </p>
+          ) : null}
+        </div>
+      </header>
+      <div className="p-0">{children}</div>
+      {footer ? <div className="border-t p-4 sm:p-6">{footer}</div> : null}
+    </section>
+  );
+}
+
+function Row({
+  icon,
+  title,
+  subtitle,
+  right,
+}: {
+  icon?: React.ReactNode;
+  title: string;
+  subtitle?: string;
+  right?: React.ReactNode;
+}): ReactElement {
+  return (
+    <li className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
+      <div className="flex min-w-0 items-center gap-3">
+        {icon ? (
+          <div className="bg-muted text-muted-foreground grid size-8 place-items-center rounded-full">
+            {icon}
+          </div>
+        ) : null}
+        <div className="min-w-0">
+          <p className="text-foreground truncate text-sm font-medium">
+            {title}
+          </p>
+          {subtitle ? (
+            <p className="text-muted-foreground truncate text-xs">{subtitle}</p>
+          ) : null}
+        </div>
+      </div>
+      {right ? <div className="shrink-0">{right}</div> : null}
+    </li>
+  );
+}
 
 export default function SuperAdminSettingsPage(): ReactElement {
-  const locale = (useLocale() as "ar" | "en") ?? "en";
+  const t = useTranslations("settings");
+  const locale = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  // Account
-  const [name, setName] = useState<string>("Ahmed Al-Harthy");
-  const [email, setEmail] = useState<string>("ahmed.alharthy@mcsy.gov.om");
-  const [phone, setPhone] = useState<string>("+968 9123 4567");
-  const [employeeId, setEmployeeId] = useState<string>("MCSY-SA-0001");
+  const profileData = useQuery(api.profiles.getMyProfileComposite, {
+    locale: locale === "en" ? "en" : "ar",
+  });
+  const notif = useQuery(api.notifications.getMyNotificationPreferences, {});
 
-  // Security (dummy)
-  const [currentPassword, setCurrentPassword] = useState<string>("");
-  const [newPassword, setNewPassword] = useState<string>("");
-  const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [, setEmail] = useState<string>("");
+  const [, setTheme] = useState<"system" | "light" | "dark">("system");
+  const [marketing, setMarketing] = useState<boolean>(false);
+  const [product, setProduct] = useState<boolean>(true);
+  const [security, setSecurity] = useState<boolean>(true);
+  const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
 
-  // Notifications & Preferences
-  const [emailNotif, setEmailNotif] = useState<boolean>(true);
-  const [smsNotif, setSmsNotif] = useState<boolean>(false);
-  const [uiLanguage, setUiLanguage] = useState<"English" | "Arabic">("English");
+  useEffect(() => {
+    const userEmail = profileData?.user?.email;
+    if (userEmail) setEmail(userEmail);
+  }, [profileData]);
+  useEffect(() => {
+    if (notif) {
+      setProduct(!!notif.productUpdates);
+      setSecurity(!!notif.securityAlerts);
+      setMarketing(!!notif.marketing);
+    }
+  }, [notif]);
 
-  function handleSave(e: FormEvent<HTMLFormElement>): void {
-    e.preventDefault();
-    // Demo only: no-op. Could show a toast.
-  }
+  const applyTheme = useCallback((mode: "system" | "light" | "dark") => {
+    const root = document.documentElement;
+    const prefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
+    const isDark = mode === "dark" || (mode === "system" && prefersDark);
+    root.classList.toggle("dark", isDark);
+  }, []);
+
+  useEffect(() => {
+    const saved =
+      (localStorage.getItem("theme") as "system" | "light" | "dark" | null) ??
+      "system";
+    setTheme(saved);
+    applyTheme(saved);
+  }, [applyTheme]);
+
+  const setPreference = useMutation(api.preferences.setLanguagePreference);
+  const switchLocale = useCallback(
+    async (next: "en" | "ar") => {
+      const days = 365;
+      const expires = new Date(
+        Date.now() + days * 24 * 60 * 60 * 1000,
+      ).toUTCString();
+      document.cookie = `locale=${encodeURIComponent(next)}; expires=${expires}; path=/; samesite=lax`;
+      try {
+        await setPreference({ locale: next });
+      } catch {}
+      const current = pathname || window.location.pathname;
+      const parts = current.split("/");
+      const first = parts[1];
+      if (first === "en" || first === "ar") parts[1] = next;
+      else parts.splice(1, 0, next);
+      const target = parts.join("/") || `/${next}`;
+      router.push(target);
+      router.refresh();
+    },
+    [pathname, router, setPreference],
+  );
+
+  const saveNotif = useMutation(api.notifications.setMyNotificationPreferences);
+  const updateNotif = useCallback(
+    async (next: {
+      productUpdates: boolean;
+      securityAlerts: boolean;
+      marketing: boolean;
+    }) => {
+      try {
+        await saveNotif(next);
+      } catch (e) {
+        console.error(e);
+      }
+    },
+    [saveNotif],
+  );
 
   return (
     <main className="bg-background min-h-screen w-full">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:py-8">
-        <header className="mb-6 sm:mb-8">
+        <header className="mb-5 sm:mb-6">
           <h1 className="text-foreground text-2xl font-bold sm:text-3xl">
-            Super Admin Settings
+            {t("title")}
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Manage your account details, security, and preferences.
-          </p>
+          <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
         </header>
 
-        <form onSubmit={handleSave} className="space-y-6">
-          {/* Account */}
-          <section className="bg-card rounded-2xl border p-6 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <User2 className="text-muted-foreground size-5" />
-              <h2 className="text-foreground text-base font-semibold">
-                Account
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="employeeId">Employee ID</Label>
-                <Input
-                  id="employeeId"
-                  value={employeeId}
-                  onChange={(e) => setEmployeeId(e.target.value)}
-                />
-              </div>
-            </div>
-          </section>
+        <div className="space-y-6">
+          <SectionCard
+            title={t("sections.preferences.title")}
+            description={t("sections.preferences.description")}
+          >
+            <ul className="divide-y">
+              <Row
+                icon={<Globe className="size-4" />}
+                title={t("sections.preferences.language.label")}
+                subtitle={t("sections.preferences.language.subtitle")}
+                right={
+                  <div className="w-28">
+                    <BasicDropdown
+                      className="w-full"
+                      label={locale === "en" ? "English" : "العربية"}
+                      items={[
+                        {
+                          id: "en",
+                          label: "English",
+                          icon: <Globe className="size-4" />,
+                        },
+                        {
+                          id: "ar",
+                          label: "العربية",
+                          icon: <Globe className="size-4" />,
+                        },
+                      ]}
+                      onChange={(i) =>
+                        void switchLocale(String(i.id) as "en" | "ar")
+                      }
+                    />
+                  </div>
+                }
+              />
+            </ul>
+          </SectionCard>
 
-          {/* Security (dummy inputs) */}
-          <section className="bg-card rounded-2xl border p-6 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <LockKeyhole className="text-muted-foreground size-5" />
-              <h2 className="text-foreground text-base font-semibold">
-                Security
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-              <div>
-                <Label htmlFor="currentPassword">Current Password</Label>
-                <Input
-                  id="currentPassword"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="newPassword">New Password</Label>
-                <Input
-                  id="newPassword"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
-              </div>
-            </div>
-            <p className="text-muted-foreground mt-2 text-xs">
-              For demo purposes, these fields are not functional.
-            </p>
-          </section>
-
-          {/* Notifications */}
-          <section className="bg-card rounded-2xl border p-6 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <Bell className="text-muted-foreground size-5" />
-              <h2 className="text-foreground text-base font-semibold">
-                Notifications
-              </h2>
-            </div>
-            <div className="space-y-3 text-sm">
-              <label className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  className="size-4 accent-[var(--primary)]"
-                  checked={emailNotif}
-                  onChange={(e) => setEmailNotif(e.target.checked)}
-                />
-                <span className="text-foreground">Email notifications</span>
-              </label>
-              <label className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  className="size-4 accent-[var(--primary)]"
-                  checked={smsNotif}
-                  onChange={(e) => setSmsNotif(e.target.checked)}
-                />
-                <span className="text-foreground">SMS notifications</span>
-              </label>
+          <SectionCard
+            title={t("sections.notifications.title")}
+            description={t("sections.notifications.description")}
+            footer={
               <p className="text-muted-foreground text-xs">
-                Notification preferences are not saved in this demo.
+                {t("sections.notifications.footer")}
               </p>
-            </div>
-          </section>
+            }
+          >
+            <ul className="divide-y">
+              <Row
+                icon={<Bell className="size-4" />}
+                title={t("sections.notifications.product.title")}
+                subtitle={t("sections.notifications.product.subtitle")}
+                right={
+                  <Switch
+                    checked={product}
+                    onCheckedChange={(v) => {
+                      setProduct(v);
+                      void updateNotif({
+                        productUpdates: v,
+                        securityAlerts: security,
+                        marketing,
+                      });
+                    }}
+                    aria-label="Toggle product updates"
+                  />
+                }
+              />
+              <Row
+                icon={<Shield className="size-4" />}
+                title={t("sections.notifications.security.title")}
+                subtitle={t("sections.notifications.security.subtitle")}
+                right={
+                  <Switch
+                    checked={security}
+                    onCheckedChange={(v) => {
+                      setSecurity(v);
+                      void updateNotif({
+                        productUpdates: product,
+                        securityAlerts: v,
+                        marketing,
+                      });
+                    }}
+                    aria-label="Toggle security alerts"
+                  />
+                }
+              />
+              <Row
+                icon={<Bell className="size-4" />}
+                title={t("sections.notifications.marketing.title")}
+                subtitle={t("sections.notifications.marketing.subtitle")}
+                right={
+                  <Switch
+                    checked={marketing}
+                    onCheckedChange={(v) => {
+                      setMarketing(v);
+                      void updateNotif({
+                        productUpdates: product,
+                        securityAlerts: security,
+                        marketing: v,
+                      });
+                    }}
+                    aria-label="Toggle marketing"
+                  />
+                }
+              />
+            </ul>
+          </SectionCard>
 
-          {/* Preferences */}
-          <section className="bg-card rounded-2xl border p-6 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <Globe2 className="text-muted-foreground size-5" />
-              <h2 className="text-foreground text-base font-semibold">
-                Preferences
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 gap-5 sm:max-w-sm">
-              <div>
-                <Label>UI Language</Label>
-                <BasicDropdown
-                  label={uiLanguage}
-                  items={[
-                    { id: "English", label: "English" },
-                    { id: "Arabic", label: "Arabic" },
-                  ]}
-                  onChange={(it) =>
-                    setUiLanguage(it.id as "English" | "Arabic")
-                  }
-                />
-                <p className="text-muted-foreground mt-2 text-xs">
-                  Changing language here does not switch locales in this demo.
-                </p>
+          <SectionCard
+            title={t("sections.account.title")}
+            description={t("sections.account.description")}
+            footer={
+              <div className="flex ltr:justify-end rtl:justify-start">
+                <Button
+                  variant="destructive"
+                  className="inline-flex items-center gap-2 text-xs"
+                  onClick={() => setConfirmOpen(true)}
+                >
+                  <Trash2 className="size-4" />{" "}
+                  {t("sections.account.delete.button")}
+                </Button>
               </div>
-            </div>
-          </section>
-
-          <div className="flex items-center gap-3 ltr:justify-end rtl:justify-start">
-            <Button type="button" variant="outline" asChild>
-              <Link
-                href={`/${locale}/sa`}
-                className="inline-flex items-center gap-2"
-              >
-                <X className="size-4" /> Cancel
-              </Link>
-            </Button>
-            <Button type="submit" className="inline-flex items-center gap-2">
-              <Save className="size-4" /> Save Changes
-            </Button>
-          </div>
-        </form>
+            }
+          >
+            <ul className="divide-y">
+              <Row
+                icon={<User2 className="size-4" />}
+                title={t("sections.account.email.label")}
+                subtitle={t("sections.account.email.subtitle")}
+                right={
+                  <Button variant="outline" className="gap-2 text-xs" disabled>
+                    <Mail className="size-4" />{" "}
+                    {t("sections.account.email.action")}
+                  </Button>
+                }
+              />
+            </ul>
+          </SectionCard>
+        </div>
       </div>
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("sections.account.delete.title")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground text-sm">
+            {t("sections.account.delete.confirmMessage")}
+          </p>
+          <div className="flex gap-2 pt-2 ltr:justify-end rtl:justify-start">
+            <DialogClose asChild>
+              <Button variant="secondary">
+                {t("sections.account.delete.cancel")}
+              </Button>
+            </DialogClose>
+            <DialogClose asChild>
+              <Button variant="destructive">
+                {t("sections.account.delete.confirm")}
+              </Button>
+            </DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

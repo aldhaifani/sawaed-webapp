@@ -5,7 +5,9 @@
     "language": "Language",
     "arabic": "Arabic",
     "english": "English",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
   },
   "calendar": {
     "months": {
@@ -512,5 +514,93 @@
       "delete": "Delete",
       "back": "Back"
     }
+  },
+  "adminProfile": {
+    "title": "Admin Profile",
+    "subtitle": "View your account details and recent activity.",
+    "sections": {
+      "quickActions": "Quick Actions",
+      "overview": "Overview",
+      "profileDetails": "Profile Details"
+    },
+    "actions": {
+      "newOpportunity": "New Opportunity",
+      "manageOpportunities": "Manage Opportunities",
+      "accountSettings": "Account Settings",
+      "backfillAdmins": "Backfill Admin Profiles",
+      "backfilling": "Backfilling…",
+      "saving": "Saving…",
+      "save": "Save",
+      "cancel": "Cancel",
+      "changeAvatar": "Change picture",
+      "removeAvatar": "Remove"
+    },
+    "stats": {
+      "total": "Total",
+      "published": "Published",
+      "drafted": "Drafted"
+    },
+    "fields": {
+      "organizationEn": "Organization (EN)",
+      "organizationAr": "Organization (AR)",
+      "departmentEn": "Department (EN)",
+      "departmentAr": "Department (AR)",
+      "jobTitleEn": "Job Title (EN)",
+      "jobTitleAr": "Job Title (AR)",
+      "employeeId": "Employee ID",
+      "contactEmailPrivate": "Contact Email (private)",
+      "contactPhonePrivate": "Contact Phone (private)",
+      "avatar": "Avatar"
+    },
+    "aria": {
+      "avatar": "Profile avatar"
+    },
+    "labels": {
+      "currentProfilePicture": "Current profile picture",
+      "noProfilePicture": "No profile picture"
+    },
+    "confirmDeleteAvatar": {
+      "title": "Remove profile picture?",
+      "hint": "This will delete your current picture.",
+      "confirm": "Remove",
+      "cancel": "Cancel"
+    },
+    "joined": "Joined {date}"
+  },
+  "superAdminProfile": {
+    "title": "Super Admin Profile",
+    "subtitle": "View and manage your super admin account.",
+    "sections": {
+      "quickActions": "Quick Actions",
+      "profileDetails": "Profile Details"
+    },
+    "actions": {
+      "accountSettings": "Account Settings",
+      "saving": "Saving…",
+      "save": "Save",
+      "cancel": "Cancel",
+      "changeAvatar": "Change picture",
+      "removeAvatar": "Remove"
+    },
+    "fields": {
+      "email": "Email",
+      "department": "Department",
+      "employeeId": "Employee ID",
+      "avatar": "Avatar"
+    },
+    "aria": {
+      "avatar": "Profile avatar"
+    },
+    "labels": {
+      "currentProfilePicture": "Current profile picture",
+      "noProfilePicture": "No profile picture"
+    },
+    "confirmDeleteAvatar": {
+      "title": "Remove profile picture?",
+      "hint": "This will delete your current picture.",
+      "confirm": "Remove",
+      "cancel": "Cancel"
+    },
+    "joined": "Joined {date}"
   }
 }

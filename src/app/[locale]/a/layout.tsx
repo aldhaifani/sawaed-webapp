@@ -33,6 +33,7 @@ export default async function AdminLayout(props: AdminLayoutProps) {
   }
   if (!me) redirect(`/${routeLocale}/auth`);
   if (me.isDeleted || me.isBlocked) redirect(`/${routeLocale}/auth`);
+  // Only allow ADMIN users into /a routes. SUPER_ADMINs must use /sa.
   if (me.role !== ROLES.ADMIN) {
     const preferredLocale = me.languagePreference ?? routeLocale;
     try {
@@ -40,6 +41,21 @@ export default async function AdminLayout(props: AdminLayoutProps) {
     } catch {
       redirect(getDashboardPathForRole(me.role));
     }
+  }
+  // Enforce onboarding for admins
+  try {
+    const onboarding = await fetchQuery(
+      api.adminOnboarding.getMyAdminOnboarding,
+      {},
+      {
+        token: await convexAuthNextjsToken(),
+      },
+    );
+    if (onboarding && onboarding.completed === false) {
+      redirect(`/${routeLocale}/a/onboarding`);
+    }
+  } catch {
+    // If fetching onboarding fails, continue to render; client will guard as well
   }
   // Use the route locale for rendering; cookie sync is handled in middleware
   const locale = routeLocale;

@@ -13,6 +13,12 @@ export interface CurrentUserResponse {
   readonly languagePreference: "ar" | "en";
   readonly avatarUrl?: string;
   readonly pictureUrl?: string;
+  readonly firstNameAr?: string;
+  readonly lastNameAr?: string;
+  readonly firstNameEn?: string;
+  readonly lastNameEn?: string;
+  readonly phone?: string;
+  readonly createdAt: number;
 }
 
 /**
@@ -42,6 +48,12 @@ export const currentUser = query({
       languagePreference: appUser.languagePreference,
       avatarUrl: appUser.avatarUrl ?? undefined,
       pictureUrl: profile?.pictureUrl ?? undefined,
+      firstNameAr: appUser.firstNameAr ?? undefined,
+      lastNameAr: appUser.lastNameAr ?? undefined,
+      firstNameEn: appUser.firstNameEn ?? undefined,
+      lastNameEn: appUser.lastNameEn ?? undefined,
+      phone: appUser.phone ?? undefined,
+      createdAt: appUser.createdAt,
     };
   },
 });
