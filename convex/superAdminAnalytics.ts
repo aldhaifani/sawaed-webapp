@@ -81,6 +81,7 @@ export const getUserRegistrationTrends = query({
           q.gte("createdAt", startOfMonth).lt("createdAt", endOfMonth),
         )
         .filter((q) => q.neq(q.field("isDeleted"), true))
+        .filter((q) => q.eq(q.field("role"), "YOUTH"))
         .collect();
 
       data.push({
@@ -270,6 +271,15 @@ export const getEventParticipationTrends = query({
     const months = args.months || 6;
     const now = new Date();
     const data = [];
+    // Precompute YOUTH user IDs to restrict registrations
+    const youthUsers = await ctx.db
+      .query("appUsers")
+      .withIndex("by_role", (q) => q.eq("role", "YOUTH"))
+      .filter((q) => q.neq(q.field("isDeleted"), true))
+      .collect();
+    const youthIds = new Set(youthUsers.map((u) => u._id));
+    // Fetch all registrations once
+    const registrations = await ctx.db.query("eventRegistrations").collect();
 
     for (let i = months - 1; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -280,11 +290,12 @@ export const getEventParticipationTrends = query({
         0,
       ).getTime();
 
-      // Count event registrations in this month
-      const registrations = await ctx.db.query("eventRegistrations").collect();
-
+      // Count event registrations in this month by YOUTH users only
       const monthlyCount = registrations.filter(
-        (reg) => reg.timestamp >= startOfMonth && reg.timestamp < endOfMonth,
+        (reg) =>
+          youthIds.has(reg.userId) &&
+          reg.timestamp >= startOfMonth &&
+          reg.timestamp < endOfMonth,
       ).length;
 
       data.push({
@@ -365,19 +376,27 @@ export const getTopSkillsSimple = query({
 
     // Get all skills
     const skills = await ctx.db.query("skills").collect();
+    // Precompute YOUTH user IDs
+    const youthUsers = await ctx.db
+      .query("appUsers")
+      .withIndex("by_role", (q) => q.eq("role", "YOUTH"))
+      .filter((q) => q.neq(q.field("isDeleted"), true))
+      .collect();
+    const youthIds = new Set(youthUsers.map((u) => u._id));
 
     // Count skill selections manually
     const skillCounts = await Promise.all(
       skills.map(async (skill) => {
-        const count = await ctx.db
+        const selections = await ctx.db
           .query("userSkills")
           .withIndex("by_skill", (q) => q.eq("skillId", skill._id))
           .collect();
+        const count = selections.filter((s) => youthIds.has(s.userId)).length;
 
         return {
           id: skill._id,
           name: args.locale === "ar" ? skill.nameAr : skill.nameEn,
-          count: count.length,
+          count: count,
         };
       }),
     );
@@ -412,19 +431,27 @@ export const getTopInterestsSimple = query({
 
     // Get all interests
     const interests = await ctx.db.query("interests").collect();
+    // Precompute YOUTH user IDs
+    const youthUsers = await ctx.db
+      .query("appUsers")
+      .withIndex("by_role", (q) => q.eq("role", "YOUTH"))
+      .filter((q) => q.neq(q.field("isDeleted"), true))
+      .collect();
+    const youthIds = new Set(youthUsers.map((u) => u._id));
 
     // Count interest selections manually
     const interestCounts = await Promise.all(
       interests.map(async (interest) => {
-        const count = await ctx.db
+        const selections = await ctx.db
           .query("userInterests")
           .withIndex("by_interest", (q) => q.eq("interestId", interest._id))
           .collect();
+        const count = selections.filter((s) => youthIds.has(s.userId)).length;
 
         return {
           id: interest._id,
           name: args.locale === "ar" ? interest.nameAr : interest.nameEn,
-          count: count.length,
+          count: count,
         };
       }),
     );
@@ -462,10 +489,18 @@ export const getYouthByGovernorateSimple = query({
 
     // Get all profiles and count by region manually (no index needed)
     const allProfiles = await ctx.db.query("profiles").collect();
+    // Precompute YOUTH user IDs and restrict profiles to YOUTH users only
+    const youthUsers = await ctx.db
+      .query("appUsers")
+      .withIndex("by_role", (q) => q.eq("role", "YOUTH"))
+      .filter((q) => q.neq(q.field("isDeleted"), true))
+      .collect();
+    const youthIds = new Set(youthUsers.map((u) => u._id));
+    const youthProfiles = allProfiles.filter((p) => youthIds.has(p.userId));
 
     // Count users by region
     const regionCounts = regions.map((region) => {
-      const profilesInRegion = allProfiles.filter(
+      const profilesInRegion = youthProfiles.filter(
         (profile) => profile.regionId === region._id,
       );
       return {

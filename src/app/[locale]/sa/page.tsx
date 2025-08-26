@@ -302,7 +302,7 @@ export default function SuperAdminPage(): ReactElement {
                                 ? value.toString()
                                 : String(value ?? "");
                             return [
-                              `${textValue} ${t("charts.users")}`,
+                              `${textValue} – `,
                               t("charts.userRegistrationTrends"),
                             ];
                           }}
