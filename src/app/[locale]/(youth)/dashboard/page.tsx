@@ -17,6 +17,7 @@ import {
   Circle,
   Trophy,
   ChevronRight,
+  ChevronLeft,
   ExternalLink,
 } from "lucide-react";
 
@@ -300,7 +301,12 @@ export default function YouthDashboardPage(): ReactElement {
               title="Learning Path"
               right={
                 <Button variant="outline" className="gap-1 text-xs sm:text-sm">
-                  View Details <ChevronRight className="size-4" />
+                  View Details{" "}
+                  {locale === "ar" ? (
+                    <ChevronLeft className="size-4" />
+                  ) : (
+                    <ChevronRight className="size-4" />
+                  )}
                 </Button>
               }
             >
@@ -381,7 +387,11 @@ export default function YouthDashboardPage(): ReactElement {
                     onClick={() => router.push(`/${locale}/opportunities`)}
                   >
                     {t("dashboard.youth.suggested.viewAll")}{" "}
-                    <ChevronRight className="size-4" />
+                    {locale === "ar" ? (
+                      <ChevronLeft className="size-4" />
+                    ) : (
+                      <ChevronRight className="size-4" />
+                    )}
                   </Button>
                 }
               >
@@ -443,7 +453,11 @@ export default function YouthDashboardPage(): ReactElement {
                     }
                   >
                     {t("dashboard.youth.myActivities.viewAll")}{" "}
-                    <ChevronRight className="size-4" />
+                    {locale === "ar" ? (
+                      <ChevronLeft className="size-4" />
+                    ) : (
+                      <ChevronRight className="size-4" />
+                    )}
                   </Button>
                 }
               >

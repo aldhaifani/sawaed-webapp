@@ -441,6 +441,16 @@
       "start": "Start",
       "end": "End",
       "officialPage": "Official Page",
+      "registration": {
+        "open": "Registration open",
+        "openUntil": "Open until {date}",
+        "opensOn": "Opens on {date}",
+        "opensSoon": "Registration opens soon",
+        "closed": "Registration closed"
+      },
+      "registrationDates": "Registration Window",
+      "registrationsOpen": "Registrations opens",
+      "registrationsClose": "Registerations Closes",
       "takeActionTitle": "Take Action",
       "takeActionHint": "Apply, save, or share this opportunity.",
       "revoke": "Revoke",

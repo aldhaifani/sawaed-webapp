@@ -472,6 +472,16 @@
       "start": "البدء",
       "end": "الانتهاء",
       "officialPage": "الصفحة الرسمية",
+      "registration": {
+        "open": "التسجيل مفتوح",
+        "openUntil": "مفتوح حتى {date}",
+        "opensOn": "يفتح في {date}",
+        "opensSoon": "سيفتح التسجيل قريبًا",
+        "closed": "التسجيل مغلق"
+      },
+      "registrationDates": "نافذة التسجيل",
+      "registrationsOpen": "فتح التسجيل",
+      "registrationsClose": "إغلاق التسجيل",
       "takeActionTitle": "اتخاذ إجراء",
       "takeActionHint": "قدّم، احفظ، أو شارك هذه الفرصة.",
       "revoke": "إلغاء",

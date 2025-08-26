@@ -158,21 +158,43 @@ export default function OpportunityDetailsPage(): ReactElement {
   const capacityText: string =
     item.capacity && item.capacity > 0 ? String(item.capacity) : t("notSet");
   const now = Date.now();
+  const openTs: number | undefined =
+    typeof event?.registrationsOpenDate === "number"
+      ? event.registrationsOpenDate
+      : undefined;
+  const closeTs: number | undefined =
+    typeof event?.registrationsCloseDate === "number"
+      ? event.registrationsCloseDate
+      : undefined;
   const isWithinWindow: boolean = (() => {
     if (!event) return false;
-    const open =
-      typeof event.registrationsOpenDate === "number"
-        ? event.registrationsOpenDate
-        : undefined;
-    const close =
-      typeof event.registrationsCloseDate === "number"
-        ? event.registrationsCloseDate
-        : undefined;
+    const open = openTs;
+    const close = closeTs;
     if (open !== undefined && now < open) return false;
     if (close !== undefined && now > close) return false;
     return true;
   })();
   const isInviteOnly: boolean = event?.registrationPolicy === "inviteOnly";
+
+  const registrationWindowLabel: string = (() => {
+    if (isInviteOnly) return t("inviteOnly") ?? "Invite Only";
+    const dateFmt = {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    } as const;
+    if (openTs && now < openTs) {
+      return t("registration.opensSoon");
+    }
+    if (closeTs && now > closeTs) {
+      return t("registration.closed") ?? "Closed";
+    }
+    if (closeTs) {
+      const d = new Date(closeTs).toLocaleDateString(locale, dateFmt);
+      return t("registration.openUntil", { date: d });
+    }
+    return t("registration.open") ?? "Open";
+  })();
 
   // moved above
 
@@ -224,6 +246,9 @@ export default function OpportunityDetailsPage(): ReactElement {
                 </span>
                 <span className="bg-background inline-flex items-center rounded-md border px-2.5 py-1">
                   <MapPin className="me-1 size-3" /> {item.location}
+                </span>
+                <span className="bg-background inline-flex items-center rounded-md border px-2.5 py-1">
+                  <Clock className="me-1 size-3" /> {registrationWindowLabel}
                 </span>
                 {/* Source hidden for public */}
                 {item.tags.map((t) => (
@@ -309,7 +334,31 @@ export default function OpportunityDetailsPage(): ReactElement {
                   <p>{item.description}</p>
                 </article>
               </TabsContent>
-              <TabsContent value="timeline" className="mt-4">
+              <TabsContent value="timeline" className="space-y-4">
+                {openTs || closeTs ? (
+                  <div className="bg-card mt-3 rounded-xl border p-4 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <Clock className="text-muted-foreground size-5" />
+                      <div>
+                        <p className="text-sm font-medium">
+                          {t("registrationDates") ?? "Registration Window"}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          {typeof openTs === "number"
+                            ? `${t("registrationsOpen") ?? "Opens"}: ${new Date(openTs).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" })}`
+                            : null}
+                          {typeof openTs === "number" &&
+                          typeof closeTs === "number"
+                            ? " · "
+                            : ""}
+                          {typeof closeTs === "number"
+                            ? `${t("registrationsClose") ?? "Closes"}: ${new Date(closeTs).toLocaleDateString(locale, { year: "numeric", month: "short", day: "numeric" })}`
+                            : null}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
                 <div className="bg-card rounded-xl border p-4 shadow-sm">
                   <div className="flex items-center gap-3">
                     <CalendarDays className="text-muted-foreground size-5" />
@@ -339,10 +388,43 @@ export default function OpportunityDetailsPage(): ReactElement {
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-background rounded-lg border p-3">
+                <div className="bg-background col-span-2 rounded-lg border p-3">
                   <div className="text-muted-foreground">{t("status")}</div>
                   <div className="font-medium">{currentStatusLabel}</div>
                 </div>
+                {typeof openTs === "number" && (
+                  <div className="bg-background rounded-lg border p-3">
+                    <div className="text-muted-foreground">
+                      {t("registrationsOpen") ?? "Opens"}
+                    </div>
+                    <div className="font-medium">
+                      {new Date(openTs).toLocaleString(locale, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  </div>
+                )}
+                {typeof closeTs === "number" && (
+                  <div className="bg-background rounded-lg border p-3">
+                    <div className="text-muted-foreground">
+                      {t("registrationsClose") ?? "Closes"}
+                    </div>
+                    <div className="font-medium">
+                      {new Date(closeTs).toLocaleString(locale, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-background rounded-lg border p-3">
                   <div className="text-muted-foreground">{t("start")}</div>
                   <div className="font-medium">{item.startDate}</div>
@@ -352,6 +434,7 @@ export default function OpportunityDetailsPage(): ReactElement {
                   <div className="font-medium">{item.endDate}</div>
                 </div>
               </div>
+
               <div className="mt-3 flex items-center gap-2">
                 {event?.externalRegistrationUrl ? (
                   <Button variant="outline" asChild>
