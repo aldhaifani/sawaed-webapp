@@ -2,7 +2,7 @@
 
 import type { ReactElement } from "react";
 import { useMemo, useEffect } from "react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
@@ -56,6 +56,7 @@ interface ActivityItem {
 
 export default function YouthDashboardPage(): ReactElement {
   const locale = (useLocale() as "ar" | "en") ?? "ar";
+  const t = useTranslations();
   const router = useRouter();
   const status = useQuery(api.onboarding.getStatus, {});
 
@@ -129,15 +130,71 @@ export default function YouthDashboardPage(): ReactElement {
     },
   ];
 
-  const checklist = [
-    { label: "Core Identity (20%)", completed: true },
-    { label: "Skills & Talents (20%)", completed: true },
-    { label: "Interests & Hobbies (15%)", completed: true },
-    { label: "Education (15%)", completed: true },
-    { label: "Projects (10%)", completed: false },
-    { label: "Work Experience & Volunteering (10%)", completed: false },
-    { label: "Awards & Certifications (10%)", completed: false },
-  ] as const;
+  // Real profile completion data
+  const composite = useQuery(api.profiles.getMyProfileComposite, { locale });
+  const completion = composite?.profile?.completionPercentage ?? 0;
+  const identityDone = useMemo(() => {
+    const nameOk = Boolean(
+      composite?.user?.firstName && composite?.user?.lastName,
+    );
+    const bioOk = Boolean(
+      composite?.profile?.bio ?? composite?.profile?.headline,
+    );
+    const locationOk = Boolean(
+      composite?.profile?.city ?? composite?.profile?.region,
+    );
+    return nameOk && bioOk && locationOk;
+  }, [
+    composite?.user?.firstName,
+    composite?.user?.lastName,
+    composite?.profile?.bio,
+    composite?.profile?.headline,
+    composite?.profile?.city,
+    composite?.profile?.region,
+  ]);
+  const checklist = useMemo(
+    () =>
+      [
+        {
+          label: `${t("profile.tabs.identity")} (20%)`,
+          completed: identityDone,
+        },
+        {
+          label: `${t("profile.tabs.skills")} (20%)`,
+          completed: (composite?.skills?.length ?? 0) > 0,
+        },
+        {
+          label: `${t("profile.tabs.interests")} (15%)`,
+          completed: (composite?.interests?.length ?? 0) > 0,
+        },
+        {
+          label: `${t("profile.tabs.education")} (15%)`,
+          completed: (composite?.education?.length ?? 0) > 0,
+        },
+        {
+          label: `${t("profile.tabs.projects")} (10%)`,
+          completed: (composite?.projects?.length ?? 0) > 0,
+        },
+        {
+          label: `${t("profile.tabs.experience")} (10%)`,
+          completed: (composite?.experiences?.length ?? 0) > 0,
+        },
+        {
+          label: `${t("profile.tabs.awards")} (10%)`,
+          completed: (composite?.awards?.length ?? 0) > 0,
+        },
+      ] as const,
+    [
+      t,
+      identityDone,
+      composite?.skills?.length,
+      composite?.interests?.length,
+      composite?.education?.length,
+      composite?.projects?.length,
+      composite?.experiences?.length,
+      composite?.awards?.length,
+    ],
+  );
 
   return (
     <main className="bg-background min-h-screen w-full">
@@ -333,17 +390,23 @@ export default function YouthDashboardPage(): ReactElement {
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h3 className="text-foreground text-base font-semibold">
-                    Profile Completion
+                    {t("profile.labels.completion")}
                   </h3>
                 </div>
-                <Button size="sm" className="text-xs">
-                  Edit Profile
+                <Button
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => router.push(`/${locale}/profile`)}
+                >
+                  {t("profile.dialog.editProfile")}
                 </Button>
               </div>
               <div className="mb-2 text-center">
-                <div className="text-muted-foreground mb-1 text-xs">70%</div>
+                <div className="text-muted-foreground mb-1 text-xs">
+                  {completion}%
+                </div>
                 <div className="w-full">
-                  <Progress value={70} className="h-1.5" />
+                  <Progress value={completion} className="h-1.5" />
                 </div>
               </div>
               <ul className="space-y-2">
