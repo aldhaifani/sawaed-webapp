@@ -649,6 +649,9 @@
     "joined": "انضم بتاريخ {date}"
   },
   "dashboard": {
+    "youth": {
+      "welcomeBack": "مرحباً بعودتك، {name}!"
+    },
     "admin": {
       "title": "لوحة تحكم المشرف",
       "subtitle": "مراقبة الفرص والنشاط على المنصة.",

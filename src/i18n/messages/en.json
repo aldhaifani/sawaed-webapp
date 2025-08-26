@@ -618,6 +618,9 @@
     "joined": "Joined {date}"
   },
   "dashboard": {
+    "youth": {
+      "welcomeBack": "Welcome back, {name}!"
+    },
     "admin": {
       "title": "Admin Dashboard",
       "subtitle": "Monitor opportunities and platform activity.",

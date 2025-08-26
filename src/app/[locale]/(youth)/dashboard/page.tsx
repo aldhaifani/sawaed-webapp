@@ -152,6 +152,7 @@ export default function YouthDashboardPage(): ReactElement {
     composite?.profile?.city,
     composite?.profile?.region,
   ]);
+  const firstName = composite?.user?.firstName ?? "";
   const checklist = useMemo(
     () =>
       [
@@ -202,7 +203,7 @@ export default function YouthDashboardPage(): ReactElement {
         {/* Hero greeting */}
         <header className="mb-4 sm:mb-6">
           <h1 className="text-foreground text-2xl font-bold sm:text-3xl">
-            Welcome back, Tareq!
+            {t("dashboard.youth.welcomeBack", { name: firstName })}
           </h1>
         </header>
 
