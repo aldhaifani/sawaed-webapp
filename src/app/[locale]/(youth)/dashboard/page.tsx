@@ -4,8 +4,9 @@ import type { ReactElement } from "react";
 import { useMemo, useEffect } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useQuery } from "convex/react";
+import { usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -47,11 +48,30 @@ interface OpportunityItem {
 }
 
 interface ActivityItem {
-  readonly id: string;
+  readonly regId: string;
+  readonly eventId: string;
   readonly title: string;
   readonly location: string;
   readonly hours: string;
-  readonly status: "Accepted" | "Pending" | "Withdrawn";
+  readonly status:
+    | "Accepted"
+    | "Pending"
+    | "Withdrawn"
+    | "Rejected"
+    | "Waitlisted";
+}
+
+type RegistrationStatus =
+  | "accepted"
+  | "pending"
+  | "cancelled"
+  | "rejected"
+  | "waitlisted";
+
+interface RegistrationSummary {
+  readonly _id: string;
+  readonly eventId: string;
+  readonly status: RegistrationStatus;
 }
 
 export default function YouthDashboardPage(): ReactElement {
@@ -65,7 +85,7 @@ export default function YouthDashboardPage(): ReactElement {
     if (!status.completed) router.replace(`/${locale}/onboarding`);
   }, [status, router, locale]);
 
-  // Dummy data
+  // Dummy data (Learning Path only)
   const progress = 55;
   const modules = useMemo(
     () => [
@@ -98,39 +118,31 @@ export default function YouthDashboardPage(): ReactElement {
     [],
   );
 
-  const opportunities: readonly OpportunityItem[] = [
-    {
-      id: "op-1",
-      title: "Public Speaking & Presentation Skills Workshop",
-      hours: "6 hrs",
-      location: "Youth Center, Muscat",
-    },
-    {
-      id: "op-2",
-      title: "Digital Skills Bootcamp",
-      hours: "12 hrs",
-      location: "Innovation Park Muscat",
-    },
-  ];
+  // Latest published events (Suggested Opportunities)
+  const { results: latestEvents } = usePaginatedQuery(
+    api.events.listPublicEventsPaginated,
+    { locale },
+    { initialNumItems: 2 },
+  );
 
-  const activities: readonly ActivityItem[] = [
-    {
-      id: "ac-1",
-      title: "Public Speaking & Presentation Skills Workshop",
-      status: "Accepted",
-      hours: "6 hrs",
-      location: "Youth Center, Muscat",
-    },
-    {
-      id: "ac-2",
-      title: "Creative Writing Circle",
-      status: "Pending",
-      hours: "2 hrs",
-      location: "Bawsher Library",
-    },
-  ];
+  const opportunities: readonly OpportunityItem[] = useMemo(() => {
+    if (!latestEvents) return [] as readonly OpportunityItem[];
+    return latestEvents.map((ev) => {
+      const title = (locale === "ar" ? ev.titleAr : ev.titleEn) ?? "";
+      const start = typeof ev.startingDate === "number" ? ev.startingDate : 0;
+      const end = typeof ev.endingDate === "number" ? ev.endingDate : start;
+      const durMs = Math.max(0, end - start);
+      const durHrs = Math.max(1, Math.round(durMs / (1000 * 60 * 60)));
+      return {
+        id: String(ev._id ?? ""),
+        title,
+        location: ev.city ?? ev.region ?? "",
+        hours: t("dashboard.youth.hoursShort", { hours: durHrs }),
+      } as const;
+    });
+  }, [latestEvents, locale, t]);
 
-  // Real profile completion data
+  // Real profile completion data (also contains activities)
   const composite = useQuery(api.profiles.getMyProfileComposite, { locale });
   const completion = composite?.profile?.completionPercentage ?? 0;
   const identityDone = useMemo(() => {
@@ -153,6 +165,79 @@ export default function YouthDashboardPage(): ReactElement {
     composite?.profile?.region,
   ]);
   const firstName = composite?.user?.firstName ?? "";
+  // Latest user activities (event registrations) enriched with event details
+  const latestRegs = useMemo<readonly RegistrationSummary[]>(() => {
+    type UnknownReg = Partial<{
+      _id: string | number;
+      eventId: string | number;
+      status: string;
+    }>;
+    const raw = (composite?.activities ?? []) as ReadonlyArray<UnknownReg>;
+    const toStringSafe = (v: unknown): string =>
+      typeof v === "string" ? v : typeof v === "number" ? String(v) : "";
+    const toStatus = (v: unknown): RegistrationStatus =>
+      v === "accepted" ||
+      v === "pending" ||
+      v === "cancelled" ||
+      v === "rejected" ||
+      v === "waitlisted"
+        ? v
+        : "pending";
+    return raw.slice(0, 2).map((r) => ({
+      _id: toStringSafe(r._id),
+      eventId: toStringSafe(r.eventId),
+      status: toStatus(r.status),
+    }));
+  }, [composite?.activities]);
+  const ev1Id = latestRegs[0]?.eventId;
+  const ev2Id = latestRegs[1]?.eventId;
+  const ev1 = useQuery(
+    api.events.getPublicEventById,
+    ev1Id ? { id: ev1Id as Id<"events">, locale } : "skip",
+  );
+  const ev2 = useQuery(
+    api.events.getPublicEventById,
+    ev2Id ? { id: ev2Id as Id<"events">, locale } : "skip",
+  );
+  const activities: readonly ActivityItem[] = useMemo(() => {
+    const mapStatus = (s: string | undefined): ActivityItem["status"] => {
+      switch (s) {
+        case "accepted":
+          return "Accepted";
+        case "pending":
+          return "Pending";
+        case "cancelled":
+          return "Withdrawn";
+        case "rejected":
+          return "Rejected";
+        case "waitlisted":
+          return "Waitlisted";
+        default:
+          return "Pending";
+      }
+    };
+    const regs = latestRegs;
+    const evs = [ev1, ev2];
+    const items: ActivityItem[] = [];
+    regs.forEach((r, idx) => {
+      const ev = evs[idx];
+      if (!r || !ev) return;
+      const title = (locale === "ar" ? ev.titleAr : ev.titleEn) ?? "";
+      const start = typeof ev.startingDate === "number" ? ev.startingDate : 0;
+      const end = typeof ev.endingDate === "number" ? ev.endingDate : start;
+      const durMs = Math.max(0, end - start);
+      const durHrs = Math.max(1, Math.round(durMs / (1000 * 60 * 60)));
+      items.push({
+        regId: r._id || String(idx),
+        eventId: r.eventId,
+        title,
+        location: ev.city ?? ev.region ?? "",
+        hours: t("dashboard.youth.hoursShort", { hours: durHrs }),
+        status: mapStatus(r.status),
+      });
+    });
+    return items;
+  }, [latestRegs, ev1, ev2, locale, t]);
   const checklist = useMemo(
     () =>
       [
@@ -287,7 +372,19 @@ export default function YouthDashboardPage(): ReactElement {
 
             {/* Two-up: Suggested Opportunities & My activities */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <SectionCard title="Suggested Opportunities">
+              <SectionCard
+                title={t("dashboard.youth.suggested.title")}
+                right={
+                  <Button
+                    variant="outline"
+                    className="gap-1 text-xs sm:text-sm"
+                    onClick={() => router.push(`/${locale}/opportunities`)}
+                  >
+                    {t("dashboard.youth.suggested.viewAll")}{" "}
+                    <ChevronRight className="size-4" />
+                  </Button>
+                }
+              >
                 <ul className="space-y-3">
                   {opportunities.map((op) => (
                     <li
@@ -313,15 +410,21 @@ export default function YouthDashboardPage(): ReactElement {
                         </div>
                       </div>
                       <div className="flex w-full justify-center gap-4">
-                        <Button size="sm" className="w-[60%] text-xs">
-                          Apply
+                        <Button
+                          size="sm"
+                          className="w-[60%] text-xs"
+                          onClick={() =>
+                            router.push(`/${locale}/opportunities/${op.id}`)
+                          }
+                        >
+                          {t("dashboard.youth.suggested.apply")}
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           className="w-[30%] text-xs"
                         >
-                          Ignore
+                          {t("dashboard.youth.suggested.ignore")}
                         </Button>
                       </div>
                     </li>
@@ -329,11 +432,25 @@ export default function YouthDashboardPage(): ReactElement {
                 </ul>
               </SectionCard>
 
-              <SectionCard title="My activities">
+              <SectionCard
+                title={t("dashboard.youth.myActivities.title")}
+                right={
+                  <Button
+                    variant="outline"
+                    className="gap-1 text-xs sm:text-sm"
+                    onClick={() =>
+                      router.push(`/${locale}/profile?tab=activities`)
+                    }
+                  >
+                    {t("dashboard.youth.myActivities.viewAll")}{" "}
+                    <ChevronRight className="size-4" />
+                  </Button>
+                }
+              >
                 <ul className="space-y-3">
                   {activities.map((ac) => (
                     <li
-                      key={ac.id}
+                      key={ac.regId}
                       className="bg-background flex flex-col gap-4 rounded-xl border p-4 shadow-xs transition-shadow hover:shadow-sm"
                     >
                       <div className="flex w-full justify-start gap-4">
@@ -342,9 +459,27 @@ export default function YouthDashboardPage(): ReactElement {
                             <CalendarDays className="size-5" />
                           </div>
                           <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${ac.status === "Accepted" ? "bg-green-100 text-green-700" : ac.status === "Pending" ? "bg-amber-100 text-amber-700" : "bg-muted text-muted-foreground"}`}
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                              ac.status === "Accepted"
+                                ? "bg-green-100 text-green-700"
+                                : ac.status === "Pending"
+                                  ? "bg-amber-100 text-amber-700"
+                                  : ac.status === "Rejected"
+                                    ? "bg-red-100 text-red-700"
+                                    : ac.status === "Waitlisted"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : "bg-muted text-muted-foreground"
+                            }`}
                           >
-                            {ac.status}
+                            {ac.status === "Accepted"
+                              ? t("profile.activities.status.accepted")
+                              : ac.status === "Pending"
+                                ? t("profile.activities.status.pending")
+                                : ac.status === "Rejected"
+                                  ? t("profile.activities.status.rejected")
+                                  : ac.status === "Waitlisted"
+                                    ? t("profile.activities.status.waitlisted")
+                                    : t("profile.activities.status.cancelled")}
                           </span>
                         </div>
                         <div className="min-w-0">
@@ -366,15 +501,20 @@ export default function YouthDashboardPage(): ReactElement {
                           size="sm"
                           variant="secondary"
                           className="w-[60%] text-xs"
+                          onClick={() =>
+                            router.push(
+                              `/${locale}/opportunities/${ac.eventId}`,
+                            )
+                          }
                         >
-                          View Information
+                          {t("dashboard.youth.myActivities.viewInfo")}
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           className="w-[30%] text-xs"
                         >
-                          Withdraw
+                          {t("dashboard.youth.myActivities.withdraw")}
                         </Button>
                       </div>
                     </li>

@@ -650,7 +650,20 @@
   },
   "dashboard": {
     "youth": {
-      "welcomeBack": "مرحباً بعودتك، {name}!"
+      "welcomeBack": "مرحباً بعودتك، {name}!",
+      "suggested": {
+        "title": "فرص مقترحة",
+        "viewAll": "عرض الكل",
+        "apply": "تقديم",
+        "ignore": "تجاهل"
+      },
+      "myActivities": {
+        "title": "أنشطتي",
+        "viewAll": "عرض الكل",
+        "viewInfo": "عرض المعلومات",
+        "withdraw": "سحب الطلب"
+      },
+      "hoursShort": "{hours} س"
     },
     "admin": {
       "title": "لوحة تحكم المشرف",

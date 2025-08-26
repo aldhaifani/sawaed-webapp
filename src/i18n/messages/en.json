@@ -619,7 +619,20 @@
   },
   "dashboard": {
     "youth": {
-      "welcomeBack": "Welcome back, {name}!"
+      "welcomeBack": "Welcome back, {name}!",
+      "suggested": {
+        "title": "Suggested Opportunities",
+        "viewAll": "View all",
+        "apply": "Apply",
+        "ignore": "Ignore"
+      },
+      "myActivities": {
+        "title": "My activities",
+        "viewAll": "View all",
+        "viewInfo": "View Information",
+        "withdraw": "Withdraw"
+      },
+      "hoursShort": "{hours} hrs"
     },
     "admin": {
       "title": "Admin Dashboard",
