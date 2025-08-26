@@ -1,762 +1,708 @@
 "use client";
 
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
-import type { LucideIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from "@/components/ui/chart";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  PieChart,
+  Pie,
+  Cell,
+  AreaChart,
+  Area,
+  CartesianGrid,
+  Label,
+} from "recharts";
+import { Badge } from "@/components/ui/badge";
 import {
   Users2,
   UserCheck,
-  UserPlus,
   Activity,
   MapPin,
-  BarChart3,
   HelpCircle,
   Timer,
+  TrendingUp,
+  Target,
+  Award,
+  Globe,
+  Calendar,
 } from "lucide-react";
 
-function SectionCard({
-  title,
-  children,
-  right,
-}: {
-  title: string;
-  children: React.ReactNode;
-  right?: React.ReactNode;
-}): ReactElement {
-  return (
-    <section className="bg-card rounded-2xl border shadow-sm">
-      <header className="flex items-center justify-between border-b px-4 py-3 sm:px-6">
-        <h3 className="text-foreground text-base font-semibold">{title}</h3>
-        {right ? <div className="shrink-0">{right}</div> : null}
-      </header>
-      <div className="p-4 sm:p-6">{children}</div>
-    </section>
-  );
-}
-
-function Sparkline({
-  data,
-  height = 36,
-  colorVar = "--color-chart-1",
-}: {
-  readonly data: readonly number[];
-  readonly height?: number;
-  readonly colorVar?: string;
-}): ReactElement {
-  const max = Math.max(...data, 1);
-  const w = data.length * 10;
-  const points = data
-    .map((v, i) => {
-      const x = i * 10 + 4;
-      const y = height - Math.max(1, Math.round((v / max) * (height - 6))) - 3;
-      return `${x},${y}`;
-    })
-    .join(" ");
-  return (
-    <svg
-      viewBox={`0 0 ${w} ${height}`}
-      className="w-full"
-      role="img"
-      aria-label="Sparkline"
-    >
-      <polyline
-        fill="none"
-        stroke={`var(${colorVar})`}
-        strokeWidth={2}
-        points={points}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-interface StatCardProps {
-  readonly title: string;
-  readonly value: string;
-  readonly change?: string;
-  readonly icon: LucideIcon;
-}
-
-function StatCard({
-  title,
-  value,
-  change,
-  icon: Icon,
-}: StatCardProps): ReactElement {
-  return (
-    <div className="bg-card rounded-2xl border p-4 shadow-xs transition-shadow hover:shadow-sm sm:p-5">
-      <div className="mb-3 flex items-center justify-between">
-        <div>
-          <p className="text-muted-foreground text-xs font-medium">{title}</p>
-          <p className="text-foreground mt-1 text-2xl font-bold">{value}</p>
-        </div>
-        <div className="bg-secondary text-secondary-foreground grid size-10 place-items-center rounded-xl">
-          <Icon className="size-5" />
-        </div>
-      </div>
-      {change ? (
-        <p className="text-muted-foreground text-xs">{change}</p>
-      ) : null}
-    </div>
-  );
-}
-
-function SimpleBarChart({
-  data,
-  height = 160,
-  colorVar = "--color-chart-3",
-}: {
-  readonly data: readonly number[];
-  readonly height?: number;
-  readonly colorVar?: string;
-}): ReactElement {
-  const max = Math.max(...data, 1);
-  return (
-    <div className="w-full">
-      <svg
-        viewBox={`0 0 ${data.length * 20} ${height}`}
-        className="w-full"
-        role="img"
-        aria-label="Bar chart"
-      >
-        {data.map((v, i) => {
-          const h = Math.max(2, Math.round((v / max) * (height - 20)));
-          const x = i * 20 + 4;
-          const y = height - h - 10;
-          return (
-            <g key={i}>
-              <rect
-                x={x}
-                y={y}
-                width={12}
-                height={h}
-                rx={4}
-                fill={`var(${colorVar})`}
-              />
-            </g>
-          );
-        })}
-        <line
-          x1={0}
-          y1={height - 10}
-          x2={data.length * 20}
-          y2={height - 10}
-          stroke="var(--color-border)"
-          strokeWidth={1}
-        />
-      </svg>
-    </div>
-  );
-}
-
-function SimpleLineChart({
-  data,
-  height = 160,
-  colorVar = "--color-chart-1",
-}: {
-  readonly data: readonly number[];
-  readonly height?: number;
-  readonly colorVar?: string;
-}): ReactElement {
-  const max = Math.max(...data, 1);
-  const w = data.length * 24;
-  const points = data
-    .map((v, i) => {
-      const x = i * 24 + 6;
-      const y =
-        height - Math.max(2, Math.round((v / max) * (height - 20))) - 10;
-      return `${x},${y}`;
-    })
-    .join(" ");
-  return (
-    <div className="w-full">
-      <svg
-        viewBox={`0 0 ${w} ${height}`}
-        className="w-full"
-        role="img"
-        aria-label="Line chart"
-      >
-        <polyline
-          fill="none"
-          stroke={`var(${colorVar})`}
-          strokeWidth={2}
-          points={points}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        {data.map((v, i) => {
-          const x = i * 24 + 6;
-          const y =
-            height - Math.max(2, Math.round((v / max) * (height - 20))) - 10;
-          return (
-            <circle key={i} cx={x} cy={y} r={3} fill={`var(${colorVar})`} />
-          );
-        })}
-        <line
-          x1={0}
-          y1={height - 10}
-          x2={w}
-          y2={height - 10}
-          stroke="var(--color-border)"
-          strokeWidth={1}
-        />
-      </svg>
-    </div>
-  );
-}
-
 import { useQuery } from "convex/react";
-import { api } from "@/../convex/_generated/api";
-import type { Id } from "@/../convex/_generated/dataModel";
+import { api } from "../../../../convex/_generated/api";
 import { useParams } from "next/navigation";
-import * as Sentry from "@sentry/nextjs";
 
 export default function SuperAdminPage(): ReactElement {
   const params = useParams<{ locale: "ar" | "en" }>();
   const locale: "ar" | "en" = params?.locale ?? "en";
-  const filtersEnabled: boolean =
-    (process.env.NEXT_PUBLIC_SA_FILTERS_ENABLED ?? "true") !== "false";
-  // Filters state
-  const [fromMs, setFromMs] = useState<number | undefined>(undefined);
-  const [toMs, setToMs] = useState<number | undefined>(undefined);
-  const [gender, setGender] = useState<"all" | "male" | "female">("all");
-  const [regionId, setRegionId] = useState<Id<"regions"> | undefined>(
-    undefined,
+  // Use i18n translations
+  const t = useTranslations("dashboard.superAdmin");
+  const calendarT = useTranslations("calendar");
+
+  // Month formatter function
+  const formatMonth = (value: string) => {
+    const monthIndex = new Date(`${value} 1, 2024`).getMonth();
+    return calendarT(`shortMonths.${monthIndex}`);
+  };
+  // Real data from Convex queries
+  const realKPIs = useQuery(api.superAdminAnalytics.getSuperAdminKPIs);
+  const userRegistrationTrends = useQuery(
+    api.superAdminAnalytics.getUserRegistrationTrends,
+    {},
   );
-  // i18n labels
-  const t = useMemo(
-    () =>
-      locale === "ar"
-        ? {
-            header: "لوحة تحكم المشرف العام",
-            subheader: "نظرة عامة وطنية للشباب والمهارات والفرص",
-            from: "من",
-            to: "إلى",
-            gender: "الجنس",
-            region: "المنطقة",
-            all: "الكل",
-            male: "ذكر",
-            female: "أنثى",
-            allRegions: "كل المناطق",
-            export: "تصدير",
-          }
-        : {
-            header: "Super Admin Dashboard",
-            subheader: "National overview of youth, skills, and opportunities",
-            from: "From",
-            to: "To",
-            gender: "Gender",
-            region: "Region",
-            all: "All",
-            male: "Male",
-            female: "Female",
-            allRegions: "All Regions",
-            export: "Export",
-          },
-    [locale],
+  const genderDistribution = useQuery(
+    api.superAdminAnalytics.getGenderDistribution,
+  );
+  const eventParticipationTrends = useQuery(
+    api.superAdminAnalytics.getEventParticipationTrends,
+    {},
   );
 
-  // Handlers with Sentry spans
-  function handleFromChange(value?: number): void {
-    Sentry.startSpan({ op: "ui.change", name: "Filter: From" }, () => {
-      setFromMs(value);
-    });
-  }
-  function handleToChange(value?: number): void {
-    Sentry.startSpan({ op: "ui.change", name: "Filter: To" }, () => {
-      setToMs(value);
-    });
-  }
-  function handleGenderChange(value: "all" | "male" | "female"): void {
-    Sentry.startSpan({ op: "ui.change", name: "Filter: Gender" }, (span) => {
-      span.setAttribute("gender", value);
-      setGender(value);
-    });
-  }
-  function handleRegionChange(value?: Id<"regions">): void {
-    Sentry.startSpan({ op: "ui.change", name: "Filter: Region" }, (span) => {
-      span.setAttribute("regionId", value ?? "all");
-      setRegionId(value);
-    });
-  }
-  // Dummy stats
+  // Chart configuration for consistent colors with i18n
+  const chartConfig = {
+    users: {
+      label: t("charts.users"),
+      color: "var(--chart-1)",
+    },
+    count: {
+      label: t("charts.count"),
+      color: "var(--chart-2)",
+    },
+    skills: {
+      label: t("charts.topSkills"),
+      color: "var(--chart-3)",
+    },
+    participants: {
+      label: t("charts.participants"),
+      color: "var(--chart-4)",
+    },
+    male: {
+      label: t("charts.male"),
+      color: "var(--chart-1)",
+    },
+    female: {
+      label: t("charts.female"),
+      color: "var(--chart-2)",
+    },
+  };
+
   const kpis = useMemo(
     () => [
-      { title: "Active Users", value: "27", change: "/ 80", icon: Activity },
       {
-        title: "Questions Answered",
-        value: "3,298",
+        title: t("kpis.activeYouths"),
+        value: realKPIs?.totalActiveUsers?.toString() ?? "0",
+        change: undefined,
+        icon: Activity,
+      },
+      {
+        title: t("kpis.totalEvents"),
+        value: realKPIs?.totalEvents?.toString() ?? "0",
         change: undefined,
         icon: HelpCircle,
       },
       {
-        title: "Av. Session Length",
-        value: "2m 34s",
+        title: t("kpis.totalRegistrations"),
+        value: realKPIs?.totalRegistrations?.toString() ?? "0",
         change: undefined,
         icon: Timer,
       },
       {
-        title: "Starting Knowledge",
-        value: "64%",
-        change: undefined,
-        icon: Users2,
-      },
-      {
-        title: "Current Knowledge",
-        value: "86%",
+        title: t("kpis.totalAdmins"),
+        value: realKPIs?.totalAdmins?.toString() ?? "0",
         change: undefined,
         icon: UserCheck,
       },
-      {
-        title: "Knowledge Gain",
-        value: "+34%",
-        change: undefined,
-        icon: UserPlus,
-      },
     ],
-    [],
+    [realKPIs, t],
   );
 
-  const ageDistribution = useMemo(
-    () => ({
-      labels: [
-        "15",
-        "16",
-        "17",
-        "18",
-        "19",
-        "20",
-        "21",
-        "22",
-        "23",
-        "24",
-        "25",
-        "26",
-        "27",
-        "28",
-        "29",
-      ],
-      values: [
-        420, 520, 680, 820, 900, 980, 1100, 1200, 1190, 1150, 980, 860, 700,
-        560, 420,
-      ] as const,
-    }),
-    [],
-  );
+  // Transform gender distribution into age groups with only 15-18 populated
+  const ageByGenderData = useMemo(() => {
+    // Defaults if no data is available
+    const base = [
+      { label: "15-18", male: 0, female: 0 },
+      { label: "19-22", male: 0, female: 0 },
+      { label: "23-26", male: 0, female: 0 },
+      { label: "27-29", male: 0, female: 0 },
+    ];
 
-  const activeUsersTrend = useMemo(
-    () => ({
-      labels: [
-        "JAN",
-        "FEB",
-        "MAR",
-        "APR",
-        "MAY",
-        "JUN",
-        "JUL",
-        "AUG",
-        "SEP",
-        "OCT",
-        "NOV",
-      ],
-      values: [120, 180, 360, 240, 280, 110, 90, 310, 330, 360, 380] as const,
-    }),
-    [],
-  );
+    if (!genderDistribution || genderDistribution.length === 0) {
+      return base;
+    }
 
-  const skillsByRegion = useMemo(
-    () =>
-      [
-        { region: "Muscat", skill: "Digital Marketing", percentage: 28 },
-        { region: "Dhofar", skill: "Graphic Design", percentage: 22 },
-        { region: "Al Batinah", skill: "Programming", percentage: 31 },
-        { region: "Al Dakhiliyah", skill: "Public Speaking", percentage: 19 },
-      ] as const,
-    [],
-  );
+    // Try to detect male/female entries robustly (supports EN/AR)
+    const isMale = (s: string) => {
+      const v = s.toLowerCase();
+      return v.includes("male") || v.includes("ذكر");
+    };
+    const isFemale = (s: string) => {
+      const v = s.toLowerCase();
+      return v.includes("female") || v.includes("أنثى") || v.includes("انثى");
+    };
 
-  // Small sparkline data for knowledge tiles
-  const knowledgeSpark1 = useMemo(
-    () => [10, 12, 13, 12, 14, 15, 16, 17, 16, 18],
-    [],
-  );
-  const knowledgeSpark2 = useMemo(
-    () => [12, 13, 15, 16, 17, 19, 20, 22, 24, 26],
-    [],
-  );
-  const knowledgeSpark3 = useMemo(
-    () => [3, 4, 6, 7, 8, 12, 11, 13, 14, 16],
-    [],
-  );
+    const maleEntry = genderDistribution.find((g) =>
+      typeof g.name === "string" ? isMale(g.name) : false,
+    );
+    const femaleEntry = genderDistribution.find((g) =>
+      typeof g.name === "string" ? isFemale(g.name) : false,
+    );
 
-  // Regions for filter
-  const regions = useQuery(api.locations.listRegions, { locale });
+    // If names aren't recognized, fall back to first two values
+    const male = maleEntry?.value ?? genderDistribution?.[0]?.value ?? 0;
+    const female = femaleEntry?.value ?? genderDistribution?.[1]?.value ?? 0;
 
-  // Live data from Convex aggregates (with filters)
-  const topSkills = useQuery(api.saAnalytics.topSkills, {
+    return [
+      { label: "15-18", male, female },
+      { label: "19-22", male: 0, female: 0 },
+      { label: "23-26", male: 0, female: 0 },
+      { label: "27-29", male: 0, female: 0 },
+    ];
+  }, [genderDistribution]);
+
+  // Live data from Convex (using simple queries as fallback)
+  const topSkills = useQuery(api.superAdminAnalytics.getTopSkillsSimple, {
     locale,
     limit: 5,
-    from: filtersEnabled ? fromMs : undefined,
-    to: filtersEnabled ? toMs : undefined,
-    gender: filtersEnabled && gender !== "all" ? gender : undefined,
-    regionId: filtersEnabled ? regionId : undefined,
   });
-  const topInterests = useQuery(api.saAnalytics.topInterests, {
+  const topInterests = useQuery(api.superAdminAnalytics.getTopInterestsSimple, {
     locale,
     limit: 5,
-    from: filtersEnabled ? fromMs : undefined,
-    to: filtersEnabled ? toMs : undefined,
-    gender: filtersEnabled && gender !== "all" ? gender : undefined,
-    regionId: filtersEnabled ? regionId : undefined,
   });
-  const youthByGov = useQuery(api.saAnalytics.youthDistributionByGovernorate, {
-    locale,
-    from: filtersEnabled ? fromMs : undefined,
-    to: filtersEnabled ? toMs : undefined,
-    gender: filtersEnabled && gender !== "all" ? gender : undefined,
-  });
+  const youthByGov = useQuery(
+    api.superAdminAnalytics.getYouthByGovernorateSimple,
+    {
+      locale,
+      limit: 8,
+    },
+  );
 
   return (
     <main className="bg-background min-h-screen w-full">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
         {/* Header */}
-        <header className="mb-6 flex flex-col items-start justify-between gap-3 sm:mb-8 sm:flex-row sm:items-center">
+        <header className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div>
-            <h1 className="text-foreground text-2xl font-bold sm:text-3xl">
-              {t.header}
+            <h1 className="text-foreground text-3xl font-bold sm:text-4xl">
+              {t("title")}
             </h1>
-            <p className="text-muted-foreground mt-1 text-sm">{t.subheader}</p>
+            <p className="text-muted-foreground mt-2 text-base">
+              {t("subtitle")}
+            </p>
           </div>
-          {filtersEnabled ? (
-            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-              {/* From */}
-              <DateTimePicker
-                label={t.from}
-                valueMs={fromMs}
-                onChange={handleFromChange}
-              />
-              {/* To */}
-              <DateTimePicker
-                label={t.to}
-                valueMs={toMs}
-                onChange={handleToChange}
-              />
-              {/* Gender */}
-              <Select
-                value={gender}
-                onValueChange={(v) =>
-                  handleGenderChange(v as "all" | "male" | "female")
-                }
-              >
-                <SelectTrigger size="sm">
-                  <SelectValue placeholder={t.gender} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t.all}</SelectItem>
-                  <SelectItem value="male">{t.male}</SelectItem>
-                  <SelectItem value="female">{t.female}</SelectItem>
-                </SelectContent>
-              </Select>
-              {/* Region */}
-              <Select
-                value={regionId ?? "all"}
-                onValueChange={(v) =>
-                  handleRegionChange(
-                    v === "all" ? undefined : (v as Id<"regions">),
-                  )
-                }
-              >
-                <SelectTrigger size="sm">
-                  <SelectValue placeholder={t.region} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t.allRegions}</SelectItem>
-                  {(regions ?? []).map(
-                    (r: { id: Id<"regions">; name: string }) => (
-                      <SelectItem key={r.id} value={r.id}>
-                        {r.name}
-                      </SelectItem>
-                    ),
-                  )}
-                </SelectContent>
-              </Select>
-              <Button className="text-xs sm:text-sm">{t.export}</Button>
-            </div>
-          ) : null}
         </header>
 
-        {/* KPI Grid styled like reference (6 tiles) */}
-        <section className="mb-6 grid grid-cols-1 gap-4 sm:mb-8 sm:grid-cols-2 xl:grid-cols-6">
-          {kpis.slice(0, 3).map((k) => (
-            <StatCard
-              key={k.title}
-              title={k.title}
-              value={k.value}
-              change={k.change}
-              icon={k.icon}
-            />
+        {/* KPI Overview Cards */}
+        <section className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {kpis.map((kpi) => (
+            <Card key={kpi.title} className="relative overflow-hidden p-0">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-muted-foreground text-sm font-medium">
+                      {kpi.title}
+                    </p>
+                    <p className="text-foreground text-3xl font-bold">
+                      {kpi.value}
+                    </p>
+                    {kpi.change && (
+                      <div className="flex items-center gap-1">
+                        <TrendingUp className="size-3 text-green-600" />
+                        <span className="text-xs text-green-600">
+                          {kpi.change}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="bg-primary/10 rounded-full p-3">
+                    <kpi.icon className="text-primary size-6" />
+                  </div>
+                </div>
+                <div className="from-primary/20 to-primary/5 absolute right-0 bottom-0 left-0 h-1 bg-gradient-to-r" />
+              </CardContent>
+            </Card>
           ))}
-          {/* Knowledge tiles with sparklines */}
-          <div className="bg-card rounded-2xl border p-4 shadow-xs sm:p-5">
-            <p className="text-muted-foreground text-xs font-medium">
-              Starting Knowledge
-            </p>
-            <div className="mt-1 flex items-end justify-between gap-2">
-              <p className="text-foreground text-2xl font-bold">64%</p>
-            </div>
-            <div className="mt-2">
-              <Sparkline data={knowledgeSpark1} />
-            </div>
-          </div>
-          <div className="bg-card rounded-2xl border p-4 shadow-xs sm:p-5">
-            <p className="text-muted-foreground text-xs font-medium">
-              Current Knowledge
-            </p>
-            <div className="mt-1 flex items-end justify-between gap-2">
-              <p className="text-foreground text-2xl font-bold">86%</p>
-            </div>
-            <div className="mt-2">
-              <Sparkline data={knowledgeSpark2} colorVar="--color-chart-2" />
-            </div>
-          </div>
-          <div className="bg-card rounded-2xl border p-4 shadow-xs sm:p-5">
-            <p className="text-muted-foreground text-xs font-medium">
-              Knowledge Gain
-            </p>
-            <div className="mt-1 flex items-end justify-between gap-2">
-              <p className="text-foreground text-2xl font-bold">+34%</p>
-            </div>
-            <div className="mt-2">
-              <Sparkline data={knowledgeSpark3} colorVar="--color-chart-4" />
-            </div>
-          </div>
         </section>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Main charts */}
-          <div className="space-y-6 lg:col-span-2">
-            <SectionCard
-              title="Activity"
-              right={
-                <div className="text-muted-foreground hidden text-xs sm:block">
-                  Month
-                </div>
-              }
-            >
-              <div className="text-muted-foreground mb-4 flex items-center gap-2 text-xs">
-                <BarChart3 className="size-4" /> Users
-              </div>
-              {/* Soft style bars */}
-              <div className="rounded-xl border p-3">
-                <SimpleBarChart
-                  data={activeUsersTrend.values as unknown as number[]}
-                  height={180}
-                  colorVar="--color-chart-1"
-                />
-                <div className="text-muted-foreground mt-2 grid grid-cols-6 gap-2 text-[10px] sm:text-xs">
-                  {activeUsersTrend.labels.map((l) => (
-                    <span key={l} className="text-center">
-                      {l}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </SectionCard>
+        {/* Main Analytics Grid */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          {/* Primary Charts - Takes 2 columns on large screens */}
+          <div className="space-y-8 lg:col-span-2">
+            {/* User Growth & Demographics */}
 
-            <SectionCard title="Age Distribution (15–29)">
-              <div className="text-muted-foreground mb-4 flex items-center gap-2 text-xs">
-                <BarChart3 className="size-4" /> Bar chart
-              </div>
-              <SimpleBarChart
-                data={ageDistribution.values as unknown as number[]}
-              />
-              <div className="text-muted-foreground mt-3 grid grid-cols-5 gap-2 text-[10px] sm:text-xs">
-                {ageDistribution.labels.map((l) => (
-                  <span key={l} className="text-center">
-                    {l}
-                  </span>
-                ))}
-              </div>
-            </SectionCard>
+            {/* User Registration Trends - Linear Area Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users2 className="size-5" />
+                  {t("charts.userRegistrationTrends")}
+                </CardTitle>
+                <CardDescription>
+                  {t("charts.userRegistrationTrendsDesc")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={chartConfig} className="h-64 w-full">
+                  <AreaChart
+                    accessibilityLayer
+                    data={userRegistrationTrends ?? []}
+                    margin={{
+                      left: locale === "ar" ? 12 : 12,
+                      right: locale === "ar" ? 12 : 12,
+                    }}
+                    style={{
+                      direction: locale === "ar" ? "rtl" : "ltr",
+                    }}
+                  >
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="month"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      tickFormatter={formatMonth}
+                      padding={{ left: 0, right: 0 }}
+                      scale="point"
+                      reversed={locale === "ar"}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      width={22}
+                      orientation={locale === "ar" ? "right" : "left"}
+                      allowDecimals={false}
+                    />
+                    <ChartTooltip
+                      cursor={false}
+                      content={
+                        <ChartTooltipContent
+                          indicator="dot"
+                          hideLabel
+                          formatter={(value, _name) => {
+                            const textValue =
+                              typeof value === "number"
+                                ? value.toString()
+                                : String(value ?? "");
+                            return [
+                              `${textValue} ${t("charts.users")}`,
+                              t("charts.userRegistrationTrends"),
+                            ];
+                          }}
+                        />
+                      }
+                    />
+                    <Area
+                      dataKey="users"
+                      type="linear"
+                      fill="var(--color-users)"
+                      fillOpacity={0.4}
+                      stroke="var(--color-users)"
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter>
+                <div className="flex w-full items-start gap-2 text-sm">
+                  <div className="grid gap-2">
+                    <div className="flex items-center gap-2 leading-none font-medium">
+                      {t("trends.userGrowth")}{" "}
+                      <TrendingUp className="h-4 w-4" />
+                    </div>
+                    <div className="text-muted-foreground flex items-center gap-2 leading-none">
+                      {t("trends.last12Months")}
+                    </div>
+                  </div>
+                </div>
+              </CardFooter>
+            </Card>
+
+            {/* Age Distribution by Gender - Stacked Bar Chart (default age 15-18) */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="size-5" />
+                  {t("charts.ageDistribution")}
+                </CardTitle>
+                <CardDescription>
+                  {t("charts.ageDistributionDesc")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={chartConfig} className="h-64 w-full">
+                  <BarChart
+                    accessibilityLayer
+                    data={ageByGenderData}
+                    style={{ direction: locale === "ar" ? "rtl" : "ltr" }}
+                    barCategoryGap={16}
+                    barGap={8}
+                  >
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tickLine={false}
+                      tickMargin={10}
+                      axisLine={false}
+                      padding={{ left: 0, right: 0 }}
+                      reversed={locale === "ar"}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      width={22}
+                      orientation={locale === "ar" ? "right" : "left"}
+                      allowDecimals={false}
+                    />
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent hideLabel />}
+                    />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Bar
+                      dataKey="male"
+                      stackId="age"
+                      fill="var(--color-male)"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="female"
+                      stackId="age"
+                      fill="var(--color-female)"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+
+            {/* Skills & Interests Analysis */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="size-5" />
+                  {t("charts.skillsInterestsOverview")}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <div>
+                    <h4 className="mb-4 text-sm font-semibold">
+                      {t("charts.topSkills")}
+                    </h4>
+                    <div className="space-y-3">
+                      {(topSkills ?? []).slice(0, 5).map((skill) => (
+                        <div
+                          key={skill.id}
+                          className="flex items-center justify-between"
+                        >
+                          <span className="text-foreground text-sm">
+                            {skill.name}
+                          </span>
+                          <Badge variant="secondary" className="text-xs">
+                            {skill.count}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="mb-4 text-sm font-semibold">
+                      {t("charts.topInterests")}
+                    </h4>
+                    <div className="space-y-3">
+                      {(topInterests ?? []).slice(0, 5).map((interest) => (
+                        <div
+                          key={interest.id}
+                          className="flex items-center justify-between"
+                        >
+                          <span className="text-foreground text-sm">
+                            {interest.name}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {interest.count}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Sidebar */}
-          <aside className="space-y-6">
-            <SectionCard title="Applications">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-card rounded-xl border p-4 shadow-xs">
-                  <p className="text-foreground text-sm font-semibold">
-                    Offline Workshops
-                  </p>
-                  <p className="text-foreground mt-2 text-2xl font-bold">213</p>
-                </div>
-                <div className="bg-card rounded-xl border p-4 shadow-xs">
-                  <p className="text-foreground text-sm font-semibold">
-                    Online Workshops
-                  </p>
-                  <p className="text-foreground mt-2 text-2xl font-bold">68</p>
-                </div>
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Top Skills">
-              <ul className="space-y-2 text-sm">
-                {(topSkills ?? []).map(
-                  (s: { id: string; name: string; count: number }) => (
-                    <li
-                      key={s.id}
-                      className="hover:bg-muted flex items-center justify-between rounded-lg px-3 py-2"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="bg-muted text-muted-foreground grid size-7 place-items-center rounded-md">
-                          <BarChart3 className="size-4" />
-                        </div>
-                        <span className="text-foreground">{s.name}</span>
-                      </div>
-                      <span className="text-muted-foreground">{s.count}</span>
-                    </li>
-                  ),
-                )}
-                {topSkills && topSkills.length === 0 ? (
-                  <li className="text-muted-foreground px-3 py-2">No data</li>
-                ) : null}
-              </ul>
-            </SectionCard>
-
-            <SectionCard title="Top Interests">
-              <ul className="space-y-2 text-sm">
-                {(topInterests ?? []).map(
-                  (i: { id: string; name: string; count: number }) => (
-                    <li
-                      key={i.id}
-                      className="hover:bg-muted flex items-center justify-between rounded-lg px-3 py-2"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="bg-muted text-muted-foreground grid size-7 place-items-center rounded-md">
-                          <BarChart3 className="size-4" />
-                        </div>
-                        <span className="text-foreground">{i.name}</span>
-                      </div>
-                      <span className="text-muted-foreground">{i.count}</span>
-                    </li>
-                  ),
-                )}
-                {topInterests && topInterests.length === 0 ? (
-                  <li className="text-muted-foreground px-3 py-2">No data</li>
-                ) : null}
-              </ul>
-            </SectionCard>
-          </aside>
-        </div>
-
-        {/* Skills analytics */}
-        <section className="mt-6 grid grid-cols-1 gap-6 sm:mt-8 lg:grid-cols-3">
-          <SectionCard title="Skills">
-            <div className="space-y-3">
-              {skillsByRegion.map((r) => (
-                <div
-                  key={`${r.region}-${r.skill}`}
-                  className="rounded-xl border p-3"
+          {/* Sidebar - Takes 1 column on large screens */}
+          <div className="space-y-6">
+            {/* Gender Distribution - Donut Chart with Text */}
+            <Card className="flex flex-col">
+              <CardHeader className="items-center pb-0">
+                <CardTitle className="flex items-center gap-2">
+                  <Users2 className="size-5" />
+                  {t("charts.genderDistribution")}
+                </CardTitle>
+                <CardDescription>
+                  {t("charts.genderDistributionDesc")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1 pb-0">
+                <ChartContainer
+                  config={chartConfig}
+                  className="mx-auto aspect-square max-h-[250px]"
                 >
-                  <div className="mb-2 flex items-center justify-between text-sm">
-                    <span className="text-foreground font-medium">
-                      {r.skill}
-                    </span>
-                    <span className="text-muted-foreground">{r.region}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="bg-muted h-2 w-full rounded-full">
-                      <div
-                        className="h-2 rounded-full"
-                        style={{
-                          width: `${r.percentage}%`,
-                          background: "var(--color-chart-2)",
+                  <PieChart>
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent hideLabel />}
+                    />
+                    <Pie
+                      data={genderDistribution ?? []}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={60}
+                      strokeWidth={5}
+                    >
+                      {genderDistribution?.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                      <Label
+                        content={({ viewBox }) => {
+                          if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                            const totalUsers =
+                              genderDistribution?.reduce(
+                                (acc, curr) => acc + curr.value,
+                                0,
+                              ) ?? 0;
+                            return (
+                              <text
+                                x={viewBox.cx}
+                                y={viewBox.cy}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                              >
+                                <tspan
+                                  x={viewBox.cx}
+                                  y={viewBox.cy}
+                                  className="fill-foreground text-3xl font-bold"
+                                >
+                                  {totalUsers.toLocaleString()}
+                                </tspan>
+                                <tspan
+                                  x={viewBox.cx}
+                                  y={(viewBox.cy ?? 0) + 24}
+                                  className="fill-muted-foreground"
+                                >
+                                  {t("charts.totalUsers")}
+                                </tspan>
+                              </text>
+                            );
+                          }
                         }}
                       />
+                    </Pie>
+                  </PieChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col gap-2 text-sm">
+                <div className="flex items-center gap-2 leading-none font-medium">
+                  {t("trends.genderOverview")}{" "}
+                  <TrendingUp className="h-4 w-4" />
+                </div>
+                <div className="text-muted-foreground leading-none">
+                  {t("trends.currentDemographics")}
+                </div>
+              </CardFooter>
+            </Card>
+
+            {/* Youth by Governorate - Pie Chart */}
+            <Card className="flex flex-col">
+              <CardHeader className="items-center pb-0">
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="size-5" />
+                  {t("charts.youthByGovernorate")}
+                </CardTitle>
+                <CardDescription>
+                  {t("charts.youthByGovernorateDesc")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1 pb-0">
+                <ChartContainer
+                  config={chartConfig}
+                  className="mx-auto aspect-square max-h-[250px]"
+                >
+                  <PieChart>
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent hideLabel />}
+                    />
+                    <Pie
+                      data={(youthByGov ?? []).slice(0, 6).map((region) => ({
+                        name: region.name,
+                        value: region.count,
+                        fill: `var(--chart-${((youthByGov?.indexOf(region) ?? 0) % 5) + 1})`,
+                      }))}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={40}
+                      strokeWidth={5}
+                    >
+                      {(youthByGov ?? []).slice(0, 6).map((region, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={`var(--chart-${(index % 5) + 1})`}
+                        />
+                      ))}
+                      <Label
+                        content={({ viewBox }) => {
+                          if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                            const totalUsers = (youthByGov ?? [])
+                              .slice(0, 6)
+                              .reduce((acc, curr) => acc + curr.count, 0);
+                            return (
+                              <text
+                                x={viewBox.cx}
+                                y={viewBox.cy}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                              >
+                                <tspan
+                                  x={viewBox.cx}
+                                  y={viewBox.cy}
+                                  className="fill-foreground text-2xl font-bold"
+                                >
+                                  {totalUsers.toLocaleString()}
+                                </tspan>
+                                <tspan
+                                  x={viewBox.cx}
+                                  y={(viewBox.cy ?? 0) + 20}
+                                  className="fill-muted-foreground text-sm"
+                                >
+                                  {t("charts.users")}
+                                </tspan>
+                              </text>
+                            );
+                          }
+                        }}
+                      />
+                    </Pie>
+                  </PieChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col gap-2 text-sm">
+                <div className="flex items-center gap-2 leading-none font-medium">
+                  {t("trends.regionalDistribution")}{" "}
+                  <MapPin className="h-4 w-4" />
+                </div>
+                <div className="text-muted-foreground leading-none">
+                  {t("trends.top6Governorates")}
+                </div>
+              </CardFooter>
+            </Card>
+
+            {/* Event Participation Trends - Linear Area Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="size-5" />
+                  {t("charts.eventParticipationTrends")}
+                </CardTitle>
+                <CardDescription>
+                  {t("charts.eventParticipationTrendsDesc")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={chartConfig} className="h-48 w-full">
+                  <AreaChart
+                    accessibilityLayer
+                    data={eventParticipationTrends ?? []}
+                    margin={{
+                      left: locale === "ar" ? 12 : 12,
+                      right: locale === "ar" ? 12 : 12,
+                    }}
+                    style={{
+                      direction: locale === "ar" ? "rtl" : "ltr",
+                    }}
+                  >
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="month"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      tickFormatter={formatMonth}
+                      padding={{ left: 0, right: 0 }}
+                      scale="point"
+                      reversed={locale === "ar"}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      width={22}
+                      orientation={locale === "ar" ? "right" : "left"}
+                      allowDecimals={false}
+                    />
+                    <ChartTooltip
+                      cursor={false}
+                      content={
+                        <ChartTooltipContent
+                          indicator="dot"
+                          hideLabel
+                          formatter={(value, _name) => {
+                            const textValue =
+                              typeof value === "number"
+                                ? value.toString()
+                                : String(value ?? "");
+                            return [
+                              `${textValue} ${t("charts.participants")}`,
+                              t("charts.eventParticipationTrends"),
+                            ];
+                          }}
+                        />
+                      }
+                    />
+                    <Area
+                      dataKey="participants"
+                      type="linear"
+                      fill="var(--color-participants)"
+                      fillOpacity={0.4}
+                      stroke="var(--color-participants)"
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter>
+                <div className="flex w-full items-start gap-2 text-sm">
+                  <div className="grid gap-2">
+                    <div className="flex items-center gap-2 leading-none font-medium">
+                      {t("trends.participationTrends")}{" "}
+                      <TrendingUp className="h-4 w-4" />
                     </div>
-                    <span className="text-muted-foreground w-10 text-right text-xs">
-                      {r.percentage}%
-                    </span>
+                    <div className="text-muted-foreground flex items-center gap-2 leading-none">
+                      {t("trends.last6Months")}
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </SectionCard>
-
-          <SectionCard title="Skills by Age">
-            <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-              {[
-                "Programming",
-                "Design",
-                "Marketing",
-                "Public Speaking",
-                "Writing",
-                "Data",
-              ].map((s, i) => (
-                <div key={s} className="rounded-xl border p-3">
-                  <p className="text-foreground mb-2 font-medium">{s}</p>
-                  <SimpleBarChart
-                    data={[
-                      10 + i * 2,
-                      14 + i * 2,
-                      18 + i * 2,
-                      16 + i * 2,
-                      12 + i * 2,
-                    ]}
-                    height={80}
-                    colorVar={
-                      i % 2 === 0 ? "--color-chart-4" : "--color-chart-5"
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          </SectionCard>
-
-          <SectionCard title="Skills Over Time">
-            <SimpleLineChart
-              data={[12, 14, 13, 16, 18, 20, 21, 19, 22, 24, 26, 28]}
-              height={120}
-            />
-            <p className="text-muted-foreground mt-2 text-xs">
-              Monthly share of top skill mentions across profiles
-            </p>
-          </SectionCard>
-
-          <SectionCard title="Youth by Governorate">
-            <ul className="space-y-2 text-sm">
-              {(youthByGov ?? []).map(
-                (r: { id: string; name: string; count: number }) => (
-                  <li
-                    key={r.id}
-                    className="hover:bg-muted flex items-center justify-between rounded-lg px-3 py-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="bg-muted text-muted-foreground grid size-7 place-items-center rounded-md">
-                        <MapPin className="size-4" />
-                      </div>
-                      <span className="text-foreground">{r.name}</span>
-                    </div>
-                    <span className="text-muted-foreground">{r.count}</span>
-                  </li>
-                ),
-              )}
-              {youthByGov && youthByGov.length === 0 ? (
-                <li className="text-muted-foreground px-3 py-2">No data</li>
-              ) : null}
-            </ul>
-          </SectionCard>
-        </section>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
       </div>
     </main>
   );

@@ -23,6 +23,20 @@
       "9": "أكتوبر",
       "10": "نوفمبر",
       "11": "ديسمبر"
+    },
+    "shortMonths": {
+      "0": "يناير",
+      "1": "فبراير",
+      "2": "مارس",
+      "3": "أبريل",
+      "4": "مايو",
+      "5": "يونيو",
+      "6": "يوليو",
+      "7": "أغسطس",
+      "8": "سبتمبر",
+      "9": "أكتوبر",
+      "10": "نوفمبر",
+      "11": "ديسمبر"
     }
   },
 
@@ -633,5 +647,83 @@
       "cancel": "إلغاء"
     },
     "joined": "انضم بتاريخ {date}"
+  },
+  "dashboard": {
+    "admin": {
+      "title": "لوحة تحكم المشرف",
+      "subtitle": "مراقبة الفرص والنشاط على المنصة.",
+      "kpis": {
+        "totalOpportunities": "إجمالي الفرص",
+        "openNow": "مفتوح الآن",
+        "upcoming30d": "القادمة (30 يوم)",
+        "registrationsWeek": "التسجيلات (أسبوع)"
+      },
+      "charts": {
+        "monthlyPublished": "الفرص المنشورة شهرياً",
+        "topCategories": "أهم فئات الفرص",
+        "recentYouthActivity": "نشاط الشباب الأخير",
+        "quickActions": "إجراءات سريعة",
+        "newOpportunity": "فرصة جديدة",
+        "manageAll": "إدارة الكل",
+        "noData": "لا توجد بيانات",
+        "opportunities": "الفرص"
+      },
+      "activity": {
+        "registered": "مسجل:",
+        "applied": "تقدم:",
+        "userFallback": "مستخدم",
+        "eventFallback": "فعالية"
+      },
+      "export": "تصدير"
+    },
+    "superAdmin": {
+      "title": "لوحة تحكم المشرف الأعلى",
+      "subtitle": "نظرة وطنية شاملة للشباب والمهارات والفرص",
+      "kpis": {
+        "activeYouths": "الشباب النشط",
+        "totalEvents": "إجمالي الفعاليات",
+        "totalRegistrations": "إجمالي التسجيلات",
+        "totalAdmins": "إجمالي المشرفين"
+      },
+      "charts": {
+        "userRegistrationTrends": "اتجاهات تسجيل المستخدمين",
+        "userRegistrationTrendsDesc": "تسجيلات المستخدمين الشهرية مع مرور الوقت",
+        "ageDistribution": "توزيع الأعمار حسب الجنس",
+        "ageDistributionDesc": "فئات عمر الشباب مقسمة حسب الذكور والإناث",
+        "genderDistribution": "توزيع الجنس",
+        "genderDistributionDesc": "توزيع جنس الشباب",
+        "youthByGovernorate": "الشباب حسب المحافظة",
+        "youthByGovernorateDesc": "التوزيع الإقليمي للمستخدمين",
+        "eventParticipationTrends": "اتجاهات مشاركة الفعاليات",
+        "eventParticipationTrendsDesc": "مشاركة الفعاليات الشهرية مع مرور الوقت",
+        "skillsInterestsOverview": "نظرة عامة على المهارات والاهتمامات",
+        "topSkills": "أهم المهارات",
+        "topInterests": "أهم الاهتمامات",
+        "totalUsers": "إجمالي المستخدمين",
+        "users": "مستخدمين",
+        "opportunities": "الفرص",
+        "male": "ذكر",
+        "female": "أنثى",
+        "count": "العدد",
+        "month": "الشهر",
+        "participants": "المشاركين",
+        "ageGroup": "فئة العمر",
+        "gender": "الجنس",
+        "region": "المنطقة",
+        "noData": "لا توجد بيانات",
+        "loading": "جارٍ التحميل...",
+        "error": "خطأ في تحميل البيانات"
+      },
+      "trends": {
+        "userGrowth": "اتجاهات نمو المستخدمين",
+        "participationTrends": "اتجاهات المشاركة",
+        "genderOverview": "نظرة عامة على توزيع الجنس",
+        "regionalDistribution": "التوزيع الإقليمي للمستخدمين",
+        "last12Months": "آخر 12 شهر",
+        "last6Months": "آخر 6 أشهر",
+        "currentDemographics": "التركيبة السكانية الحالية لمستخدمي الشباب",
+        "top6Governorates": "أهم 6 محافظات حسب عدد المستخدمين"
+      }
+    }
   }
 }

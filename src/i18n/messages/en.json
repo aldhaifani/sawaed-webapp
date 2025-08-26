@@ -23,6 +23,20 @@
       "9": "October",
       "10": "November",
       "11": "December"
+    },
+    "shortMonths": {
+      "0": "Jan",
+      "1": "Feb",
+      "2": "Mar",
+      "3": "Apr",
+      "4": "May",
+      "5": "Jun",
+      "6": "Jul",
+      "7": "Aug",
+      "8": "Sep",
+      "9": "Oct",
+      "10": "Nov",
+      "11": "Dec"
     }
   },
   "auth": {
@@ -602,5 +616,83 @@
       "cancel": "Cancel"
     },
     "joined": "Joined {date}"
+  },
+  "dashboard": {
+    "admin": {
+      "title": "Admin Dashboard",
+      "subtitle": "Monitor opportunities and platform activity.",
+      "kpis": {
+        "totalOpportunities": "Total Opportunities",
+        "openNow": "Open Now",
+        "upcoming30d": "Upcoming (30d)",
+        "registrationsWeek": "Registrations (week)"
+      },
+      "charts": {
+        "monthlyPublished": "Monthly Published Opportunities",
+        "topCategories": "Top Opportunity Categories",
+        "recentYouthActivity": "Recent Youth Activity",
+        "quickActions": "Quick Actions",
+        "newOpportunity": "New Opportunity",
+        "manageAll": "Manage All",
+        "noData": "No data available",
+        "opportunities": "Opportunities"
+      },
+      "activity": {
+        "registered": "Registered:",
+        "applied": "Applied:",
+        "userFallback": "User",
+        "eventFallback": "Event"
+      },
+      "export": "Export"
+    },
+    "superAdmin": {
+      "title": "Super Admin Dashboard",
+      "subtitle": "National overview of youth, skills, and opportunities",
+      "kpis": {
+        "activeYouths": "Active Youths",
+        "totalEvents": "Total Events",
+        "totalRegistrations": "Total Registrations",
+        "totalAdmins": "Total Admins"
+      },
+      "charts": {
+        "userRegistrationTrends": "User Registration Trends",
+        "userRegistrationTrendsDesc": "Monthly user registrations over time",
+        "ageDistribution": "Age Distribution by Gender",
+        "ageDistributionDesc": "Youth age groups divided by male and female",
+        "genderDistribution": "Gender Distribution",
+        "genderDistributionDesc": "Youth gender breakdown",
+        "youthByGovernorate": "Youth by Governorate",
+        "youthByGovernorateDesc": "Regional distribution of users",
+        "eventParticipationTrends": "Event Participation Trends",
+        "eventParticipationTrendsDesc": "Monthly event participation over time",
+        "skillsInterestsOverview": "Skills & Interests Overview",
+        "topSkills": "Top Skills",
+        "topInterests": "Top Interests",
+        "totalUsers": "Total Users",
+        "users": "Users",
+        "opportunities": "Opportunities",
+        "male": "Male",
+        "female": "Female",
+        "count": "Count",
+        "month": "Month",
+        "participants": "Participants",
+        "ageGroup": "Age Group",
+        "gender": "Gender",
+        "region": "Region",
+        "noData": "No data available",
+        "loading": "Loading...",
+        "error": "Error loading data"
+      },
+      "trends": {
+        "userGrowth": "User growth trends",
+        "participationTrends": "Participation trends",
+        "genderOverview": "Gender distribution overview",
+        "regionalDistribution": "Regional user distribution",
+        "last12Months": "Last 12 months",
+        "last6Months": "Last 6 months",
+        "currentDemographics": "Current youth user demographics",
+        "top6Governorates": "Top 6 governorates by user count"
+      }
+    }
   }
 }

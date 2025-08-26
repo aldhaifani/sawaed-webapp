@@ -9,6 +9,7 @@
  */
 
 import type * as ResendOTP from "../ResendOTP.js";
+import type * as adminAnalytics from "../adminAnalytics.js";
 import type * as adminOnboarding from "../adminOnboarding.js";
 import type * as adminProfiles from "../adminProfiles.js";
 import type * as aggregates from "../aggregates.js";
@@ -32,6 +33,7 @@ import type * as rbacHelpers from "../rbacHelpers.js";
 import type * as rbacWrappers from "../rbacWrappers.js";
 import type * as saAnalytics from "../saAnalytics.js";
 import type * as seed from "../seed.js";
+import type * as superAdminAnalytics from "../superAdminAnalytics.js";
 import type * as superAdminProfiles from "../superAdminProfiles.js";
 import type * as taxonomies from "../taxonomies.js";
 import type * as users from "../users.js";
@@ -52,6 +54,7 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   ResendOTP: typeof ResendOTP;
+  adminAnalytics: typeof adminAnalytics;
   adminOnboarding: typeof adminOnboarding;
   adminProfiles: typeof adminProfiles;
   aggregates: typeof aggregates;
@@ -75,6 +78,7 @@ declare const fullApi: ApiFromModules<{
   rbacWrappers: typeof rbacWrappers;
   saAnalytics: typeof saAnalytics;
   seed: typeof seed;
+  superAdminAnalytics: typeof superAdminAnalytics;
   superAdminProfiles: typeof superAdminProfiles;
   taxonomies: typeof taxonomies;
   users: typeof users;
