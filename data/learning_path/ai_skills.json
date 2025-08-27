@@ -1,0 +1,1171 @@
+[
+  {
+    "nameEn": "Information and Communications Technology",
+    "nameAr": "تكنولوجيا المعلومات والاتصالات",
+    "category": "ict",
+    "definitionEn": "Ability to use digital tools, devices, software, and platforms to access information and perform tasks.",
+    "definitionAr": "القدرة على استخدام الأدوات الرقمية، والأجهزة، والبرمجيات، والمنصات للوصول إلى المعلومات وتنفيذ المهام.",
+    "levels": [
+      {
+        "level": 1,
+        "nameEn": "Level 1",
+        "nameAr": "المستوى الأول",
+        "descriptionEn": "Perform basic operations on a computer/phone, use a browser, and a word processor.",
+        "descriptionAr": "إجراء عمليات أساسية على الحاسوب أو الهاتف واستخدام المتصفح ومعالج النصوص.",
+        "questions": [
+          "كيف تفتح ملفًا محفوظًا على جهازك؟",
+          "هل تعرف كيف تستخدم محرر نصوص مثل Word أو Google Docs لكتابة فقرة؟",
+          "كيف تبحث عن موضوع معين في الإنترنت؟"
+        ],
+        "evaluation": [
+          "✔ إذا عرف كيف يستخدم المتصفح، ويكتب مستندًا، ويحفظه ← مستوى ١"
+        ],
+        "progressionSteps": [
+          "فتح ملف محفوظ عبر مستعرض الملفات ثم النقر مرتين لفتحه",
+          "كتابة فقرة باستخدام Word أو Google Docs",
+          "إجراء بحث عبر متصفح مثل Chrome أو Firefox"
+        ],
+        "resources": [
+          {
+            "url": "https://edu.gcfglobal.org/en/windowsbasics/working-with-files"
+          },
+          {
+            "url": "https://commons.hostos.cuny.edu/edtech/basic-computer-skills/working-with-files-and-folders"
+          },
+          {
+            "url": "https://edu.gcfglobal.org/en/windowsbasics/working-with-files/1"
+          }
+        ]
+      },
+      {
+        "level": 2,
+        "nameEn": "Level 2",
+        "nameAr": "المستوى الثاني",
+        "descriptionEn": "Use common office tools efficiently and manage/organize files.",
+        "descriptionAr": "استخدام برامج شائعة بكفاءة، وإدارة الملفات وتنظيمها.",
+        "questions": [
+          "هل يمكنك إنشاء عرض تقديمي يحتوي على صور وانتقالات؟",
+          "هل تستطيع استخدام معادلة بسيطة في Excel (جمع أو متوسط)؟",
+          "كيف تنظم ملفاتك في مجلدات؟ وهل تستخدم Google Drive أو OneDrive؟"
+        ],
+        "evaluation": [
+          "✔ إذا استخدم برامج Office/Google بشكل فعّال + نظّم ملفاته ← مستوى ٢"
+        ],
+        "progressionSteps": [
+          "إنشاء عرض تقديمي في PowerPoint أو Google Slides وإضافة صور وانتقالات",
+          "إدخال بيانات في Excel/Sheets واستخدام SUM أو AVERAGE",
+          "تنظيم الملفات باستخدام Google Drive أو OneDrive"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/DzTCFsdxMP4?si=EQmcY2M573daPjhe" }
+        ]
+      },
+      {
+        "level": 3,
+        "nameEn": "Level 3",
+        "nameAr": "المستوى الثالث",
+        "descriptionEn": "Learn new tools independently, solve simple tech issues, and understand basic cybersecurity.",
+        "descriptionAr": "تعلم أدوات جديدة ذاتيًا، حل مشكلات تقنية بسيطة، وفهم مبادئ الأمن السيبراني.",
+        "questions": [
+          "هل سبق أن تعلمت برنامجًا جديدًا من فيديو أو مقالة؟",
+          "إذا لم يعمل الإنترنت، كيف تحاول حل المشكلة؟",
+          "كيف تحمي حساباتك وما الفرق بين كلمة سر قوية وضعيفة؟"
+        ],
+        "evaluation": [
+          "✔ إذا تعلم برنامجًا بمفرده، وحل مشاكل فنية بسيطة، وفهم أساسيات الأمان ← مستوى ٣"
+        ],
+        "progressionSteps": [
+          "التعرف على رسائل البريد المشبوهة والتصيد الاحتيالي",
+          "اتباع خطوات تشخيص مشاكل الإنترنت الأساسية",
+          "إنشاء كلمات سر قوية وتمكين المصادقة الثنائية"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/aRbKFCY4tjE?si=M4qvV10xSu19YaCA" }
+        ]
+      },
+      {
+        "level": 4,
+        "nameEn": "Level 4",
+        "nameAr": "المستوى الرابع",
+        "descriptionEn": "Understand basic programming, automate tasks, and set up simple networks or websites.",
+        "descriptionAr": "فهم برمجة أساسية، أتمتة المهام، وإعداد شبكات أو مواقع بسيطة.",
+        "questions": [
+          "هل يمكنك كتابة كود بسيط بلغة مثل Python أو HTML؟",
+          "هل سبق أن أنشأت موقعًا شخصيًا أو مدونة؟",
+          "كيف تقوم بأتمتة مهمة يومية مثل إعادة تسمية مجموعة ملفات؟"
+        ],
+        "evaluation": [
+          "✔ إذا أنشأ مشروعًا بسيطًا بالكود، وأتمت مهمة باستخدام سكربت/أداة ← مستوى ٤"
+        ],
+        "progressionSteps": [
+          "كتابة صفحة HTML بسيطة تحتوي على عنوان وفقرة وصورة",
+          "إنشاء مدونة أو صفحة شخصية",
+          "أتمتة مهام بسيطة عبر سكربتات أو أدوات"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/-USAeFpVf_A?si=iOhe5UYKkd6k_gsu" }
+        ]
+      },
+      {
+        "level": 5,
+        "nameEn": "Level 5",
+        "nameAr": "المستوى الخامس",
+        "descriptionEn": "Design integrated applications or websites, choose appropriate tech, and contribute to open-source.",
+        "descriptionAr": "تصميم تطبيقات أو مواقع متكاملة، اختيار التقنية المناسبة، والمساهمة في مشاريع مفتوحة المصدر.",
+        "questions": [
+          "هل أنشأت أو ساعدت في تطوير تطبيق أو موقع ديناميكي؟",
+          "كيف تختار أفضل تقنية لمشروع معين؟",
+          "هل ساهمت في مشروع مفتوح المصدر؟"
+        ],
+        "evaluation": [
+          "✔ إذا أنشأ مشروعًا عمليًا أو ساهم في مجتمعات تقنية أو صمم بنية تقنية → مستوى ٥"
+        ],
+        "progressionSteps": [
+          "بناء مشروع ويب حقيقي (واجهة وتفاعل وتنسيق)",
+          "دمج أكثر من تقنية لإنشاء موقع متكامل",
+          "المساهمة في مشاريع GitHub"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/mkLbp0msvbI?si=EFGKV_PhfKbg0Z1Z" }
+        ]
+      },
+      {
+        "level": 6,
+        "nameEn": "Level 6",
+        "nameAr": "المستوى السادس",
+        "descriptionEn": "Operate devices, connect to the internet, and recognize basic components (hardware/software).",
+        "descriptionAr": "تشغيل الأجهزة والاتصال بالإنترنت والتعرّف على المكوّنات الأساسية (العتاد/البرمجيات).",
+        "questions": [
+          "كيف تتصل بشبكة Wi‑Fi وتتحقق من الاتصال؟",
+          "ما الفرق بين العتاد (Hardware) والبرمجيات (Software)؟",
+          "كيف تتحقق من مساحة التخزين والإعدادات الأساسية في جهازك؟"
+        ],
+        "evaluation": [
+          "✔ إذا استطاع تشغيل الجهاز والاتصال بالشبكة والتعرّف على المكوّنات الأساسية ← مستوى ٦"
+        ],
+        "progressionSteps": [
+          "فتح إعدادات الشبكة والاتصال بشبكة جديدة",
+          "التعرّف على مكوّنات الجهاز (المعالج، الذاكرة، التخزين)",
+          "التفرقة بين التطبيقات ونظام التشغيل وإدارة التحديثات"
+        ],
+        "resources": [
+          {
+            "url": "https://edu.gcfglobal.org/en/windowsbasics/connecting-to-the-internet/"
+          }
+        ]
+      },
+      {
+        "level": 7,
+        "nameEn": "Level 7",
+        "nameAr": "المستوى السابع",
+        "descriptionEn": "Use email, office tools, and common applications productively for everyday tasks.",
+        "descriptionAr": "التعامل مع البريد الإلكتروني وبرامج أوفيس وتطبيقات شائعة بفعالية في المهام اليومية.",
+        "questions": [
+          "كيف تُرسل بريدًا مهنياً مع مرفقات؟",
+          "ما الأدوات التي تستخدمها لتنظيم المستندات والمواعيد؟",
+          "كيف تتعاون على مستند مشترك (التعليقات/التتبع)؟"
+        ],
+        "evaluation": [
+          "✔ إذا استخدم البريد والأدوات المكتبية بكفاءة وأدار الملفات والمستندات المشتركة ← مستوى ٧"
+        ],
+        "progressionSteps": [
+          "إرسال بريد مع مرفقات وصياغة موضوع ورسالة واضحة",
+          "استخدام الجداول والنصوص والعروض بمهام بسيطة",
+          "التعاون في مستندات سحابية (تعليقات/اقتراحات)"
+        ],
+        "resources": [
+          { "url": "https://support.google.com/docs/answer/2494881" }
+        ]
+      },
+      {
+        "level": 8,
+        "nameEn": "Level 8",
+        "nameAr": "المستوى الثامن",
+        "descriptionEn": "Search efficiently, verify sources, and turn data into useful information.",
+        "descriptionAr": "البحث الفعّال عن المعلومات والتحقق من المصادر وتحويل البيانات إلى معلومات مفيدة.",
+        "questions": [
+          "كيف تتحقق من موثوقية موقع أو مصدر؟",
+          "ما العبارات/العوامل التي تستخدمها لتحسين البحث؟",
+          "كيف تلخّص نتائج البحث وتعرضها؟"
+        ],
+        "evaluation": [
+          "✔ إذا استخدم بحثًا متقدمًا وتحقق من المصادر وقدّم ملخصًا واضحًا للمعلومات ← مستوى ٨"
+        ],
+        "progressionSteps": [
+          "استخدام عوامل بحث متقدمة (site:, filetype:)",
+          "مقارنة مصدرين على الأقل للتحقق",
+          "تلخيص النتائج في نقاط أو جدول"
+        ],
+        "resources": [{ "url": "https://en.wikipedia.org/wiki/CRAAP_test" }]
+      },
+      {
+        "level": 9,
+        "nameEn": "Level 9",
+        "nameAr": "المستوى التاسع",
+        "descriptionEn": "Protect accounts and data; apply strong passwords, 2FA, and safe browsing habits.",
+        "descriptionAr": "حماية الحسابات والبيانات؛ استخدام كلمات مرور قوية والمصادقة الثنائية وعادات تصفح آمنة.",
+        "questions": [
+          "ما خصائص كلمة المرور القوية؟",
+          "كيف تُفعِّل المصادقة الثنائية 2FA؟",
+          "كيف تتعرّف على رسائل التصيّد؟"
+        ],
+        "evaluation": [
+          "✔ إذا طبّق ممارسات أمان أساسية (كلمات مرور قوية/2FA/حذر من التصيّد) ← مستوى ٩"
+        ],
+        "progressionSteps": [
+          "تفعيل 2FA لحسابين على الأقل",
+          "إنشاء وإدارة كلمات مرور عبر مدير كلمات مرور",
+          "مراجعة إعدادات الخصوصية في منصتين"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/aRbKFCY4tjE?si=M4qvV10xSu19YaCA" }
+        ]
+      },
+      {
+        "level": 10,
+        "nameEn": "Level 10",
+        "nameAr": "المستوى العاشر",
+        "descriptionEn": "Create digital content (presentations, websites, videos) and collaborate online effectively.",
+        "descriptionAr": "إنشاء محتوى رقمي (عروض، مواقع، فيديو) والتعاون عبر الإنترنت بفعالية.",
+        "questions": [
+          "هل أنشأت موقعًا أو عرضًا متقدّمًا أو فيديو تعليميًا؟",
+          "كيف تُنظّم فريقًا للعمل على مشروع رقمي؟",
+          "ما الأدوات التي تستخدمها لإدارة الإصدارات والتعليقات؟"
+        ],
+        "evaluation": [
+          "✔ إذا أنتج محتوى عالي الجودة وتعاون بفاعلية ضمن منصات رقمية ← مستوى ١٠"
+        ],
+        "progressionSteps": [
+          "إنشاء صفحة/موقع بسيط أو فيديو قصير",
+          "استخدام منصات تعاون (Drive/Notion/GitHub) لإدارة العمل",
+          "مشاركة النتائج وتوثيق خطوات التنفيذ"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/-USAeFpVf_A?si=iOhe5UYKkd6k_gsu" }
+        ]
+      }
+    ]
+  },
+  {
+    "nameEn": "Critical Thinking",
+    "nameAr": "التفكير الناقد",
+    "category": "critical_thinking",
+    "definitionEn": "Evaluate claims and arguments using evidence and logic; consider multiple perspectives; make fair, reasoned judgments.",
+    "definitionAr": "تقييم الادعاءات والحجج بالأدلة والمنطق؛ مراعاة وجهات نظر متعددة؛ واتخاذ أحكام عادلة ومُعلَّلة.",
+    "levels": [
+      {
+        "level": 1,
+        "nameEn": "Level 1",
+        "nameAr": "المستوى الأول",
+        "descriptionEn": "Recognize a clear, simple claim and ask clarifying questions without forming a hasty judgment.",
+        "descriptionAr": "تمييز ادعاء بسيط وطرح أسئلة توضيحية دون إصدار حكم متسرّع.",
+        "questions": [
+          "ما الادعاء المطروح؟",
+          "ما المعلومات غير الواضحة التي تحتاج لتوضيح؟",
+          "ما المصادر الممكنة للتحقق؟"
+        ],
+        "evaluation": [
+          "✔ إذا حدد الادعاء وطرح سؤالين توضيحيين على الأقل دون حكم مسبق ← مستوى ١"
+        ],
+        "progressionSteps": [
+          "اكتب الادعاء بكلماتك",
+          "اسأل أسئلة توضيحية محددة",
+          "اقترح مصدرًا واحدًا للتحقق"
+        ],
+        "resources": [{ "url": "https://youtu.be/ZLyUHbexz04" }]
+      },
+      {
+        "level": 2,
+        "nameEn": "Level 2",
+        "nameAr": "المستوى الثاني",
+        "descriptionEn": "Identify basic evidence for/against a claim and distinguish fact from opinion.",
+        "descriptionAr": "تحديد أدلة أساسية مع/ضد الادعاء والتمييز بين الحقيقة والرأي.",
+        "questions": [
+          "ما الدليل المؤيد؟ ما الدليل المعارض؟",
+          "هل هذه عبارة حقيقة أم رأي؟",
+          "ما المصدر؟ وهل هو موثوق؟"
+        ],
+        "evaluation": [
+          "✔ إذا قدم دليلين وصنّف ثلاث عبارات (حقيقة/رأي) بدقة ← مستوى ٢"
+        ],
+        "progressionSteps": [
+          "جمع دليلين من مصدرين",
+          "تصنيف عبارات إلى حقيقة/رأي",
+          "ذكر المصدر لكل دليل"
+        ],
+        "resources": [{ "url": "https://youtu.be/6OLPL5p0fMg" }]
+      },
+      {
+        "level": 3,
+        "nameEn": "Level 3",
+        "nameAr": "المستوى الثالث",
+        "descriptionEn": "Analyze arguments by identifying premises and conclusions; detect common logical fallacies.",
+        "descriptionAr": "تحليل الحجج بتحديد المقدمات والنتيجة؛ واكتشاف المغالطات المنطقية الشائعة.",
+        "questions": [
+          "ما المقدمات؟ ما الاستنتاج؟",
+          "هل توجد مغالطة مثل التعميم أو الرجل القش؟",
+          "ما البدائل الممكنة للتفسير؟"
+        ],
+        "evaluation": [
+          "✔ إذا استخرج المقدمات/النتيجة وحدد مغالطة واحدة على الأقل بدقة ← مستوى ٣"
+        ],
+        "progressionSteps": [
+          "تمييز المقدمات عن الاستنتاج",
+          "التعرّف على مغالطتين شائعتين",
+          "اقتراح تفسير بديل واحد"
+        ],
+        "resources": [{ "url": "https://youtu.be/6sUbt-Qp6Pg" }]
+      },
+      {
+        "level": 4,
+        "nameEn": "Level 4",
+        "nameAr": "المستوى الرابع",
+        "descriptionEn": "Compare multiple perspectives fairly, weigh trade-offs, and form a reasoned position.",
+        "descriptionAr": "مقارنة وجهات نظر متعددة بإنصاف ووزن المقايضات وتكوين موقف مُعلّل.",
+        "questions": [
+          "ما وجهتا نظر متعارضتان؟",
+          "ما المزايا والعيوب لكل جانب؟",
+          "ما موقفك ولماذا؟"
+        ],
+        "evaluation": [
+          "✔ إذا عرض جانبين بعدالة وذكر حجتين مضادتين قبل تبنّي موقف ← مستوى ٤"
+        ],
+        "progressionSteps": [
+          "جمع حجج مؤيدة ومعارضة",
+          "صياغة ميزان للمزايا/العيوب",
+          "كتابة موقف مع سببين داعمين"
+        ],
+        "resources": [{ "url": "https://youtu.be/Ll5CL6HN9nQ" }]
+      },
+      {
+        "level": 5,
+        "nameEn": "Level 5",
+        "nameAr": "المستوى الخامس",
+        "descriptionEn": "Synthesize complex information, self-critique reasoning, and update beliefs when new evidence appears.",
+        "descriptionAr": "تركيب معلومات معقدة، ممارسة نقد ذاتي للتفكير، وتحديث المعتقدات عند ظهور أدلة جديدة.",
+        "questions": [
+          "هل أخذت جميع وجهات النظر الممكنة؟",
+          "كيف يمكن تطوير التفكير مستقبلًا؟",
+          "هل موقفك متوازن وعادل؟"
+        ],
+        "evaluation": [
+          "✔ إذا قدّم تحليلًا متوازنًا مع مراجعة نقدية ذاتية وتحديث موقفه بالأدلة ← مستوى ٥"
+        ],
+        "progressionSteps": [
+          "ممارسة تفكير عميق يوميًا",
+          "توسيع القاعدة المعرفية بقراءة متعددة التخصصات",
+          "مراجعة المعتقدات وتصحيحها"
+        ],
+        "resources": [{ "url": "https://youtu.be/M9FD1nlu5Wk" }]
+      },
+      {
+        "level": 6,
+        "nameEn": "Level 6",
+        "nameAr": "المستوى السادس",
+        "descriptionEn": "Avoid snap judgments; pause, clarify the problem, and separate emotion from analysis.",
+        "descriptionAr": "تجنّب الأحكام السريعة؛ التوقّف قليلًا وتوضيح المشكلة وفصل العاطفة عن التحليل.",
+        "questions": [
+          "هل أفهم أصل المشكلة فعلاً؟",
+          "هل كان رد فعلي سريعًا فقط؟",
+          "هل هناك طريقة أوضح للتعامل؟"
+        ],
+        "evaluation": [
+          "✔ إذا أظهر تباطؤًا واعيًا وحدد المشكلة بدقة قبل الحكم ← مستوى ٦"
+        ],
+        "progressionSteps": [
+          "التوقف قصيرًا قبل الحكم",
+          "صياغة المشكلة بدقة",
+          "تجنّب القرارات العاطفية"
+        ],
+        "resources": [{ "url": "https://youtu.be/6DxTQiJuAoc" }]
+      },
+      {
+        "level": 7,
+        "nameEn": "Level 7",
+        "nameAr": "المستوى السابع",
+        "descriptionEn": "Identify surface causes and test simple alternatives; reflect on temporary vs. lasting fixes.",
+        "descriptionAr": "تحديد أسباب سطحية واختبار بدائل بسيطة؛ التمييز بين حلول مؤقتة ودائمة.",
+        "questions": [
+          "ما السبب المباشر؟",
+          "هل الحل يخفف المشكلة أم يحلها نهائيًا؟",
+          "ما البدائل الممكنة؟"
+        ],
+        "evaluation": [
+          "✔ إذا جرّب بديلين وقيّم أثرهما على المدى القصير والطويل ← مستوى ٧"
+        ],
+        "progressionSteps": [
+          "البحث عن السبب المباشر",
+          "مقارنة حل مؤقت بآخر دائم",
+          "طلب تغذية راجعة خارجية"
+        ],
+        "resources": [{ "url": "https://youtu.be/uP6BuRz7ppI" }]
+      },
+      {
+        "level": 8,
+        "nameEn": "Level 8",
+        "nameAr": "المستوى الثامن",
+        "descriptionEn": "Generate creative, non-obvious options and test on a small scale before adoption.",
+        "descriptionAr": "توليد حلول إبداعية غير تقليدية واختبارها على نطاق صغير قبل التبنّي.",
+        "questions": [
+          "هل يمكن التفكير بطريقة مختلفة؟",
+          "ما الحلول الإبداعية الممكنة؟",
+          "كيف نوازن بين المخاطرة والفائدة؟"
+        ],
+        "evaluation": [
+          "✔ إذا قدّم حلاً غير تقليدي واختبره تجريبيًا بنتيجة قابلة للقياس ← مستوى ٨"
+        ],
+        "progressionSteps": [
+          "جلسة عصف ذهني",
+          "استلهام حلول من مجالات مجاورة",
+          "اختبار الفكرة على مجموعة صغيرة"
+        ],
+        "resources": [
+          {
+            "url": "https://www.youtube.com/live/RT_hm41IrRw?si=FI65DHtN6QLOx8cV"
+          }
+        ]
+      },
+      {
+        "level": 9,
+        "nameEn": "Level 9",
+        "nameAr": "المستوى التاسع",
+        "descriptionEn": "Use structured methods and tools to evaluate information and decisions under uncertainty.",
+        "descriptionAr": "استخدام أدوات ومنهجيات منظمة لتقييم المعلومات واتخاذ قرارات أكثر وعيًا تحت عدم اليقين.",
+        "questions": [
+          "ما الأداة الأنسب للتحليل؟",
+          "ما البيانات اللازمة لاتخاذ القرار؟",
+          "كيف تقلّل التحيّز؟"
+        ],
+        "evaluation": [
+          "✔ إذا استعمل أداة منهجية وبيّن كيف حسّنت جودة الحكم ← مستوى ٩"
+        ],
+        "progressionSteps": [
+          "اختيار أداة تحليل (مثل 5 Whys)",
+          "جمع بيانات ملائمة",
+          "توثيق القرار وأسبابه"
+        ],
+        "resources": [{ "url": "https://youtu.be/6sUbt-Qp6Pg" }]
+      },
+      {
+        "level": 10,
+        "nameEn": "Level 10",
+        "nameAr": "المستوى العاشر",
+        "descriptionEn": "Apply robust thinking frameworks, consider all angles, and practice regular self-critique.",
+        "descriptionAr": "تطبيق أطر تفكير قوية والنظر للأمور من جميع الزوايا وممارسة النقد الذاتي بانتظام.",
+        "questions": [
+          "كيف تضمن شمول زوايا النظر؟",
+          "كيف تربط الحكم بقيم ومعايير ثابتة؟",
+          "كيف تراجع قراراتك دوريًا؟"
+        ],
+        "evaluation": [
+          "✔ إذا قدّم حكمًا متوازنًا مدعومًا بإطار تفكير وأدلة ومع مراجعة ذاتية ← مستوى ١٠"
+        ],
+        "progressionSteps": [
+          "اختيار إطار تفكير وتطبيقه",
+          "تمرين دوري للنقد الذاتي",
+          "تحديث المعتقدات وفق أدلة جديدة"
+        ],
+        "resources": [{ "url": "https://youtu.be/Ll5CL6HN9nQ" }]
+      }
+    ]
+  },
+  {
+    "nameEn": "Problem Solving",
+    "nameAr": "حل المشكلات",
+    "category": "problem_solving",
+    "definitionEn": "Analyze problems, identify root causes, generate options, and implement and evaluate effective solutions proportionate to complexity.",
+    "definitionAr": "تحليل المشكلات وتحديد الأسباب الجذرية وتوليد بدائل وتنفيذ الحلول المناسبة وتقييمها وفقًا للتعقيد.",
+    "levels": [
+      {
+        "level": 1,
+        "nameEn": "Level 1",
+        "nameAr": "المستوى الأول",
+        "descriptionEn": "Identify a simple, well-defined problem and follow ready-made step-by-step instructions to resolve it.",
+        "descriptionAr": "التعرّف على مشكلة بسيطة ومحددة واتباع خطوات جاهزة لحلها.",
+        "questions": [
+          "ما هي المشكلة التي تواجهك في هذا السيناريو؟ هل يمكنك وصفها ببساطة؟",
+          "هل تستطيع اتباع تعليمات خطوة بخطوة لحل هذه المشكلة؟",
+          "هل هذه المشكلة واضحة أم تحتاج توضيحًا؟"
+        ],
+        "evaluation": [
+          "✔ إذا حدد المشكلة (مثل: الرابط لا يعمل) واقترح حلًا بسيطًا (تحديث الصفحة/تغيير المتصفح/إبلاغ الدعم) ← مستوى ١"
+        ],
+        "progressionSteps": [
+          "قراءة السيناريو جيدًا ومعرفة ما يحدث",
+          "تحديد المشكلة بكلمات بسيطة",
+          "تطبيق تعليمات جاهزة مثل إعادة المحاولة أو تغيير المتصفح أو الاتصال بالدعم",
+          "التأكد من وضوح المشكلة"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/Ibq3idYxE4E?si=IHVJAPG18L8mwCiD" }
+        ]
+      },
+      {
+        "level": 2,
+        "nameEn": "Level 2",
+        "nameAr": "المستوى الثاني",
+        "descriptionEn": "Break down the problem, list possible causes, propose multiple solutions, try one simple option, and reflect on results.",
+        "descriptionAr": "تفكيك المشكلة إلى مكونات، تحديد الأسباب الممكنة، توليد عدة حلول، تجربة حل بسيط وتقييمه.",
+        "questions": [
+          "ما مكونات المشكلة؟ ما الأسباب الممكنة؟",
+          "ما الحلول التي تقترحها لهذه المشكلة؟",
+          "جرب أحد الحلول: هل عمل؟ لماذا/لماذا لا؟"
+        ],
+        "evaluation": [
+          "✔ إذا فكك المشكلة وولد أكثر من حل ثم قيّم أحدها ولو بشكل بسيط ← مستوى ٢"
+        ],
+        "progressionSteps": [
+          "طرح سؤال: ما الأسباب الممكنة؟",
+          "تحليل المشكلة: من المسؤول؟ متى تحدث؟ أين؟",
+          "كتابة عدة حلول ممكنة (٣ على الأقل)",
+          "تجربة حل بسيط وتقييمه ومقارنة البدائل"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/GpzutFsz2SA?si=eONSPLyQnFt-3BQJ" }
+        ]
+      },
+      {
+        "level": 3,
+        "nameEn": "Level 3",
+        "nameAr": "المستوى الثالث",
+        "descriptionEn": "Identify root causes using analytical tools (e.g., 5 Whys, fishbone) and write a detailed action plan with owners and timelines.",
+        "descriptionAr": "تحديد الأسباب الجذرية باستخدام أدوات تحليلية وصياغة خطة مفصلة بخطوات ومسؤوليات وزمن تنفيذ.",
+        "questions": [
+          "ما الأسباب الجذرية للمشكلة؟ استخدم أداة مثل 5 Whys أو مخطط السبب والأثر.",
+          "كيف تكتب خطة خطوة بخطوة للحل؟",
+          "هل توجد آثار مترتبة يجب الانتباه لها؟"
+        ],
+        "evaluation": [
+          "✔ إذا استخدم أدوات تحليل حقيقية وكتب خطة مفصلة منظمة ← مستوى ٣"
+        ],
+        "progressionSteps": [
+          "استخدام 5 Whys أو مخطط السبب والأثر",
+          "تحديد السبب الجذري",
+          "وضع خطة مفصلة: خطوات، مسؤوليات، زمن التنفيذ",
+          "مراعاة الآثار على العملاء أو الموظفين أو السمعة"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/f_YTZokpFWU?si=BxOMkRfsDid79adx" }
+        ]
+      },
+      {
+        "level": 4,
+        "nameEn": "Level 4",
+        "nameAr": "المستوى الرابع",
+        "descriptionEn": "Handle complex, multi-constraint problems; prioritize, assess risks, and define KPIs to evaluate solution outcomes.",
+        "descriptionAr": "التعامل مع مشكلات معقدة متعددة المتغيرات، تحديد الأولويات، تحليل المخاطر، وتحديد مؤشرات أداء لتقييم النتائج.",
+        "questions": [
+          "كيف تتعامل مع مشكلة فيها متغيرات كثيرة (ميزانية، وقت، أشخاص)؟",
+          "ما الخطة الاستراتيجية التي تضعها؟",
+          "بعد التنفيذ، كيف تقيس الفاعلية وما البيانات التي تحتاجها؟"
+        ],
+        "evaluation": [
+          "✔ إذا بنى خطة تستوعب التعقيد وتوقع العقبات وحدد آليات التقييم والتحسين ← مستوى ٤"
+        ],
+        "progressionSteps": [
+          "تحليل جوانب المشكلة (ميزانية، وقت، موارد)",
+          "تحديد الأولويات",
+          "تحليل المخاطر ووضع بدائل (Plan A/Plan B)",
+          "وضع KPIs وجمع بيانات بعد التنفيذ"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/AehohZNyfr0?si=_N031FxuIBbs7v_h" }
+        ]
+      },
+      {
+        "level": 5,
+        "nameEn": "Level 5",
+        "nameAr": "المستوى الخامس",
+        "descriptionEn": "Design systematic, scalable solutions (new models/tools) that address root problems and can be automated and reused.",
+        "descriptionAr": "ابتكار حلول منهجية قابلة للتوسع تعالج أصل المشكلة (نموذج/أداة/خوارزمية) مع أتمتة وإتاحة التكرار.",
+        "questions": [
+          "هل يمكنك اقتراح حل جذري لمشكلة متكررة؟",
+          "هل يمكنك ابتكار طريقة جديدة (خوارزمية/أداة/نموذج)?",
+          "كيف يمكنك أتمتة الحل لتوفير الوقت والجهد؟"
+        ],
+        "evaluation": [
+          "✔ إذا ابتكر نموذجًا جديدًا أو أتمت عملية بشكل منهجي أو بنى حلًا قابلاً للتكرار ← مستوى ٥"
+        ],
+        "progressionSteps": [
+          "تحليل شامل لمشكلة متكررة",
+          "اقتراح حل جذري يعالج الأصل",
+          "ابتكار أداة/نموذج/خوارزمية",
+          "أتمتة الحل وتوثيقه لإعادة الاستخدام"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/_i1hO-bcExs?si=NLQRR9qKReJrV-cz" }
+        ]
+      },
+      {
+        "level": 6,
+        "nameEn": "Level 6",
+        "nameAr": "المستوى السادس",
+        "descriptionEn": "Define the problem precisely, list constraints, and separate symptoms from root issues before acting.",
+        "descriptionAr": "تعريف المشكلة بدقة، تحديد القيود، والتمييز بين الأعراض والسبب الجذري قبل اتخاذ إجراء.",
+        "questions": [
+          "ما تعريف المشكلة بدقة؟",
+          "ما القيود (وقت/ميزانية/موارد)؟",
+          "هل ما تراه عرض أم سبب جذري؟"
+        ],
+        "evaluation": [
+          "✔ إذا صاغ بيان مشكلة واضحًا وحدد 3 قيود وفصل الأعراض عن السبب ← مستوى ٦"
+        ],
+        "progressionSteps": [
+          "كتابة Problem Statement",
+          "قائمة بالقيود والمتطلبات",
+          "تمييز الأعراض عن الأسباب باستخدام 5 Whys"
+        ],
+        "resources": [{ "url": "https://youtu.be/JmrC5D1sQ0g" }]
+      },
+      {
+        "level": 7,
+        "nameEn": "Level 7",
+        "nameAr": "المستوى السابع",
+        "descriptionEn": "Generate and compare alternatives; evaluate trade-offs and choose an option with rationale.",
+        "descriptionAr": "توليد بدائل ومقارنتها؛ تقييم المقايضات واختيار خيار مع تبرير واضح.",
+        "questions": [
+          "ما البدائل الممكنة؟",
+          "ما مزايا/عيوب كل بديل؟",
+          "لماذا اخترت هذا الحل؟"
+        ],
+        "evaluation": [
+          "✔ إذا قارن 3 بدائل وفق معايير محددة وقدم قرارًا مبررًا ← مستوى ٧"
+        ],
+        "progressionSteps": [
+          "تحديد معايير اختيار (كلفة/أثر/زمن)",
+          "مقارنة 3 بدائل في جدول",
+          "اتخاذ قرار مبرر"
+        ],
+        "resources": [{ "url": "https://youtu.be/5T1nHWv2uU8" }]
+      },
+      {
+        "level": 8,
+        "nameEn": "Level 8",
+        "nameAr": "المستوى الثامن",
+        "descriptionEn": "Pilot the chosen solution; define success metrics and collect data to evaluate impact.",
+        "descriptionAr": "تجربة الحل المختار على نطاق صغير؛ تحديد مؤشرات نجاح وجمع بيانات لتقييم الأثر.",
+        "questions": [
+          "ما خطة التجربة المصغرة؟",
+          "ما المقاييس التي ستقيسها؟",
+          "كيف ستجمع البيانات؟"
+        ],
+        "evaluation": [
+          "✔ إذا نفّذ تجربة محدودة وقيّم النتائج بمقاييس واضحة ← مستوى ٨"
+        ],
+        "progressionSteps": [
+          "تحديد نطاق تجريبي",
+          "تعريف KPIs",
+          "جمع وتحليل النتائج"
+        ],
+        "resources": [{ "url": "https://youtu.be/9bzx8G8nC7o" }]
+      },
+      {
+        "level": 9,
+        "nameEn": "Level 9",
+        "nameAr": "المستوى التاسع",
+        "descriptionEn": "Manage complex, multi-stakeholder problems; coordinate workstreams and risks; communicate decisions.",
+        "descriptionAr": "إدارة مشكلات معقدة متعددة الأطراف؛ تنسيق مسارات العمل والمخاطر؛ توصيل القرارات بوضوح.",
+        "questions": [
+          "من هم المعنيون؟",
+          "كيف تُنسّق الجهود وتتابع المخاطر؟",
+          "ما خطة التواصل؟"
+        ],
+        "evaluation": [
+          "✔ إذا قاد تنفيذًا متعدد الأطراف بخطة مخاطر وتواصل فعّال ← مستوى ٩"
+        ],
+        "progressionSteps": [
+          "خارطة أصحاب المصلحة",
+          "خطة مخاطر وتخفيف",
+          "قنوات تواصل منتظمة"
+        ],
+        "resources": [{ "url": "https://youtu.be/y9XyKq7Vv4E" }]
+      },
+      {
+        "level": 10,
+        "nameEn": "Level 10",
+        "nameAr": "المستوى العاشر",
+        "descriptionEn": "Institutionalize solutions (playbooks, automation, governance); continuously improve using feedback loops.",
+        "descriptionAr": "مأسسة الحلول (أدلة تشغيل، أتمتة، حوكمة)؛ تحسين مستمر عبر حلقات التعلّم.",
+        "questions": [
+          "كيف تعمم الحل وتضمن استدامته؟",
+          "ما الأتمتة الممكنة؟",
+          "كيف تُنشئ حلقة تحسين مستمرة؟"
+        ],
+        "evaluation": [
+          "✔ إذا وثّق وأتمت وحوكم الحل مع دورة تحسين مستمرة ← مستوى ١٠"
+        ],
+        "progressionSteps": [
+          "كتابة Playbook",
+          "أتمتة الخطوات المتكررة",
+          "آلية تغذية راجعة وتحسين"
+        ],
+        "resources": [{ "url": "https://youtu.be/8f8mYh8v8ss" }]
+      }
+    ]
+  },
+  {
+    "nameEn": "Data and Information Literacy",
+    "nameAr": "التعامل مع البيانات والمعلومات",
+    "category": "data_literacy",
+    "definitionEn": "Search, evaluate, organize, analyze, and communicate data and information ethically to derive insights.",
+    "definitionAr": "البحث عن البيانات والمعلومات وتقييمها وتنظيمها وتحليلها وعرضها بشكل أخلاقي لاستخراج الرؤى.",
+    "levels": [
+      {
+        "level": 1,
+        "nameEn": "Level 1",
+        "nameAr": "المستوى الأول",
+        "descriptionEn": "Perform simple searches, identify author and source, and recognize trustworthy websites.",
+        "descriptionAr": "بحث بسيط، التعرف على الكاتب والمصدر، وتمييز المواقع الموثوقة.",
+        "questions": [
+          "كيف تبحث عن معلومة معينة على الإنترنت؟",
+          "من كتب المقال ومن أي موقع؟",
+          "هل كل المواقع موثوقة؟ كيف تميز؟"
+        ],
+        "evaluation": [
+          "✔ إذا حدد المعلومة والكاتب والموقع وميّز موقعًا موثوقًا من غيره ← مستوى ١"
+        ],
+        "progressionSteps": [
+          "استخدام محركات البحث بعبارات مناسبة",
+          "مراجعة الكاتب واسم الموقع",
+          "تطبيق اختبارات مثل SIFT أو CRAAP"
+        ],
+        "resources": [
+          { "url": "https://en.wikipedia.org/wiki/CRAAP_test" },
+          { "url": "https://youtu.be/NAkkcxbM5k?si=Icw7NOhUvmVXlAcZ" }
+        ]
+      },
+      {
+        "level": 2,
+        "nameEn": "Level 2",
+        "nameAr": "المستوى الثاني",
+        "descriptionEn": "Use advanced search operators, collect data from multiple sources, and cite references correctly.",
+        "descriptionAr": "استخدام عوامل بحث متقدمة، جمع بيانات من مصادر متعددة، وكتابة المراجع بشكل صحيح.",
+        "questions": [
+          "هل استخدمت site:.edu أو filetype:pdf؟",
+          "كيف تذكر المرجع؟",
+          "هل يمكنك جمع بيانات من 5 مواقع في جدول؟"
+        ],
+        "evaluation": [
+          "✔ إذا استخدم أدوات بحث ذكية وأدخل البيانات بدقة وذكر المرجع بطريقة صحيحة ← مستوى ٢"
+        ],
+        "progressionSteps": [
+          "استخدام عوامل بحث متقدمة",
+          "جمع معلومات (العنوان، المؤلف، السنة) في جدول",
+          "توثيق المراجع بوضوح"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/C-2YMhMu5Lc?si=pUWIiJmbtY2CmYZb" }
+        ]
+      },
+      {
+        "level": 3,
+        "nameEn": "Level 3",
+        "nameAr": "المستوى الثالث",
+        "descriptionEn": "Synthesize multiple sources into a coherent summary; organize information clearly; understand privacy.",
+        "descriptionAr": "تلخيص من مصادر متعددة في فقرة متماسكة، تنظيم المعلومات بوضوح، وفهم الخصوصية.",
+        "questions": [
+          "هل يمكنك تلخيص 3 مصادر في فقرة واحدة؟",
+          "كيف تنظم البيانات في جدول واضح؟",
+          "ما المعلومات الشخصية التي لا يجب مشاركتها؟"
+        ],
+        "evaluation": [
+          "✔ إذا لخص بدقة ونظم المعلومات وأظهر فهمًا لحماية البيانات ← مستوى ٣"
+        ],
+        "progressionSteps": [
+          "قراءة 3 مصادر",
+          "تأليف فقرة تلخص الأفكار المشتركة",
+          "إنشاء جدول يوضح الأفكار المشتركة والمختلفة"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/kahKKcSThiE?si=JDSoa0EN8mhdpL8K" }
+        ]
+      },
+      {
+        "level": 4,
+        "nameEn": "Level 4",
+        "nameAr": "المستوى الرابع",
+        "descriptionEn": "Analyze simple datasets, create appropriate charts, and locate open/public data.",
+        "descriptionAr": "تحليل بيانات بسيطة، إنشاء رسوم بيانية مناسبة، ومعرفة مصادر البيانات العامة.",
+        "questions": [
+          "هل يمكنك تحليل مجموعة بيانات بسيطة لاكتشاف نمط؟",
+          "أي رسم بياني تختار للتغيّر عبر 6 أشهر؟",
+          "أين تجد بيانات حكومية/بحثية عامة؟"
+        ],
+        "evaluation": [
+          "✔ إذا أنشأ رسمًا بيانيًا من بيانات واقعية وحلل النمط وعرف مصادر البيانات ← مستوى ٤"
+        ],
+        "progressionSteps": [
+          "تحميل بيانات فعلية",
+          "إدخالها في Excel/Sheets",
+          "إنشاء رسم بياني مناسب وتفسير النمط"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/eHtZrIb0oWY?si=3v-l2hJ0JdnO1Th4" }
+        ]
+      },
+      {
+        "level": 5,
+        "nameEn": "Level 5",
+        "nameAr": "المستوى الخامس",
+        "descriptionEn": "Draw non-obvious insights from complex data, critique research methodology, and design data-driven projects ethically.",
+        "descriptionAr": "استخلاص استنتاجات غير مباشرة من بيانات معقدة، نقد منهجية البحث، وتصميم مشاريع قائمة على البيانات بأخلاقيات.",
+        "questions": [
+          "ما نقاط الضعف في طريقة جمع البيانات؟",
+          "هل تستطيع تقديم تحليل لا يظهر مباشرة؟",
+          "ما المعايير الأخلاقية لمشاريع البيانات؟"
+        ],
+        "evaluation": [
+          "✔ إذا فسر البيانات بعمق ونقد المنهجية وصمم فكرة قائمة على استخدام قانوني وأخلاقي للبيانات ← مستوى ٥"
+        ],
+        "progressionSteps": [
+          "قراءة تقرير بحثي معقد",
+          "تحديد نقاط الضعف في جمع البيانات",
+          "اقتراح مشروع واقعي يعتمد على البيانات مع مراعاة الأخلاقيات"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/bg-8ESjW8Cs?si=beFvH-kFy6kdJWeN" }
+        ]
+      },
+      {
+        "level": 6,
+        "nameEn": "Level 6",
+        "nameAr": "المستوى السادس",
+        "descriptionEn": "Plan and conduct structured research: define questions, use advanced operators, and maintain a source log.",
+        "descriptionAr": "تخطيط وبحث منظم: تعريف أسئلة، استخدام عوامل بحث متقدمة، وتوثيق المصادر.",
+        "questions": [
+          "ما سؤال البحث الدقيق؟",
+          "ما العبارات وعوامل البحث المستخدمة؟",
+          "كيف توثق المصادر؟"
+        ],
+        "evaluation": [
+          "✔ إذا صاغ سؤالًا واضحًا واستخدم عوامل متقدمة ووثّق 5 مصادر ← مستوى ٦"
+        ],
+        "progressionSteps": [
+          "صياغة سؤال SMART",
+          "استخدام site:, filetype:, date:",
+          "إنشاء سجل مراجع بسيط"
+        ],
+        "resources": [
+          { "url": "https://guides.lib.berkeley.edu/how-to-evaluate-sources" }
+        ]
+      },
+      {
+        "level": 7,
+        "nameEn": "Level 7",
+        "nameAr": "المستوى السابع",
+        "descriptionEn": "Evaluate credibility with criteria (authority, accuracy, currency, purpose) and detect misinformation patterns.",
+        "descriptionAr": "تقييم المصداقية بمعايير (السلطة، الدقة، الحداثة، الغرض) وكشف أنماط التضليل.",
+        "questions": [
+          "من المؤلف وما خبرته؟",
+          "هل المعلومات حديثة ودقيقة؟",
+          "هل هناك تحيّز؟"
+        ],
+        "evaluation": [
+          "✔ إذا طبّق معايير تقييم على 3 مصادر وحدد تحيزًا واحدًا ← مستوى ٧"
+        ],
+        "progressionSteps": [
+          "تطبيق CRAAP/SIFT",
+          "مقارنة 3 مصادر",
+          "وصف تحيز محتمل"
+        ],
+        "resources": [
+          {
+            "url": "https://www.caul.edu.au/programs-projects/aim/evaluate-information"
+          }
+        ]
+      },
+      {
+        "level": 8,
+        "nameEn": "Level 8",
+        "nameAr": "المستوى الثامن",
+        "descriptionEn": "Clean and structure data; produce clear charts; summarize and communicate insights for an audience.",
+        "descriptionAr": "تنظيف وهيكلة البيانات؛ إنشاء رسوم بيانية واضحة؛ تلخيص النتائج للجمهور.",
+        "questions": [
+          "ما خطوات التنظيف (فراغات/قيم مفقودة)؟",
+          "ما أفضل رسم لتمييز الاتجاه؟",
+          "كيف تعرض النتائج بوضوح؟"
+        ],
+        "evaluation": [
+          "✔ إذا نظف مجموعة بيانات صغيرة ورسم مخططًا مناسبًا وقدّم ملخصًا واضحًا ← مستوى ٨"
+        ],
+        "progressionSteps": [
+          "تنظيف ملف CSV صغير",
+          "اختيار رسم (خط/أعمدة/دائري)",
+          "كتابة ملخص موجز"
+        ],
+        "resources": [{ "url": "https://youtu.be/MBVx6XJ2l2A" }]
+      },
+      {
+        "level": 9,
+        "nameEn": "Level 9",
+        "nameAr": "المستوى التاسع",
+        "descriptionEn": "Design small analyses with appropriate methods; interpret results carefully; note limitations and ethics.",
+        "descriptionAr": "تصميم تحليلات صغيرة بطرق مناسبة؛ تفسير النتائج بحذر؛ توضيح القيود والاعتبارات الأخلاقية.",
+        "questions": [
+          "ما الطريقة المناسبة؟",
+          "كيف تفسر النتائج دون مبالغة؟",
+          "ما القيود والأخلاقيات؟"
+        ],
+        "evaluation": [
+          "✔ إذا صمّم تحليلًا صغيرًا وأوضح قيودًا وأخلاقيات بجلاء ← مستوى ٩"
+        ],
+        "progressionSteps": [
+          "اختيار منهج بسيط",
+          "تنفيذ التحليل وتفسيره",
+          "كتابة القيود والأخلاقيات"
+        ],
+        "resources": [{ "url": "https://youtu.be/rokGy0huYEA" }]
+      },
+      {
+        "level": 10,
+        "nameEn": "Level 10",
+        "nameAr": "المستوى العاشر",
+        "descriptionEn": "Lead data-informed decision-making: dashboards, reproducible workflows, and continuous data quality improvements.",
+        "descriptionAr": "قيادة قرارات مستندة إلى البيانات: لوحات متابعة، عمليات قابلة للتكرار، وتحسينات مستمرة لجودة البيانات.",
+        "questions": [
+          "ما لوحة المؤشرات المطلوبة؟",
+          "كيف تضمن قابلية التكرار؟",
+          "كيف تحسّن جودة البيانات؟"
+        ],
+        "evaluation": [
+          "✔ إذا بنى لوحة بسيطة وWorkflow قابلًا للتكرار وخطة جودة بيانات ← مستوى ١٠"
+        ],
+        "progressionSteps": [
+          "تصميم Dashboard بسيط",
+          "توثيق خطوات التحليل",
+          "تحسينات دورية للجودة"
+        ],
+        "resources": [{ "url": "https://youtu.be/d4jK7JbK6PE" }]
+      }
+    ]
+  },
+  {
+    "nameEn": "Creativity and Innovation",
+    "nameAr": "الإبداع والابتكار",
+    "category": "creativity_innovation",
+    "definitionEn": "Generate, combine, refine, and realize ideas into tangible outcomes individually and collaboratively.",
+    "definitionAr": "توليد ودمج وصقل الأفكار وتحويلها إلى مخرجات ملموسة بشكل فردي وجماعي.",
+    "levels": [
+      {
+        "level": 1,
+        "nameEn": "Level 1",
+        "nameAr": "المستوى الأول",
+        "descriptionEn": "Generate ideas freely without premature judgment; playful experimentation.",
+        "descriptionAr": "توليد أفكار بدون حكم مسبق وتجريب مرح.",
+        "questions": [
+          "إذا طُلب منك أفكار لتطوير تطبيق تعليمي، ما أول 5 أفكار؟",
+          "هل تحب تجربة أفكار حتى لو بدت غريبة؟"
+        ],
+        "evaluation": [
+          "✔ إذا قدّم أفكارًا متنوعة دون تقييد أو حكم مسبق ← مستوى ١"
+        ],
+        "progressionSteps": [
+          "تحديد موضوع بسيط",
+          "كتابة 10 أفكار عشوائية بزمن محدد (عصف ذهني)",
+          "مشاركة الأفكار دون مناقشة صحتها"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/G8w0rJhztJ4?si=Gk3_AZEQuOmtTI_q" }
+        ]
+      },
+      {
+        "level": 2,
+        "nameEn": "Level 2",
+        "nameAr": "المستوى الثاني",
+        "descriptionEn": "Combine two ideas using simple creativity tools and articulate the unique value.",
+        "descriptionAr": "دمج فكرتين باستخدام أدوات إبداع بسيطة والتعبير عن المختلف والفريد.",
+        "questions": [
+          "هل يمكنك دمج فكرتين مختلفتين لإنشاء فكرة جديدة؟",
+          "هل استخدمت خريطة ذهنية أو تقنية مشابهة؟"
+        ],
+        "evaluation": [
+          "✔ إذا دمج فكرتين بوضوح واستخدم أداة (عصف/خريطة ذهنية) وشرح فرادة الفكرة ← مستوى ٢"
+        ],
+        "progressionSteps": [
+          "اختيار فكرتين متباعدتين",
+          "إنشاء خريطة ذهنية توضح الدمج",
+          "وصف القيمة المختلفة"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/vK_0Fxx5vMA?si=I-ptF3x6r9A0qICG" }
+        ]
+      },
+      {
+        "level": 3,
+        "nameEn": "Level 3",
+        "nameAr": "المستوى الثالث",
+        "descriptionEn": "Apply structured creativity models (e.g., SCAMPER), filter options by criteria, and produce a simple prototype.",
+        "descriptionAr": "تطبيق نماذج تفكير إبداعي وتصفية الأفكار بمعايير واضحة وإعداد نموذج أولي بسيط.",
+        "questions": [
+          "هل استخدمت SCAMPER أو Six Thinking Hats؟ كيف؟",
+          "كيف تختار أفضل فكرة؟",
+          "هل أنشأت نموذجًا أوليًا (رسم/قصة/عرض)؟"
+        ],
+        "evaluation": [
+          "✔ إذا استُخدم نموذج تفكير منهجي وقُدم نموذج أولي بصري للفكرة ← مستوى ٣"
+        ],
+        "progressionSteps": [
+          "اختيار مشكلة وتطبيق SCAMPER",
+          "اختيار أفضل فكرة",
+          "رسم/تصميم نموذج أولي بسيط"
+        ],
+        "resources": [
+          {
+            "url": "https://www.youtube.com/live/OzkR_ap9RbE?si=8YyA4JWuE_K1i9OW"
+          }
+        ]
+      },
+      {
+        "level": 4,
+        "nameEn": "Level 4",
+        "nameAr": "المستوى الرابع",
+        "descriptionEn": "Develop an idea into a personal project, reframe the problem, and leverage trends to enhance the solution.",
+        "descriptionAr": "تطوير الفكرة إلى مشروع شخصي وإعادة صياغة المشكلة والاستفادة من الاتجاهات لتطوير الفكرة.",
+        "questions": [
+          "ما آخر مشروع شخصي نفذته من فكرة جديدة؟",
+          "هل أعدت صياغة المشكلة بطريقة مختلفة؟",
+          "كيف تتابع الاتجاهات وتستفيد منها؟"
+        ],
+        "evaluation": [
+          "✔ إذا طُورت فكرة إلى مشروع ملموس وأعيد تعريف المشكلة ودُمجت الاتجاهات المستقبلية ← مستوى ٤"
+        ],
+        "progressionSteps": [
+          "اختيار فكرة وتوسيعها إلى مشروع",
+          "إعادة صياغة المشكلة",
+          "متابعة الاتجاهات وربط المشروع باتجاه مستقبلي"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/KfesFuLqXwM?si=RQDCmVZLUBTRJSGR" }
+        ]
+      },
+      {
+        "level": 5,
+        "nameEn": "Level 5",
+        "nameAr": "المستوى الخامس",
+        "descriptionEn": "Demonstrate a distinctive creative style, consistently produce unconventional work, and maintain a portfolio.",
+        "descriptionAr": "امتلاك أسلوب إبداعي خاص وكسر الأنماط السائدة وممارسة الإبداع المستمر مع وجود أرشيف أعمال.",
+        "questions": [
+          "هل تمتلك أسلوبًا إبداعيًا خاصًا؟",
+          "هل أنشأت شيئًا غير مألوف تمامًا؟",
+          "هل لديك Portfolio؟ كيف تطوره؟"
+        ],
+        "evaluation": [
+          "✔ إذا ظهر أسلوب تفكير فريد وسجل دائم للأعمال وكُسرت أنماط تقليدية ← مستوى ٥"
+        ],
+        "progressionSteps": [
+          "تحديد المجال الإبداعي",
+          "بناء Portfolio ونشر الأعمال",
+          "اختيار فكرة غير مألوفة والعمل عليها وشرح الفلسفة"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/3bU3DVmuGhs?si=SjybJH_OCPEvuwqP" }
+        ]
+      },
+      {
+        "level": 6,
+        "nameEn": "Level 6",
+        "nameAr": "المستوى السادس",
+        "descriptionEn": "Generate many ideas without judgment; playful experimentation and quick diverging.",
+        "descriptionAr": "إنتاج أفكار كثيرة بدون حكم مسبق والتجريب المرح.",
+        "questions": [
+          "أول 5 أفكار لتحسين تطبيق تعليمي؟",
+          "هل جرّبت فكرة غريبة للتسلية؟",
+          "كيف تشعر عند مشاركة أفكارك؟"
+        ],
+        "evaluation": ["✔ إذا أنتج عدة أفكار متنوعة بسرعة ← مستوى ٦"],
+        "progressionSteps": [
+          "جلسات عصف ذهني قصيرة",
+          "تدوين كل فكرة مهما كانت",
+          "تدريب على التفكير الحر"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/7AEwlf3s-rQ?si=5SFwpXtQ0F4rZEYX" }
+        ]
+      },
+      {
+        "level": 7,
+        "nameEn": "Level 7",
+        "nameAr": "المستوى السابع",
+        "descriptionEn": "Select the best ideas and refine them to be more realistic and implementable.",
+        "descriptionAr": "اختيار أفضل الأفكار وتحسينها لتصبح أكثر واقعية وقابلة للتنفيذ.",
+        "questions": [
+          "كيف تختار أفضل فكرة؟",
+          "هل تستطيع تعديل فكرة لتناسب الواقع؟",
+          "ما معاييرك في التحسين؟"
+        ],
+        "evaluation": ["✔ إذا حوّل فكرة خام إلى خطة أولية عملية ← مستوى ٧"],
+        "progressionSteps": [
+          "فرز الأفكار وفق الأولوية والإمكانية",
+          "وضع معايير (سهولة التنفيذ/الفائدة/التكلفة)",
+          "تطوير الفكرة برسومات أو نموذج"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/EJRCyY6K2_o?si=EDKxeqV4RYTCwtjO" }
+        ]
+      },
+      {
+        "level": 8,
+        "nameEn": "Level 8",
+        "nameAr": "المستوى الثامن",
+        "descriptionEn": "Turn the idea into a prototype or practical experiment and test it with others.",
+        "descriptionAr": "تحويل الفكرة إلى نموذج أولي أو تجربة عملية واختبارها مع الآخرين.",
+        "questions": [
+          "هل صنعت نموذجًا أوليًا؟",
+          "كيف تختبر فكرتك؟",
+          "ما الأدوات اللازمة للتنفيذ؟"
+        ],
+        "evaluation": ["✔ إذا نفّذ نموذجًا أوليًا وجربه مع الآخرين ← مستوى ٨"],
+        "progressionSteps": [
+          "استخدام أدوات بسيطة لصنع النماذج",
+          "تجربة الفكرة مع مجموعة صغيرة",
+          "جمع ملاحظات وتطوير النموذج"
+        ],
+        "resources": [
+          { "url": "https://youtu.be/4uOkfpsjKNI?si=CxgpAgJyJAm1RxLT" }
+        ]
+      },
+      {
+        "level": 9,
+        "nameEn": "Level 9",
+        "nameAr": "المستوى التاسع",
+        "descriptionEn": "Collaborate with others to produce collective creative solutions; facilitate group ideation.",
+        "descriptionAr": "التعاون مع الآخرين لإنتاج حلول إبداعية جماعية وإدارة جلسات عصف جماعي.",
+        "questions": [
+          "كيف تشارك أفكارك مع فريق؟",
+          "هل تستفيد من أفكار الآخرين؟",
+          "كيف تدير جلسة عصف ذهني؟"
+        ],
+        "evaluation": [
+          "✔ إذا يسّر تعاونًا أفضى لحل إبداعي جماعي ملموس ← مستوى ٩"
+        ],
+        "progressionSteps": [
+          "تيسير جلسة عصف",
+          "دمج أفكار الفريق",
+          "اتفاق على نموذج أولي مشترك"
+        ],
+        "resources": [{ "url": "https://youtu.be/6n9Gm8oF0t0" }]
+      },
+      {
+        "level": 10,
+        "nameEn": "Level 10",
+        "nameAr": "المستوى العاشر",
+        "descriptionEn": "Sustain a distinctive creative identity; ship unconventional products; share and advocate bold ideas.",
+        "descriptionAr": "ترسيخ هوية إبداعية مميزة؛ إصدار منتجات غير تقليدية؛ نشر والدفاع عن أفكار جريئة.",
+        "questions": [
+          "ما عملك الأكثر جرأة؟",
+          "كيف تطور هويتك الإبداعية؟",
+          "كيف تواجه مقاومة الأفكار الجديدة؟"
+        ],
+        "evaluation": [
+          "✔ إذا حافظ على إنتاج غير تقليدي مؤثّر وهوية إبداعية واضحة ← مستوى ١٠"
+        ],
+        "progressionSteps": [
+          "خطة نشر منتظم",
+          "شبكة مراجعين وملاحظات",
+          "تجارب على أفكار استكشافية"
+        ],
+        "resources": [{ "url": "https://youtu.be/P6zW0m9YH6k" }]
+      }
+    ]
+  }
+]

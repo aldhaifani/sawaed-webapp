@@ -1,0 +1,109 @@
+{
+  "meta": {
+    "generatedAt": "2025-08-16T07:35:32.203Z",
+    "tasksAnalyzed": 12,
+    "totalTasks": 12,
+    "analysisCount": 12,
+    "thresholdScore": 5,
+    "projectName": "Taskmaster",
+    "usedResearch": true
+  },
+  "complexityAnalysis": [
+    {
+      "taskId": 1,
+      "taskTitle": "Setup Project Infrastructure and Convex Backend",
+      "complexityScore": 8,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Break down the setup into subtasks including Next.js 15 project initialization with TypeScript and App Router, Convex project initialization, schema definitions for all tables, Convex Auth configuration for email OTP, RBAC setup with defined roles, and database index configuration for performance.",
+      "reasoning": "This task involves multiple foundational components including frontend framework setup, backend schema design, authentication, and role-based access control, all critical and interdependent. It requires careful configuration and integration, making it complex and foundational for subsequent tasks."
+    },
+    {
+      "taskId": 2,
+      "taskTitle": "Integrate Monitoring and Analytics Tools",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Expand into subtasks for installing and configuring Sentry SDK with PII scrubbing, setting up PostHog SDK for event tracking, integrating both tools with Convex backend and Next.js middleware, configuring feature flags, and validating error and event tracking.",
+      "reasoning": "Integration of monitoring and analytics involves multiple SDKs and privacy considerations, plus linking with backend and frontend middleware. While not as complex as core infrastructure, it requires careful setup and testing to ensure data privacy and accurate event capture."
+    },
+    {
+      "taskId": 3,
+      "taskTitle": "Implement Authentication System with Email OTP",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Detail subtasks for implementing email OTP flow with Convex Auth, building login/signup UI, managing user sessions and role-based redirects, logout functionality, error handling including rate limiting, and storing user preferences like language.",
+      "reasoning": "Authentication with email OTP involves backend logic, frontend UI, session management, security considerations like rate limiting, and user experience elements, making it moderately complex and critical for secure access."
+    },
+    {
+      "taskId": 4,
+      "taskTitle": "Build Internationalization Framework",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Create subtasks for setting up next-intl or equivalent i18n library, creating bilingual translation files, implementing RTL/LTR layout switching with CSS, building language selector component, and ensuring dynamic content translation for database fields.",
+      "reasoning": "Supporting bilingual RTL and LTR layouts with dynamic switching requires both frontend UI and backend content handling, plus careful CSS and component design to ensure accessibility and usability."
+    },
+    {
+      "taskId": 5,
+      "taskTitle": "Create Master Taxonomies for Skills and Interests",
+      "complexityScore": 5,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Expand into subtasks for researching and compiling bilingual taxonomies, creating Convex mutations to seed data, implementing search and filtering for taxonomy selection, and building an admin interface for taxonomy management.",
+      "reasoning": "This task combines data research, backend data seeding, and frontend search/admin UI. It is moderately complex due to bilingual support and admin management but less technically challenging than core infrastructure."
+    },
+    {
+      "taskId": 6,
+      "taskTitle": "Build Dynamic Profile Management System",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Detail subtasks for creating profile forms with bio, photo upload integration with Convex file storage, location and multi-select components for skills/interests, profile editing with real-time updates, progress indicator implementation, and data validation for junction tables.",
+      "reasoning": "Profile management involves complex UI forms, file handling, real-time data updates, and relational data consistency, requiring careful frontend-backend coordination and validation."
+    },
+    {
+      "taskId": 7,
+      "taskTitle": "Develop Opportunities Portal",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Break down into subtasks for admin event posting UI with bilingual support, event listing page with search/filter/pagination, registration system with duplicate prevention, admin dashboard for registrations, and email notification implementation.",
+      "reasoning": "This task requires building multiple interconnected features including admin interfaces, user-facing listings, registration logic, and notification systems, all with bilingual support, making it moderately complex."
+    },
+    {
+      "taskId": 8,
+      "taskTitle": "Build Ministry Admin Dashboard",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Create subtasks for implementing Convex queries for aggregated anonymous data, building interactive charts with Chart.js, adding filters for date and demographics, ensuring data anonymization, and implementing export report functionality.",
+      "reasoning": "Dashboard development involves data aggregation, visualization, filtering, and export features with privacy considerations, requiring moderate complexity in backend queries and frontend UI."
+    },
+    {
+      "taskId": 9,
+      "taskTitle": "Implement User Onboarding Flow",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Expand into subtasks for designing multi-step onboarding UI, implementing language selection, profile setup, skills/interests selection, progress tracking with skip options, gamification/rewards, and contextual help/tooltips.",
+      "reasoning": "Onboarding involves UX design, multi-step form logic, progress persistence, and engagement features, moderately complex but mostly frontend-focused with some backend integration."
+    },
+    {
+      "taskId": 10,
+      "taskTitle": "Implement Responsive UI Components and Accessibility",
+      "complexityScore": 6,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Detail subtasks for building reusable UI components with Tailwind CSS supporting RTL/LTR, implementing responsive breakpoints, adding WCAG 2.1 AA compliance features (ARIA labels, keyboard navigation, color contrast), and creating loading states and error boundaries.",
+      "reasoning": "Creating accessible, responsive UI components with bilingual support requires detailed frontend work and adherence to accessibility standards, moderately complex but essential for usability."
+    },
+    {
+      "taskId": 11,
+      "taskTitle": "Set up Deployment Pipeline and Environment Configuration",
+      "complexityScore": 5,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Break down into subtasks for configuring Vercel project with Git-based automatic deployments, setting up preview environments for PRs, managing environment variables for multiple stages, and configuring domain and SSL certificates with error pages.",
+      "reasoning": "Deployment pipeline setup is operationally critical but follows well-established patterns and tools, making it moderately complex with focus on configuration and validation."
+    },
+    {
+      "taskId": 12,
+      "taskTitle": "Performance Optimization and Testing",
+      "complexityScore": 7,
+      "recommendedSubtasks": 6,
+      "expansionPrompt": "Expand into subtasks for implementing React Server Components, optimizing bundle size and loading, adding unit and integration tests, setting up performance monitoring and Core Web Vitals tracking, conducting security audits and penetration testing, and optimizing images with lazy loading.",
+      "reasoning": "This task spans frontend optimization, testing, security, and monitoring, requiring cross-cutting expertise and comprehensive coverage, making it moderately high complexity."
+    }
+  ]
+}

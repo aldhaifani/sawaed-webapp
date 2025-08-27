@@ -326,6 +326,96 @@ const schema = defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_user", ["userId"]),
+
+  // AI-specific Skills used for learning path generation and chat assessments
+  // These are separate from `skills` to avoid breaking existing features and to
+  // support richer, bilingual definitions and level structures dedicated to AI.
+  aiSkills: defineTable({
+    // Optional mapping to the generic taxonomy skill if applicable
+    skillId: v.optional(v.id("skills")),
+    nameEn: v.string(),
+    nameAr: v.string(),
+    category: v.optional(v.string()),
+    // Bilingual definitions for AI prompts and UI context
+    definitionEn: v.string(),
+    definitionAr: v.string(),
+    // Structured levels used by the AI and UI (ordered, level >= 1)
+    levels: v.array(
+      v.object({
+        level: v.number(),
+        nameEn: v.string(),
+        nameAr: v.string(),
+        descriptionEn: v.string(),
+        descriptionAr: v.string(),
+        // Optional structured fields for future-proofing and richer UX
+        questions: v.optional(v.array(v.string())),
+        evaluation: v.optional(v.array(v.string())),
+        progressionSteps: v.optional(v.array(v.string())),
+        resources: v.optional(
+          v.array(
+            v.object({
+              title: v.optional(v.string()),
+              url: v.string(),
+            }),
+          ),
+        ),
+      }),
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_name_en", ["nameEn"])
+    .index("by_category", ["category"]),
+
+  // AI Assessments produced at the end of a chat session
+  aiAssessments: defineTable({
+    userId: v.id("appUsers"),
+    aiSkillId: v.id("aiSkills"),
+    level: v.number(), // integer semantic; validated in code
+    confidence: v.number(), // 0..1; validated in code
+    reasoning: v.optional(v.string()), // internal notes, not shown to youth
+    rawJson: v.optional(v.string()), // optional raw JSON returned by AI
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"]) // user assessment history
+    .index("by_skill", ["aiSkillId"]) // list assessments per skill
+    .index("by_user_skill", ["userId", "aiSkillId"]) // fetch latest via sort
+    .index("by_created", ["createdAt"]), // time-ordered queries
+
+  // AI-generated Learning Paths linked to a specific assessment
+  aiLearningPaths: defineTable({
+    userId: v.id("appUsers"),
+    aiSkillId: v.id("aiSkills"),
+    assessmentId: v.id("aiAssessments"),
+    modules: v.array(
+      v.object({
+        id: v.string(),
+        title: v.string(),
+        type: v.union(
+          v.literal("article"),
+          v.literal("video"),
+          v.literal("quiz"),
+          v.literal("project"),
+        ),
+        // Keep duration as a short human-readable label per PRD (e.g., "6 min")
+        duration: v.string(),
+      }),
+    ),
+    status: v.union(
+      v.literal("active"),
+      v.literal("completed"),
+      v.literal("archived"),
+    ),
+    // Basic progress tracking without adding a separate progress table yet
+    completedModuleIds: v.optional(v.array(v.string())),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"]) // fetch paths for a user
+    .index("by_skill", ["aiSkillId"]) // list paths per skill
+    .index("by_user_skill", ["userId", "aiSkillId"]) // user-skill paths
+    .index("by_assessment", ["assessmentId"]) // link back to assessment
+    .index("by_user_created", ["userId", "createdAt"]), // order by time
 });
 
 export default schema;
