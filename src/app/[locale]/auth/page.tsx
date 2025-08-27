@@ -220,18 +220,6 @@ export default function LoginPage(): ReactElement {
 
   return (
     <section className="relative min-h-screen w-full overflow-hidden">
-      {/* Background */}
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          background: "#ffffff",
-          backgroundImage:
-            "radial-gradient(circle at top center, rgba(173,109,244,0.5), transparent 70%)",
-          filter: "blur(80px)",
-          backgroundRepeat: "no-repeat",
-        }}
-      />
-
       <div className="relative z-10 flex min-h-screen items-center px-4 py-16 md:py-32">
         <div className="bg-background/80 m-auto w-full max-w-md rounded-xl border p-6 backdrop-blur">
           <div className="w-full text-center">
