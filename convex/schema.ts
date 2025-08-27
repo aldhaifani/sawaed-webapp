@@ -380,7 +380,8 @@ const schema = defineSchema({
     .index("by_user", ["userId"]) // user assessment history
     .index("by_skill", ["aiSkillId"]) // list assessments per skill
     .index("by_user_skill", ["userId", "aiSkillId"]) // fetch latest via sort
-    .index("by_created", ["createdAt"]), // time-ordered queries
+    .index("by_created", ["createdAt"]) // time-ordered queries
+    .index("by_user_skill_created", ["userId", "aiSkillId", "createdAt"]), // latest per user+skill
 
   // AI-generated Learning Paths linked to a specific assessment
   aiLearningPaths: defineTable({
@@ -415,7 +416,14 @@ const schema = defineSchema({
     .index("by_skill", ["aiSkillId"]) // list paths per skill
     .index("by_user_skill", ["userId", "aiSkillId"]) // user-skill paths
     .index("by_assessment", ["assessmentId"]) // link back to assessment
-    .index("by_user_created", ["userId", "createdAt"]), // order by time
+    .index("by_user_created", ["userId", "createdAt"]) // order by time
+    .index("by_user_skill_status", ["userId", "aiSkillId", "status"]) // filter active paths
+    .index("by_user_skill_status_created", [
+      "userId",
+      "aiSkillId",
+      "status",
+      "createdAt",
+    ]), // latest active path
 });
 
 export default schema;

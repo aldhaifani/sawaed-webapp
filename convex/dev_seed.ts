@@ -1,6 +1,7 @@
 import { mutation } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import aiSkillsData from "@/../data/learning_path/ai_skills.json";
+import { assertValidSkillLevels } from "./validators";
 
 /**
  * One-off seeding for location taxonomies (Oman).
@@ -176,24 +177,44 @@ export const seedRegionsAndCities = mutation({
 });
 
 /**
- * Bulk seed AI skills from JSON file located at `convex/data/ai_skills.json`.
- * Skips existing entries by `nameEn` using index `by_name_en`.
+ * Bulk seed AI skills from JSON file located at `data/learning_path/ai_skills.json`.
+ * Performs an upsert by `nameEn` using index `by_name_en`:
+ * - Insert new items
+ * - Update existing items' definitions, levels, names, and category
  * Run from Convex Dashboard > Functions > mutations > dev_seed.seedAiSkillsFromJson
  */
 export const seedAiSkillsFromJson = mutation({
   args: {},
-  handler: async (ctx): Promise<{ inserted: number; skipped: number }> => {
+  handler: async (
+    ctx,
+  ): Promise<{ inserted: number; updated: number; skipped: number }> => {
     const now = Date.now();
     let inserted = 0;
-    let skipped = 0;
+    let updated = 0;
+    // Back-compat with previous return shape that had `skipped`
+    const skipped = 0;
 
     for (const item of aiSkillsData) {
-      const exists = await ctx.db
+      // Validate level structure before writing to DB
+      assertValidSkillLevels(item.levels as any);
+
+      const existing = await ctx.db
         .query("aiSkills")
         .withIndex("by_name_en", (q) => q.eq("nameEn", item.nameEn))
-        .first();
-      if (exists) {
-        skipped += 1;
+        .unique();
+
+      if (existing) {
+        // Update all editable fields while preserving `skillId` and `createdAt`
+        await ctx.db.patch(existing._id, {
+          nameEn: item.nameEn,
+          nameAr: item.nameAr,
+          category: item.category,
+          definitionEn: item.definitionEn,
+          definitionAr: item.definitionAr,
+          levels: item.levels as any,
+          updatedAt: now,
+        } as any);
+        updated += 1;
         continue;
       }
 
@@ -203,13 +224,13 @@ export const seedAiSkillsFromJson = mutation({
         category: item.category,
         definitionEn: item.definitionEn,
         definitionAr: item.definitionAr,
-        levels: item.levels,
+        levels: item.levels as any,
         createdAt: now,
         updatedAt: now,
       });
       inserted += 1;
     }
 
-    return { inserted, skipped };
+    return { inserted, updated, skipped };
   },
 });

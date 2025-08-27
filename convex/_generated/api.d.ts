@@ -13,6 +13,8 @@ import type * as adminAnalytics from "../adminAnalytics.js";
 import type * as adminOnboarding from "../adminOnboarding.js";
 import type * as adminProfiles from "../adminProfiles.js";
 import type * as aggregates from "../aggregates.js";
+import type * as aiAssessments from "../aiAssessments.js";
+import type * as aiSkills from "../aiSkills.js";
 import type * as analytics from "../analytics.js";
 import type * as auth from "../auth.js";
 import type * as authz from "../authz.js";
@@ -37,6 +39,7 @@ import type * as superAdminAnalytics from "../superAdminAnalytics.js";
 import type * as superAdminProfiles from "../superAdminProfiles.js";
 import type * as taxonomies from "../taxonomies.js";
 import type * as users from "../users.js";
+import type * as validators from "../validators.js";
 
 import type {
   ApiFromModules,
@@ -58,6 +61,8 @@ declare const fullApi: ApiFromModules<{
   adminOnboarding: typeof adminOnboarding;
   adminProfiles: typeof adminProfiles;
   aggregates: typeof aggregates;
+  aiAssessments: typeof aiAssessments;
+  aiSkills: typeof aiSkills;
   analytics: typeof analytics;
   auth: typeof auth;
   authz: typeof authz;
@@ -82,6 +87,7 @@ declare const fullApi: ApiFromModules<{
   superAdminProfiles: typeof superAdminProfiles;
   taxonomies: typeof taxonomies;
   users: typeof users;
+  validators: typeof validators;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 

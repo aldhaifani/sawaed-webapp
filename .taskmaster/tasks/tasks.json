@@ -26,7 +26,7 @@
             "description": "Develop serverless Convex functions to handle assessment operations: startAssessment(userId, skill), storeAssessment(userId, skill, jsonResult), getLearningPath(userId, skill), and getSkills().",
             "dependencies": ["1.1"],
             "details": "Write mutation functions for starting and storing assessments ensuring transactional integrity. Write query functions to retrieve learning paths and available skills. Ensure functions use correct schema types and handle errors gracefully.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -35,7 +35,7 @@
             "description": "Create indexes on Convex tables to optimize queries for userId, skill, and other frequently queried fields, considering Convex indexing constraints and array limitations.",
             "dependencies": ["1.1"],
             "details": "Add indexes such as by_userId on assessments and learning_paths, by_skill on skills and assessments. Avoid indexing arrays directly due to Convex limitations; design schema to support efficient lookups. Validate index effectiveness with sample queries.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -44,7 +44,7 @@
             "description": "Define and integrate validation schemas for each table and function input/output to ensure data consistency and correctness within Convex constraints.",
             "dependencies": ["1.1", "1.2"],
             "details": "Use Convex's validator builder (v) to enforce field types, required fields, and constraints such as confidence ranges or timestamp formats. Validate function parameters and database writes to prevent invalid data entry.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -493,7 +493,7 @@
     ],
     "metadata": {
       "created": "2025-08-27T16:15:53.164Z",
-      "updated": "2025-08-27T19:18:14.046Z",
+      "updated": "2025-08-27T20:15:54.305Z",
       "description": "Tasks for master context"
     }
   }
