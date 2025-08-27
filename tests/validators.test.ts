@@ -66,9 +66,10 @@ describe("validators.assertValidModules", () => {
     expect(() => assertValidModules(mods)).toThrow();
   });
   it("rejects invalid type", () => {
-    // @ts-expect-error testing invalid type
+    // Cast the invalid value via unknown so we can bypass TS's union type at compile-time
+    // while still sending an invalid runtime value to the validator.
     const mods: ModuleItem[] = [
-      sampleModule({ type: "invalid" }),
+      sampleModule({ type: "invalid" as unknown as ModuleItem["type"] }),
       sampleModule({ id: "m2" }),
       sampleModule({ id: "m3" }),
     ];
