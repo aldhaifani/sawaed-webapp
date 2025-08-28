@@ -18,6 +18,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import * as Sentry from "@sentry/nextjs";
+import { useAiChatInit } from "@/hooks/use-ai-chat-init";
 
 interface ChatConfigState {
   readonly aiSkillId?: Id<"aiSkills">;
@@ -33,6 +36,7 @@ export default function YouthLearningPage(): ReactElement {
 
   const config = useQuery(api.aiChatConfigs.getMyChatConfig, {});
   const upsert = useMutation(api.aiChatConfigs.upsertMyChatConfig);
+  const { init: initAssessment } = useAiChatInit();
 
   type ChatConfigResult = {
     readonly _id?: Id<"aiChatConfigs">;
@@ -59,26 +63,63 @@ export default function YouthLearningPage(): ReactElement {
     });
   }, [config, locale]);
 
+  const [saving, setSaving] = useState<boolean>(false);
   const onSave = useCallback(async () => {
     if (!state) return;
-    await upsert({
-      aiSkillId: state.aiSkillId,
-      preferredLanguage: state.preferredLanguage,
-    });
-  }, [state, upsert]);
+    await Sentry.startSpan(
+      { op: "ai.config", name: "Save AI Chat Config" },
+      async () => {
+        try {
+          setSaving(true);
+          await upsert({
+            aiSkillId: state.aiSkillId,
+            preferredLanguage: state.preferredLanguage,
+          });
+          toast.success(t("saveSuccess"));
+        } catch (err) {
+          const e = err as Error;
+          Sentry.captureException(e, {
+            tags: { area: "ai", action: "saveConfig" },
+          });
+          toast.error(t("saveError"));
+        } finally {
+          setSaving(false);
+        }
+      },
+    );
+  }, [state, t, upsert]);
 
+  const [starting, setStarting] = useState<boolean>(false);
   const onStartAssessment = useCallback(async () => {
     if (!state?.aiSkillId) return;
-    // Persist latest selections (non-blocking for UX but awaited to avoid race)
-    await upsert({
-      aiSkillId: state.aiSkillId,
-      preferredLanguage: state.preferredLanguage,
-    });
-    const skillId = state.aiSkillId as unknown as string;
-    router.push(
-      `/${locale}/learning/chat?skill=${encodeURIComponent(skillId)}`,
+    await Sentry.startSpan(
+      { op: "ai.start", name: "Start Assessment Flow" },
+      async () => {
+        try {
+          setStarting(true);
+          await upsert({
+            aiSkillId: state.aiSkillId,
+            preferredLanguage: state.preferredLanguage,
+          });
+          const res = await initAssessment(state.aiSkillId!);
+          if (!res) {
+            toast.error(t("startInitFailed"));
+            return;
+          }
+          const skillId = String(state.aiSkillId);
+          router.push(
+            `/${locale}/learning/chat?skill=${encodeURIComponent(skillId)}`,
+          );
+        } catch (err) {
+          const e = err as Error;
+          Sentry.captureException(e, { tags: { area: "ai", action: "start" } });
+          toast.error(t("startErrorGeneric"));
+        } finally {
+          setStarting(false);
+        }
+      },
     );
-  }, [locale, router, state, upsert]);
+  }, [initAssessment, locale, router, state, t, upsert]);
 
   const title = useMemo(() => t("title"), [t]);
 
@@ -135,14 +176,18 @@ export default function YouthLearningPage(): ReactElement {
             </div>
 
             <div className="flex flex-col-reverse items-stretch justify-between gap-3 pt-2 sm:flex-row sm:items-center">
-              <Button variant="secondary" onClick={onSave} disabled={isLoading}>
+              <Button
+                variant="secondary"
+                onClick={onSave}
+                disabled={isLoading || saving}
+              >
                 {t("save")}
               </Button>
               <Button
                 onClick={onStartAssessment}
-                disabled={isLoading || !state?.aiSkillId}
+                disabled={isLoading || starting || !state?.aiSkillId}
               >
-                {t("startAssessment")}
+                {starting ? t("startingLabel") : t("startAssessment")}
               </Button>
             </div>
           </CardContent>

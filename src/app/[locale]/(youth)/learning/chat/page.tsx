@@ -1,29 +1,47 @@
 "use client";
 
 import type { ReactElement } from "react";
-import { useMemo } from "react";
-import { useLocale } from "next-intl";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useAiChatInit } from "@/hooks/use-ai-chat-init";
+import type { Id } from "@/../convex/_generated/dataModel";
+import { toast } from "sonner";
+import * as Sentry from "@sentry/nextjs";
 
 /**
- * Placeholder Chat Page
- * Shows selected skill id via query (?skill=) and a simple message.
- * The real chat UI will be implemented in a later task.
+ * Assessment Chat bootstrap page
+ * - Reads ?skill= param
+ * - Calls useAiChatInit().init to prefetch latest assessment/path context
+ * - Renders loading, error, and ready states. The actual chat UI will be added later.
  */
-export default function ChatPlaceholderPage(): ReactElement {
+export default function ChatInitPage(): ReactElement {
   const rawLocale = useLocale();
   const locale: "ar" | "en" = rawLocale === "ar" ? "ar" : "en";
+  const t = useTranslations("chat");
   const params = useSearchParams();
-  const skill = params.get("skill") ?? "";
+  const router = useRouter();
+  const { init, isLoading, error, data } = useAiChatInit();
+  const [booted, setBooted] = useState<boolean>(false);
 
-  const title = useMemo(
-    () =>
-      locale === "ar"
-        ? "محادثة التقييم (قريبًا)"
-        : "Assessment Chat (Coming Soon)",
-    [locale],
-  );
+  const skillParam = params.get("skill") ?? "";
+  const skillId = skillParam as unknown as Id<"aiSkills">;
+
+  useEffect(() => {
+    if (!skillParam) return;
+    void Sentry.startSpan(
+      { op: "ai.chat", name: "Chat Page Init" },
+      async () => {
+        const res = await init(skillId);
+        if (!res) toast.error(t("errorLoading"));
+        setBooted(true);
+      },
+    );
+  }, [init, skillId, skillParam, t]);
+
+  const title = useMemo(() => t("title"), [t]);
 
   return (
     <main className="bg-background min-h-screen w-full">
@@ -31,20 +49,56 @@ export default function ChatPlaceholderPage(): ReactElement {
         <h1 className="text-foreground mb-6 text-2xl font-bold">{title}</h1>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">
-              {locale === "ar" ? "المهارة المختارة" : "Selected Skill"}
-            </CardTitle>
+            <CardTitle className="text-base">{t("initTitle")}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-sm">
-              {locale === "ar" ? "المعرف:" : "ID:"}{" "}
-              <span className="font-mono">{skill}</span>
-            </p>
-            <p className="text-muted-foreground mt-2 text-sm">
-              {locale === "ar"
-                ? "سيتم عرض واجهة محادثة الذكاء الاصطناعي هنا في المهام القادمة."
-                : "The AI chat interface will be implemented here in upcoming tasks."}
-            </p>
+          <CardContent className="space-y-3">
+            {!skillParam && (
+              <p className="text-destructive text-sm">{t("missingSkill")}</p>
+            )}
+
+            {isLoading && (
+              <div className="text-muted-foreground text-sm">
+                {t("loading")}
+              </div>
+            )}
+
+            {error && (
+              <div className="text-destructive text-sm">
+                {t("errorLoading")}
+              </div>
+            )}
+
+            {booted && data && (
+              <div className="space-y-2">
+                <div className="text-sm">
+                  <span className="text-muted-foreground">{t("skill")}</span>{" "}
+                  <span className="font-medium">
+                    {locale === "ar"
+                      ? data.aiSkill.nameAr
+                      : data.aiSkill.nameEn}
+                  </span>
+                </div>
+                {data.latestAssessment && (
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">
+                      {t("lastLevel")}
+                    </span>{" "}
+                    <span className="font-medium">
+                      {data.latestAssessment.level}
+                    </span>
+                  </div>
+                )}
+                <div className="pt-2">
+                  <Button
+                    onClick={
+                      () => router.replace(`/${locale}/learning`) // Placeholder action for now
+                    }
+                  >
+                    {t("backToSettings")}
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

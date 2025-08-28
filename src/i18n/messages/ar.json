@@ -763,8 +763,30 @@
     "languagePlaceholder": "اختر اللغة",
     "languageHint": "يتم افتراض اللغة من تفضيل حسابك، ويمكنك تغييرها هنا.",
     "save": "حفظ",
+    "saveSuccess": "تم حفظ الإعدادات",
+    "saveError": "فشل حفظ الإعدادات",
     "startAssessment": "بدء التقييم",
+    "startingLabel": "جاري البدء...",
+    "startInitFailed": "تعذّر بدء التقييم",
+    "startErrorGeneric": "حدث خطأ",
     "learningPathTitle": "مسار التعلم (قريبًا)",
     "learningPathHint": "سيظهر مسار التعلم هنا بعد تفعيل التوليد وربطه بالمحادثة."
+  },
+
+  "chat": {
+    "title": "محادثة التقييم",
+    "initTitle": "التهيئة",
+    "missingSkill": "المهارة غير محددة",
+    "loading": "جارٍ التحميل...",
+    "errorLoading": "حدث خطأ أثناء التحميل",
+    "skill": "المهارة:",
+    "lastLevel": "آخر مستوى:",
+    "backToSettings": "العودة للإعدادات"
+  },
+
+  "notFound": {
+    "title": "الصفحة غير موجودة",
+    "desc": "عذراً، الصفحة التي تبحث عنها غير موجودة.",
+    "cta": "العودة إلى صفحتي"
   }
 }

@@ -732,8 +732,30 @@
     "languagePlaceholder": "Select language",
     "languageHint": "Defaults to your account language preference; you can change it here.",
     "save": "Save",
+    "saveSuccess": "Settings saved",
+    "saveError": "Failed to save settings",
     "startAssessment": "Start Assessment",
+    "startingLabel": "Starting...",
+    "startInitFailed": "Could not start assessment",
+    "startErrorGeneric": "Something went wrong",
     "learningPathTitle": "Learning Path (Coming Soon)",
     "learningPathHint": "Your generated learning path will appear here once generation is enabled and linked to the chat."
+  },
+
+  "chat": {
+    "title": "Assessment Chat",
+    "initTitle": "Initialization",
+    "missingSkill": "Missing skill parameter",
+    "loading": "Loading...",
+    "errorLoading": "An error occurred while loading",
+    "skill": "Skill:",
+    "lastLevel": "Last level:",
+    "backToSettings": "Back to settings"
+  },
+
+  "notFound": {
+    "title": "Page Not Found",
+    "desc": "Sorry, the page you are looking for does not exist.",
+    "cta": "Go to My Home"
   }
 }

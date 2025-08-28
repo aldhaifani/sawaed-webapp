@@ -144,6 +144,27 @@ export default convexAuthNextjsMiddleware(
             return res;
           }
 
+          // If path has no locale prefix, rewrite to locale-prefixed path to keep routing under [locale]
+          // This ensures 404s are handled by src/app/[locale]/not-found.tsx instead of the global default
+          if (
+            !LOCALE_PREFIXES.some(
+              (p) => pathname === p || pathname.startsWith(`${p}/`),
+            )
+          ) {
+            const url = nextUrl.clone();
+            url.pathname = `/${redirectLocale}${pathname}`;
+            const res = NextResponse.rewrite(url);
+            if (!cookies.has(LOCALE_COOKIE)) {
+              res.cookies.set(LOCALE_COOKIE, redirectLocale, {
+                httpOnly: false,
+                sameSite: "lax",
+                path: "/",
+                maxAge: 60 * 60 * 24 * 365,
+              });
+            }
+            return res;
+          }
+
           // Default behavior
           const res = intlResponse; // continue with the next-intl response
           if (!cookies.has(LOCALE_COOKIE)) {
