@@ -61,9 +61,9 @@ export function Navbar({ role }: NavbarProps): ReactElement | null {
   if (hidden) return null;
 
   return (
-    <header className="border-border/30 sticky inset-x-0 top-0 z-50 w-full border-b">
+    <header className="border-border/30 bg-background/70 supports-[backdrop-filter]:bg-background/70 sticky inset-x-0 top-0 z-50 w-full border-b backdrop-blur">
       {/* Desktop / large screens */}
-      <div className="bg-background/70 supports-[backdrop-filter]:bg-background/60 relative z-[60] mx-auto hidden w-full max-w-7xl items-center justify-between rounded-full px-4 py-2 backdrop-blur lg:flex">
+      <div className="relative z-[60] mx-auto hidden w-full max-w-7xl items-center justify-between rounded-full px-4 py-2 lg:flex">
         {/* Left: Logo */}
         <div className="flex items-center gap-6">
           <Link href={`/${locale}`} className="flex items-center gap-2">
@@ -122,7 +122,7 @@ export function Navbar({ role }: NavbarProps): ReactElement | null {
       </div>
 
       {/* Mobile */}
-      <div className="bg-background/70 supports-[backdrop-filter]:bg-background/60 relative z-50 mx-auto flex w-full max-w-[calc(100vw-2rem)] flex-col items-center justify-between px-0 py-2 backdrop-blur lg:hidden">
+      <div className="relative z-50 mx-auto flex w-full max-w-[calc(100vw-2rem)] flex-col items-center justify-between px-0 py-2 lg:hidden">
         <div className="flex w-full flex-row items-center justify-between px-2">
           <Link href={`/${locale}`} className="flex items-center gap-2">
             <Image src="/logo.svg" alt="Logo" width={32} height={32} />

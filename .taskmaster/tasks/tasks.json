@@ -66,7 +66,7 @@
         "testStrategy": "Component testing with React Testing Library, E2E tests for skill selection flow, accessibility testing for RTL/LTR support",
         "priority": "medium",
         "dependencies": [1],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -92,7 +92,7 @@
             "description": "Implement React state management for skill selection and loading states. Add navigation logic to redirect users to the chat interface with the selected skill as a parameter. Include error handling for data fetching and navigation failures.",
             "dependencies": [],
             "details": "Manage selected skill state and loading indicators using React hooks. On skill selection, navigate to the chat page passing the skill parameter. Handle possible errors during skill fetching or navigation gracefully, providing user feedback.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -105,7 +105,7 @@
         "testStrategy": "Component unit tests, visual regression tests, real-time messaging tests, JSON detection validation",
         "priority": "medium",
         "dependencies": [2],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -113,7 +113,7 @@
             "description": "Design and implement the chat interface with responsive message bubbles, typing indicators, and auto-scroll functionality to ensure smooth user experience across devices.",
             "dependencies": [],
             "details": "Focus on creating a clean, intuitive UI that supports both Arabic and English text with proper RTL/LTR alignment. Include visual elements such as message bubbles styled for readability and typing indicators to mimic natural conversation flow. Implement auto-scroll to keep the latest messages visible. Ensure mobile optimization and consistent branding colors and fonts.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -493,7 +493,7 @@
     ],
     "metadata": {
       "created": "2025-08-27T16:15:53.164Z",
-      "updated": "2025-08-28T16:46:24.328Z",
+      "updated": "2025-08-28T21:12:10.845Z",
       "description": "Tasks for master context"
     }
   }
