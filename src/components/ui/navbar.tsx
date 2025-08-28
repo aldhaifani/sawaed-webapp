@@ -1,16 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
-import { useState, useMemo, useEffect, type ReactElement } from "react";
-import { Menu } from "lucide-react";
-import Image from "next/image";
-import UserAccountAvatar from "@/components/ui/UserAccountAvatar";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Role } from "@/shared/rbac";
+import UserAccountAvatar from "@/components/ui/UserAccountAvatar";
 import ThemeToggleButton from "@/components/ui/theme-toggle-button";
+import { motion, AnimatePresence } from "motion/react";
+import { Menu, X } from "lucide-react";
 
 interface NavbarProps {
   readonly role: Role;
@@ -26,6 +27,7 @@ export function Navbar({ role }: NavbarProps): ReactElement | null {
   const t = useTranslations("nav");
   const pathname = usePathname() || "/";
   const [open, setOpen] = useState<boolean>(false);
+  const [hovered, setHovered] = useState<number | null>(null);
   const me = useQuery(api.rbac.currentUser);
   const avatarSrc = me?.pictureUrl ?? me?.avatarUrl;
 
@@ -59,74 +61,116 @@ export function Navbar({ role }: NavbarProps): ReactElement | null {
   if (hidden) return null;
 
   return (
-    <header className="bg-card text-card-foreground sticky top-0 z-50 w-full border-b">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2">
-        {/* Left group: Logo (desktop) */}
+    <header className="border-border/30 sticky inset-x-0 top-0 z-50 w-full border-b">
+      {/* Desktop / large screens */}
+      <div className="bg-background/70 supports-[backdrop-filter]:bg-background/60 relative z-[60] mx-auto hidden w-full max-w-7xl items-center justify-between rounded-full px-4 py-2 backdrop-blur lg:flex">
+        {/* Left: Logo */}
         <div className="flex items-center gap-6">
           <Link href={`/${locale}`} className="flex items-center gap-2">
             <Image src="/logo.svg" alt="Logo" width={36} height={36} />
           </Link>
         </div>
-        {/* Middle group: Menu (desktop) */}
-        <div className="hidden items-center gap-6 md:flex">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="text-muted-foreground hover:text-foreground text-sm"
-            >
-              {l.label}
-            </Link>
-          ))}
+        {/* Center: Links with animated pill */}
+        <nav
+          className="relative flex flex-1 items-center justify-center"
+          onMouseLeave={() => setHovered(null)}
+        >
+          <div className="relative flex items-center gap-2 text-sm font-medium">
+            {links.map((l, idx) => {
+              const active =
+                pathname === l.href || pathname.startsWith(`${l.href}/`);
+              const showPill = active || hovered === idx;
+              return (
+                <div key={l.href} className="relative">
+                  {showPill && (
+                    <motion.span
+                      layoutId="nav-pill"
+                      className="bg-muted/80 absolute inset-x-0 -inset-y-1 z-0 rounded-full dark:bg-neutral-800"
+                      transition={{
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 40,
+                      }}
+                    />
+                  )}
+                  <Link
+                    href={l.href}
+                    aria-current={active ? "page" : undefined}
+                    className={`relative z-10 rounded-full px-3 py-3 transition-colors ${
+                      active
+                        ? "text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onMouseEnter={() => setHovered(idx)}
+                  >
+                    {l.label}
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        </nav>
+        {/* Right: Theme + Avatar */}
+        <div className="hidden items-center gap-4 lg:flex">
+          <ThemeToggleButton />
+          <UserAccountAvatar
+            className="p-0.5"
+            avatarUrl={avatarSrc}
+            role={role}
+          />
         </div>
-        {/* Right group: Switcher + Avatar (desktop) + Hamburger (mobile) */}
-        <div className="flex items-center gap-3">
-          <div className="hidden items-center gap-4 md:flex">
-            <ThemeToggleButton />
+      </div>
 
-            <UserAccountAvatar
-              className="p-0.5"
-              avatarUrl={avatarSrc}
-              role={role}
-            />
-          </div>
-          <div className="flex items-center md:hidden">
-            <button
-              type="button"
-              aria-label={t("openMenu", { defaultMessage: "Open menu" })}
-              className="text-foreground"
-              onClick={() => setOpen((v) => !v)}
+      {/* Mobile */}
+      <div className="bg-background/70 supports-[backdrop-filter]:bg-background/60 relative z-50 mx-auto flex w-full max-w-[calc(100vw-2rem)] flex-col items-center justify-between px-0 py-2 backdrop-blur lg:hidden">
+        <div className="flex w-full flex-row items-center justify-between px-2">
+          <Link href={`/${locale}`} className="flex items-center gap-2">
+            <Image src="/logo.svg" alt="Logo" width={32} height={32} />
+          </Link>
+          <button
+            type="button"
+            aria-label={t("openMenu", { defaultMessage: "Open menu" })}
+            onClick={() => setOpen((v) => !v)}
+            className="p-2"
+          >
+            {open ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="bg-background mt-2 flex w-full flex-col items-start justify-start gap-3 rounded-lg px-4 py-4 shadow"
             >
-              <Menu size={24} />
-            </button>
-          </div>
-        </div>
-      </nav>
-      {/* Mobile drawer */}
-      {open && (
-        <div className="bg-card text-card-foreground border-t p-3 md:hidden">
-          <div className="flex flex-col gap-3">
-            {links.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="text-muted-foreground hover:text-foreground text-sm"
-                onClick={() => setOpen(false)}
-              >
-                {l.label}
-              </Link>
-            ))}
-            <div className="flex items-center justify-between">
-              <UserAccountAvatar
-                className="p-0.5"
-                avatarUrl={avatarSrc}
-                role={role}
-              />
-              <ThemeToggleButton />
-            </div>
-          </div>
-        </div>
-      )}
+              {links.map((l) => {
+                const active =
+                  pathname === l.href || pathname.startsWith(`${l.href}/`);
+                return (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    aria-current={active ? "page" : undefined}
+                    className={`text-sm ${active ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"}`}
+                    onClick={() => setOpen(false)}
+                  >
+                    {l.label}
+                  </Link>
+                );
+              })}
+              <div className="mt-2 flex w-full items-center justify-between">
+                <UserAccountAvatar
+                  className="p-0.5"
+                  avatarUrl={avatarSrc}
+                  role={role}
+                />
+                <ThemeToggleButton />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </header>
   );
 }

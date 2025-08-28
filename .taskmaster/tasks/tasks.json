@@ -83,7 +83,7 @@
             "description": "Add support for both Arabic (right-to-left) and English (left-to-right) layouts on the skill selection page to ensure proper display and usability for both languages.",
             "dependencies": [],
             "details": "Use CSS and React techniques to switch layout direction based on language selection or locale. Ensure all UI elements, including dropdown and text, correctly adapt to RTL and LTR orientations. Test accessibility and visual correctness in both modes.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -493,7 +493,7 @@
     ],
     "metadata": {
       "created": "2025-08-27T16:15:53.164Z",
-      "updated": "2025-08-28T16:37:38.630Z",
+      "updated": "2025-08-28T16:46:24.328Z",
       "description": "Tasks for master context"
     }
   }
