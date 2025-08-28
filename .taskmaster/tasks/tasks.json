@@ -9,7 +9,7 @@
         "testStrategy": "Unit tests for each Convex function, integration tests for data flow, validate schema constraints and data integrity",
         "priority": "high",
         "dependencies": [],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -53,7 +53,7 @@
             "description": "Develop comprehensive tests covering Convex schema correctness, function logic, data flow, and validation to ensure robustness and correctness.",
             "dependencies": ["1.2", "1.4"],
             "details": "Implement unit tests for each Convex function verifying expected behavior and error handling. Write integration tests simulating assessment lifecycle and learning path retrieval. Test schema validation rules and indexing impact on queries.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -66,7 +66,7 @@
         "testStrategy": "Component testing with React Testing Library, E2E tests for skill selection flow, accessibility testing for RTL/LTR support",
         "priority": "medium",
         "dependencies": [1],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -74,7 +74,7 @@
             "description": "Create a Next.js page containing a dropdown component that fetches skills from the Convex database using the getSkills() function. Display skill names along with descriptions and level previews.",
             "dependencies": [],
             "details": "Implement the dropdown UI using React components. Use Convex's query API to fetch skill data in real-time. Ensure the dropdown updates dynamically as data changes. Include skill descriptions and level previews within the dropdown options.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -493,7 +493,7 @@
     ],
     "metadata": {
       "created": "2025-08-27T16:15:53.164Z",
-      "updated": "2025-08-27T20:15:54.305Z",
+      "updated": "2025-08-28T16:37:38.630Z",
       "description": "Tasks for master context"
     }
   }

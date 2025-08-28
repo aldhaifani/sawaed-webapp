@@ -1,6 +1,8 @@
 import { mutation } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import aiSkillsData from "@/../data/learning_path/ai_skills.json";
+import taxonomySkills from "@/../data/taxonomies/skills.json";
+import taxonomyInterests from "@/../data/taxonomies/interests.json";
 import { assertValidSkillLevels } from "./validators";
 
 /**
@@ -194,9 +196,90 @@ export const seedAiSkillsFromJson = mutation({
     // Back-compat with previous return shape that had `skipped`
     const skipped = 0;
 
-    for (const item of aiSkillsData) {
+    // 1) Ensure taxonomy Skills are present; build slug->id map
+    const skillSlugToId = new Map<string, Id<"skills">>();
+    for (const s of taxonomySkills as Array<{
+      slug: string;
+      nameEn: string;
+      nameAr: string;
+      category?: string;
+    }>) {
+      const existing = await ctx.db
+        .query("skills")
+        .withIndex("by_name_en", (q) => q.eq("nameEn", s.nameEn))
+        .unique();
+      if (existing) {
+        // keep names in sync
+        await ctx.db.patch(existing._id, {
+          nameEn: s.nameEn,
+          nameAr: s.nameAr,
+          category: s.category,
+          updatedAt: now,
+        } as any);
+        skillSlugToId.set(s.slug, existing._id as Id<"skills">);
+      } else {
+        const id = (await ctx.db.insert("skills", {
+          nameEn: s.nameEn,
+          nameAr: s.nameAr,
+          category: s.category,
+          createdAt: now,
+          updatedAt: now,
+        })) as Id<"skills">;
+        skillSlugToId.set(s.slug, id);
+      }
+    }
+
+    // 2) Ensure taxonomy Interests are present; build slug->id map
+    const interestSlugToId = new Map<string, Id<"interests">>();
+    for (const i of taxonomyInterests as Array<{
+      slug: string;
+      nameEn: string;
+      nameAr: string;
+      category?: string;
+    }>) {
+      const existing = await ctx.db
+        .query("interests")
+        .withIndex("by_name_en", (q) => q.eq("nameEn", i.nameEn))
+        .unique();
+      if (existing) {
+        await ctx.db.patch(existing._id, {
+          nameEn: i.nameEn,
+          nameAr: i.nameAr,
+          category: i.category,
+          updatedAt: now,
+        } as any);
+        interestSlugToId.set(i.slug, existing._id as Id<"interests">);
+      } else {
+        const id = (await ctx.db.insert("interests", {
+          nameEn: i.nameEn,
+          nameAr: i.nameAr,
+          category: i.category,
+          createdAt: now,
+          updatedAt: now,
+        })) as Id<"interests">;
+        interestSlugToId.set(i.slug, id);
+      }
+    }
+
+    for (const item of aiSkillsData as Array<{
+      nameEn: string;
+      nameAr: string;
+      category?: string;
+      definitionEn: string;
+      definitionAr: string;
+      levels: unknown[];
+      relatedSkillSlugs?: string[];
+      relatedInterestSlugs?: string[];
+    }>) {
       // Validate level structure before writing to DB
       assertValidSkillLevels(item.levels as any);
+
+      const relatedSkillIds = (item.relatedSkillSlugs ?? [])
+        .map((slug) => skillSlugToId.get(slug))
+        .filter(Boolean) as Id<"skills">[];
+      const relatedInterestIds = (item.relatedInterestSlugs ?? [])
+        .map((slug) => interestSlugToId.get(slug))
+        .filter(Boolean) as Id<"interests">[];
 
       const existing = await ctx.db
         .query("aiSkills")
@@ -212,6 +295,10 @@ export const seedAiSkillsFromJson = mutation({
           definitionEn: item.definitionEn,
           definitionAr: item.definitionAr,
           levels: item.levels as any,
+          relatedSkillIds: relatedSkillIds.length ? relatedSkillIds : undefined,
+          relatedInterestIds: relatedInterestIds.length
+            ? relatedInterestIds
+            : undefined,
           updatedAt: now,
         } as any);
         updated += 1;
@@ -225,6 +312,10 @@ export const seedAiSkillsFromJson = mutation({
         definitionEn: item.definitionEn,
         definitionAr: item.definitionAr,
         levels: item.levels as any,
+        relatedSkillIds: relatedSkillIds.length ? relatedSkillIds : undefined,
+        relatedInterestIds: relatedInterestIds.length
+          ? relatedInterestIds
+          : undefined,
         createdAt: now,
         updatedAt: now,
       });

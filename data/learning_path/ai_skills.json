@@ -5,6 +5,19 @@
     "category": "ict",
     "definitionEn": "Ability to use digital tools, devices, software, and platforms to access information and perform tasks.",
     "definitionAr": "القدرة على استخدام الأدوات الرقمية، والأجهزة، والبرمجيات، والمنصات للوصول إلى المعلومات وتنفيذ المهام.",
+    "relatedSkillSlugs": [
+      "digital-literacy",
+      "office-productivity",
+      "coding-programming",
+      "cloud-computing",
+      "cybersecurity-basics"
+    ],
+    "relatedInterestSlugs": [
+      "coding-app-dev",
+      "cybersecurity-interest",
+      "ai-ml-clubs",
+      "online-learning-moocs"
+    ],
     "levels": [
       {
         "level": 1,
@@ -252,6 +265,18 @@
     "category": "critical_thinking",
     "definitionEn": "Evaluate claims and arguments using evidence and logic; consider multiple perspectives; make fair, reasoned judgments.",
     "definitionAr": "تقييم الادعاءات والحجج بالأدلة والمنطق؛ مراعاة وجهات نظر متعددة؛ واتخاذ أحكام عادلة ومُعلَّلة.",
+    "relatedSkillSlugs": [
+      "communication",
+      "project-management-basics",
+      "data-analysis-visualization",
+      "creativity"
+    ],
+    "relatedInterestSlugs": [
+      "literature-writing",
+      "online-learning-moocs",
+      "podcasting-vlogging",
+      "cultural-events-festivals"
+    ],
     "levels": [
       {
         "level": 1,
@@ -475,6 +500,20 @@
     "category": "problem_solving",
     "definitionEn": "Analyze problems, identify root causes, generate options, and implement and evaluate effective solutions proportionate to complexity.",
     "definitionAr": "تحليل المشكلات وتحديد الأسباب الجذرية وتوليد بدائل وتنفيذ الحلول المناسبة وتقييمها وفقًا للتعقيد.",
+    "relatedSkillSlugs": [
+      "project-management-basics",
+      "coding-programming",
+      "data-analysis-visualization",
+      "teamwork-collaboration",
+      "creativity"
+    ],
+    "relatedInterestSlugs": [
+      "startups-entrepreneurship",
+      "robotics-electronics",
+      "ai-ml-clubs",
+      "drones-maker",
+      "coding-app-dev"
+    ],
     "levels": [
       {
         "level": 1,
@@ -709,6 +748,18 @@
     "category": "data_literacy",
     "definitionEn": "Search, evaluate, organize, analyze, and communicate data and information ethically to derive insights.",
     "definitionAr": "البحث عن البيانات والمعلومات وتقييمها وتنظيمها وتحليلها وعرضها بشكل أخلاقي لاستخراج الرؤى.",
+    "relatedSkillSlugs": [
+      "data-analysis-visualization",
+      "digital-literacy",
+      "cybersecurity-basics",
+      "communication"
+    ],
+    "relatedInterestSlugs": [
+      "online-learning-moocs",
+      "social-media-content",
+      "digital-photography-editing",
+      "cybersecurity-interest"
+    ],
     "levels": [
       {
         "level": 1,
@@ -945,6 +996,20 @@
     "category": "creativity_innovation",
     "definitionEn": "Generate, combine, refine, and realize ideas into tangible outcomes individually and collaboratively.",
     "definitionAr": "توليد ودمج وصقل الأفكار وتحويلها إلى مخرجات ملموسة بشكل فردي وجماعي.",
+    "relatedSkillSlugs": [
+      "creativity",
+      "ui-ux-design",
+      "graphic-design",
+      "content-writing-storytelling",
+      "motion-graphics-animation"
+    ],
+    "relatedInterestSlugs": [
+      "visual-arts",
+      "music-performance",
+      "fashion-design",
+      "creative-industries",
+      "podcasting-vlogging"
+    ],
     "levels": [
       {
         "level": 1,

@@ -44,6 +44,7 @@ export function Navbar({ role }: NavbarProps): ReactElement | null {
       return [
         { href: `/${locale}/dashboard`, label: t("dashboard") },
         { href: `/${locale}/opportunities`, label: t("opportunities") },
+        { href: `/${locale}/learning`, label: t("learning") },
       ];
     }
     if (role === "ADMIN") {

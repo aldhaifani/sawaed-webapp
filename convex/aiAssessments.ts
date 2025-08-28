@@ -29,17 +29,47 @@ export const getSkills = query({
     const authUserId = await auth.getUserId(ctx);
     if (!authUserId) return [];
     const skills = await ctx.db.query("aiSkills").collect();
-    return skills.map((s) => ({
-      _id: s._id as Id<"aiSkills">,
-      nameEn: s.nameEn as string,
-      nameAr: s.nameAr as string,
-      category: s.category,
-      levels: s.levels.map((lvl) => ({
-        level: lvl.level,
-        nameEn: lvl.nameEn,
-        nameAr: lvl.nameAr,
-      })),
-    }));
+    const enriched = await Promise.all(
+      skills.map(async (s) => {
+        const relSkillIds = s.relatedSkillIds ?? [];
+        const relInterestIds = s.relatedInterestIds ?? [];
+        const relatedSkills = (
+          await Promise.all(relSkillIds.map((id) => ctx.db.get(id)))
+        )
+          .filter(Boolean)
+          .map((sk) => ({
+            _id: sk!._id,
+            nameEn: sk!.nameEn as string,
+            nameAr: sk!.nameAr as string,
+          }));
+        const relatedInterests = (
+          await Promise.all(relInterestIds.map((id) => ctx.db.get(id)))
+        )
+          .filter(Boolean)
+          .map((it) => ({
+            _id: it!._id,
+            nameEn: it!.nameEn as string,
+            nameAr: it!.nameAr as string,
+          }));
+        return {
+          _id: s._id as Id<"aiSkills">,
+          nameEn: s.nameEn as string,
+          nameAr: s.nameAr as string,
+          category: s.category,
+          // Added bilingual definitions for richer UI previews (non-breaking addition)
+          definitionEn: s.definitionEn as string,
+          definitionAr: s.definitionAr as string,
+          levels: s.levels.map((lvl) => ({
+            level: lvl.level,
+            nameEn: lvl.nameEn,
+            nameAr: lvl.nameAr,
+          })),
+          relatedSkills,
+          relatedInterests,
+        } as const;
+      }),
+    );
+    return enriched;
   },
 });
 

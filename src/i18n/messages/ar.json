@@ -123,7 +123,8 @@
   "nav": {
     "dashboard": "لوحة التحكم",
     "opportunities": "الفرص",
-    "openMenu": "فتح القائمة"
+    "openMenu": "فتح القائمة",
+    "learning": "التعلم"
   },
   "userMenu": {
     "profile": "الملف الشخصي",
@@ -751,5 +752,19 @@
         "top6Governorates": "أهم 6 محافظات حسب عدد المستخدمين"
       }
     }
+  },
+  "learning": {
+    "title": "التعلم",
+    "settingsTitle": "إعدادات محادثة الذكاء الاصطناعي",
+    "skillLabel": "المهارة",
+    "skillPlaceholder": "اختر مهارة",
+    "skillHelp": "اختر المهارة التي تريد التعلم حولها. سيتم حفظ اختيارك.",
+    "chatLanguageLabel": "لغة المحادثة",
+    "languagePlaceholder": "اختر اللغة",
+    "languageHint": "يتم افتراض اللغة من تفضيل حسابك، ويمكنك تغييرها هنا.",
+    "save": "حفظ",
+    "startAssessment": "بدء التقييم",
+    "learningPathTitle": "مسار التعلم (قريبًا)",
+    "learningPathHint": "سيظهر مسار التعلم هنا بعد تفعيل التوليد وربطه بالمحادثة."
   }
 }

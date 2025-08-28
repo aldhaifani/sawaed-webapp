@@ -122,7 +122,8 @@
   "nav": {
     "dashboard": "Dashboard",
     "opportunities": "Opportunities",
-    "openMenu": "Open menu"
+    "openMenu": "Open menu",
+    "learning": "Learning"
   },
   "userMenu": {
     "profile": "Profile",
@@ -720,5 +721,19 @@
         "top6Governorates": "Top 6 governorates by user count"
       }
     }
+  },
+  "learning": {
+    "title": "Learning",
+    "settingsTitle": "AI Chat Settings",
+    "skillLabel": "Skill",
+    "skillPlaceholder": "Select a skill",
+    "skillHelp": "Choose the skill you want to learn. Your selection will be saved.",
+    "chatLanguageLabel": "Chat Language",
+    "languagePlaceholder": "Select language",
+    "languageHint": "Defaults to your account language preference; you can change it here.",
+    "save": "Save",
+    "startAssessment": "Start Assessment",
+    "learningPathTitle": "Learning Path (Coming Soon)",
+    "learningPathHint": "Your generated learning path will appear here once generation is enabled and linked to the chat."
   }
 }

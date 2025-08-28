@@ -361,6 +361,9 @@ const schema = defineSchema({
         ),
       }),
     ),
+    // Optional links to generic taxonomy for UI tags
+    relatedSkillIds: v.optional(v.array(v.id("skills"))),
+    relatedInterestIds: v.optional(v.array(v.id("interests"))),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -424,6 +427,21 @@ const schema = defineSchema({
       "status",
       "createdAt",
     ]), // latest active path
+
+  // Per-user AI chat configuration: selected skill, system prompt, and preferred chat language
+  aiChatConfigs: defineTable({
+    userId: v.id("appUsers"),
+    // Selected AI Skill for chat/assessment context (optional; user may not have chosen yet)
+    aiSkillId: v.optional(v.id("aiSkills")),
+    // Main system prompt to steer the chat agent for this user
+    systemPrompt: v.optional(v.string()),
+    // Preferred chat language, linked to `appUsers.languagePreference`
+    preferredLanguage: v.union(v.literal("ar"), v.literal("en")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"]) // fetch/update the user's config
+    .index("by_user_skill", ["userId", "aiSkillId"]), // fast lookup by user and skill
 });
 
 export default schema;
