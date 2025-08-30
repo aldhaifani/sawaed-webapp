@@ -7,6 +7,7 @@ import {
   MAX_MODULES,
 } from "@/shared/ai/constants";
 import * as Sentry from "@sentry/nextjs";
+import { ModuleTemplates } from "@/shared/ai/module-templates";
 
 // Local fallback data (static skill definitions and level descriptors)
 // Loaded only on the server; used when Convex context is unavailable or to enrich details
@@ -100,58 +101,42 @@ function normalizeLevels(input: unknown): ReadonlyArray<SummaryLevel> {
   return out;
 }
 
-function levelTemplatesSection(
-  locale: Locale,
-  localLevels: readonly LocalLevel[],
-  latestLevel?: number,
-): string | undefined {
-  if (!localLevels || localLevels.length === 0) return undefined;
-  const header = pick(
-    locale === "ar",
-    "قوالب حسب المستوى:",
-    "Per-level templates:",
-  );
-  const lines: string[] = [header];
-  const sorted = [...localLevels].sort(
-    (a, b) => (a.level ?? 0) - (b.level ?? 0),
-  );
-  for (const l of sorted) {
-    const lvl = l.level as number | undefined;
-    const title = pick(locale === "ar", l.nameAr, l.nameEn);
-    const mark =
-      latestLevel !== undefined && lvl === latestLevel
-        ? pick(locale === "ar", " (آخر تقييم)", " (latest)")
-        : "";
-    lines.push(`- L${lvl}: ${title}${mark}`);
-    const qArr = l.questions ?? [];
-    const evArr = l.evaluation ?? [];
-    const pgArr = l.progressionSteps ?? [];
-    const rsArr = l.resources ?? [];
-    if (qArr.length > 0)
-      lines.push(
-        `  • ${pick(locale === "ar", "أسئلة:", "Questions:")} ${qArr.slice(0, 2).join(" | ")}`,
-      );
-    if (evArr.length > 0)
-      lines.push(
-        `  • ${pick(locale === "ar", "تقييم:", "Evaluation:")} ${evArr.slice(0, 1).join(" | ")}`,
-      );
-    if (pgArr.length > 0)
-      lines.push(
-        `  • ${pick(locale === "ar", "خطوات التقدم:", "Progression steps:")} ${pgArr.slice(0, 2).join(" | ")}`,
-      );
-    if (rsArr.length > 0)
-      lines.push(
-        `  • ${pick(locale === "ar", "مصادر:", "Resources:")} ${rsArr
-          .slice(0, 2)
-          .map((r) => r.url)
-          .join(" | ")}`,
-      );
-  }
-  return lines.join("\n");
-}
+// removed: legacy per-level templates section (replaced by conciseModuleTemplatesSection)
 
 function safeJoin(lines: readonly (string | undefined | null)[]): string {
   return lines.filter(Boolean).join("\n");
+}
+
+function clamp(n: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, n));
+}
+
+function conciseModuleTemplatesSection(
+  locale: Locale,
+  params: { baseLevel?: number; skillNameEn?: string; skillNameAr?: string },
+): string {
+  const header =
+    locale === "ar" ? "قوالب الوحدات (مختصر):" : "Module Templates (concise):";
+  const version = ModuleTemplates.getVersion();
+  const skillToken = locale === "ar" ? params.skillNameAr : params.skillNameEn;
+  const base = clamp(params.baseLevel ?? 3, 1, 5);
+  const levelsToShow = [clamp(base - 1, 1, 5), base, clamp(base + 1, 1, 5)];
+  const seen = new Set<number>();
+  const lines: string[] = [`${header} v${version}`];
+  for (const lvl of levelsToShow) {
+    if (seen.has(lvl)) continue;
+    seen.add(lvl);
+    for (const type of ["article", "video", "quiz", "project"] as const) {
+      const line = ModuleTemplates.toConciseInstruction({
+        level: lvl,
+        type,
+        locale,
+        skillToken,
+      });
+      lines.push(`- ${line}`);
+    }
+  }
+  return lines.join("\n");
 }
 
 function findLocalSkillByNames(
@@ -288,6 +273,31 @@ function turnTakingRules(locale: Locale): string {
   ]);
 }
 
+function multipleChoiceRules(locale: Locale): string {
+  return safeJoin([
+    pick(
+      locale === "ar",
+      "\n\nصيغة الأسئلة متعددة الخيارات:",
+      "\n\nMultiple-choice format:",
+    ),
+    pick(
+      locale === "ar",
+      "- في كل دور، اطرح سؤال تقييم واحد فقط مع 5 خيارات: (A)، (B)، (C)، (D)، و(Other: اكتب إجابتك).",
+      "- Each turn, ask exactly one assessment question with 5 options: (A), (B), (C), (D), and (Other: write your own).",
+    ),
+    pick(
+      locale === "ar",
+      "- اجعل الخيارات الأربعة واضحة ومتميزة، واسمح للمستخدم بكتابة إجابة حرة إذا اختار (Other).",
+      "- Make the four options clear and distinct; allow the user to write a free-form answer if they choose (Other).",
+    ),
+    pick(
+      locale === "ar",
+      "- بعد اختيار المستخدم أو كتابة إجابة، قدّم تغذية راجعة قصيرة ثم انتقل للسؤال التالي أو قم بالتكييف في الصعوبة.",
+      "- After the user selects or writes an answer, give brief feedback, then proceed to the next question or adapt difficulty.",
+    ),
+  ]);
+}
+
 function dynamicDifficultyRules(locale: Locale, latestLevel?: number): string {
   const base = latestLevel ?? 3;
   return safeJoin([
@@ -400,9 +410,14 @@ export async function buildSystemPrompt(
 
   const constraints = moduleConstraints(locale);
   const schema = schemaInstruction(locale);
-  const templates = levelTemplatesSection(locale, localLevels, latestLevel);
+  const templates = conciseModuleTemplatesSection(locale, {
+    baseLevel: latestLevel,
+    skillNameEn,
+    skillNameAr,
+  });
   const tone = bilingualToneRules(locale);
   const turns = turnTakingRules(locale);
+  const mcq = multipleChoiceRules(locale);
   const adapt = dynamicDifficultyRules(locale, latestLevel);
 
   return Sentry.startSpan(
@@ -419,6 +434,7 @@ export async function buildSystemPrompt(
         userContext,
         tone,
         turns,
+        mcq,
         adapt,
         templates,
         constraints,

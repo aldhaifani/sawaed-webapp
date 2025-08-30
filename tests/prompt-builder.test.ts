@@ -22,6 +22,8 @@ describe("prompt-builder", () => {
     expect(out.systemPrompt).toContain("Output Instructions:");
     expect(out.systemPrompt).toContain("```json");
     expect(out.systemPrompt).toContain("learningModules");
+    expect(out.systemPrompt).toContain("Multiple-choice format:");
+    expect(out.systemPrompt).toContain("Module Templates (concise): v");
   });
 
   it("builds an Arabic prompt with constraints and schema", async () => {
@@ -34,6 +36,8 @@ describe("prompt-builder", () => {
     expect(out.systemPrompt).toContain("قيود مسار التعلم:");
     expect(out.systemPrompt).toContain("التعليمات الخاصة بالمخرجات:");
     expect(out.systemPrompt).toContain("```json");
+    expect(out.systemPrompt).toContain("صيغة الأسئلة متعددة الخيارات:");
+    expect(out.systemPrompt).toContain("قوالب الوحدات (مختصر):");
   });
 
   it("includes allowed module types and min/max module constraints", async () => {

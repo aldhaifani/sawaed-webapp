@@ -1,0 +1,614 @@
+{
+  "templateVersion": "1.0.0",
+  "levels": [
+    {
+      "level": 1,
+      "templates": {
+        "article": {
+          "en": {
+            "titlePatterns": [
+              "Getting Started with {{skill}}: A Simple Guide",
+              "Basics of {{skill}} for Beginners"
+            ],
+            "objectives": [
+              "Understand what {{skill}} means in everyday life",
+              "Learn 2–3 key terms with simple examples"
+            ],
+            "durationBand": "8–12 minutes",
+            "outline": [
+              "Definition and why it matters",
+              "Two everyday examples",
+              "Quick tips to practice today"
+            ]
+          },
+          "ar": {
+            "titlePatterns": [
+              "مقدمة في {{skill}}: دليل مبسّط",
+              "أساسيات {{skill}} للمبتدئين"
+            ],
+            "objectives": [
+              "فهم معنى {{skill}} في الحياة اليومية",
+              "تعلّم ٢–٣ مصطلحات مع أمثلة بسيطة"
+            ],
+            "durationBand": "٨–١٢ دقيقة",
+            "outline": [
+              "التعريف ولماذا هو مهم",
+              "مثالان من الحياة اليومية",
+              "نصائح سريعة للتطبيق اليوم"
+            ]
+          }
+        },
+        "video": {
+          "en": {
+            "titlePatterns": [
+              "Watch: {{skill}} in 10 Minutes",
+              "{{skill}} Basics Explained"
+            ],
+            "objectives": [
+              "See {{skill}} in action with a simple demo",
+              "Learn one shortcut or habit"
+            ],
+            "durationBand": "5–10 minutes",
+            "outline": ["Concept overview", "Short demo", "One practice task"]
+          },
+          "ar": {
+            "titlePatterns": [
+              "شاهد: {{skill}} في ١٠ دقائق",
+              "شرح أساسيات {{skill}}"
+            ],
+            "objectives": [
+              "رؤية {{skill}} عمليًا عبر عرض بسيط",
+              "تعلّم اختصار أو عادة واحدة"
+            ],
+            "durationBand": "٥–١٠ دقائق",
+            "outline": ["نظرة عامة على المفهوم", "عرض قصير", "مهمة تدريبية"]
+          }
+        },
+        "quiz": {
+          "en": {
+            "titlePatterns": [
+              "Quick Check: {{skill}} Basics",
+              "Can You Spot {{skill}} Terms?"
+            ],
+            "objectives": [
+              "Check recognition of 3–5 basic ideas",
+              "Build confidence with instant feedback"
+            ],
+            "durationBand": "5–8 minutes",
+            "outline": ["5 single‑choice questions", "Immediate explanations"],
+            "evaluationHints": [
+              "Accept partial understanding if 3/5 correct",
+              "Offer one tip for each mistake"
+            ]
+          },
+          "ar": {
+            "titlePatterns": [
+              "اختبار سريع: أساسيات {{skill}}",
+              "هل تتعرّف على مصطلحات {{skill}}؟"
+            ],
+            "objectives": [
+              "قياس التعرّف على ٣–٥ أفكار أساسية",
+              "تعزيز الثقة عبر تغذية راجعة فورية"
+            ],
+            "durationBand": "٥–٨ دقائق",
+            "outline": ["٥ أسئلة اختيار واحد", "تفسير فوري للإجابات"],
+            "evaluationHints": [
+              "قبول فهم جزئي إذا كانت ٣/٥ صحيحة",
+              "تقديم نصيحة قصيرة لكل خطأ"
+            ]
+          }
+        },
+        "project": {
+          "en": {
+            "titlePatterns": [
+              "Mini Task: Use {{skill}} Today",
+              "First Steps Project: {{skill}}"
+            ],
+            "objectives": [
+              "Apply {{skill}} in one simple scenario",
+              "Document what you did in 3 bullets"
+            ],
+            "durationBand": "15–25 minutes",
+            "outline": [
+              "Step‑by‑step checklist (3–4 steps)",
+              "Submission: 1 screenshot or short note"
+            ],
+            "evaluationHints": [
+              "Completion over perfection",
+              "Celebrate first attempt"
+            ]
+          },
+          "ar": {
+            "titlePatterns": [
+              "مهمة صغيرة: طبّق {{skill}} اليوم",
+              "مشروع أولي: {{skill}}"
+            ],
+            "objectives": [
+              "تطبيق {{skill}} في موقف بسيط",
+              "توثيق ما قمت به في ٣ نقاط"
+            ],
+            "durationBand": "١٥–٢٥ دقيقة",
+            "outline": [
+              "قائمة خطوات (٣–٤ خطوات)",
+              "التسليم: لقطة شاشة أو ملاحظة قصيرة"
+            ],
+            "evaluationHints": [
+              "الأولوية للإكمال لا للكمال",
+              "الاحتفاء بالمحاولة الأولى"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "level": 2,
+      "templates": {
+        "article": {
+          "en": {
+            "titlePatterns": [
+              "{{skill}}: Organize and Improve",
+              "Practical {{skill}} Tips You Can Use"
+            ],
+            "objectives": [
+              "Organize basic tasks with {{skill}}",
+              "Compare two simple methods"
+            ],
+            "durationBand": "10–15 minutes",
+            "outline": [
+              "Two methods side‑by‑side",
+              "When to use each",
+              "Practice prompt"
+            ]
+          },
+          "ar": {
+            "titlePatterns": [
+              "{{skill}}: تنظيم وتحسين",
+              "نصائح عملية في {{skill}}"
+            ],
+            "objectives": [
+              "تنظيم المهام الأساسية باستخدام {{skill}}",
+              "مقارنة طريقتين بسيطتين"
+            ],
+            "durationBand": "١٠–١٥ دقيقة",
+            "outline": [
+              "مقارنة بين طريقتين",
+              "متى نستخدم كل طريقة",
+              "تمرين تطبيقي"
+            ]
+          }
+        },
+        "video": {
+          "en": {
+            "titlePatterns": [
+              "Do More with {{skill}}",
+              "{{skill}} Walkthrough for Daily Tasks"
+            ],
+            "objectives": [
+              "Follow a guided workflow",
+              "Avoid 2 common mistakes"
+            ],
+            "durationBand": "8–12 minutes",
+            "outline": ["Workflow demo", "Mistakes to avoid", "Try it yourself"]
+          },
+          "ar": {
+            "titlePatterns": [
+              "إنجاز أكبر باستخدام {{skill}}",
+              "جولة توضيحية لـ {{skill}} في المهام اليومية"
+            ],
+            "objectives": ["اتباع سير عمل موجه", "تجنّب خطأين شائعين"],
+            "durationBand": "٨–١٢ دقيقة",
+            "outline": ["عرض سير العمل", "أخطاء شائعة", "جرّب بنفسك"]
+          }
+        },
+        "quiz": {
+          "en": {
+            "titlePatterns": [
+              "Apply {{skill}}: Quick Quiz",
+              "Decide the Best Option"
+            ],
+            "objectives": [
+              "Choose methods for simple scenarios",
+              "Explain a choice in one sentence"
+            ],
+            "durationBand": "6–10 minutes",
+            "outline": ["6 scenario questions", "1 short justification"],
+            "evaluationHints": [
+              "Reward correct reasoning even if outcome differs"
+            ]
+          },
+          "ar": {
+            "titlePatterns": [
+              "تطبيق {{skill}}: اختبار سريع",
+              "اختر الخيار الأنسب"
+            ],
+            "objectives": [
+              "اختيار الطريقة المناسبة لسيناريوهات بسيطة",
+              "شرح سبب الاختيار بجملة"
+            ],
+            "durationBand": "٦–١٠ دقائق",
+            "outline": ["٦ أسئلة سيناريو", "تبرير قصير"],
+            "evaluationHints": ["مكافأة التبرير الصحيح حتى لو اختلفت النتيجة"]
+          }
+        },
+        "project": {
+          "en": {
+            "titlePatterns": [
+              "Organize a Small {{skill}} Task",
+              "Mini Project: Improve with {{skill}}"
+            ],
+            "objectives": [
+              "Plan and execute a 3‑step task",
+              "Reflect on what improved"
+            ],
+            "durationBand": "20–30 minutes",
+            "outline": [
+              "Plan (1–2 bullets)",
+              "Do (2–3 steps)",
+              "Reflect (2 bullets)"
+            ],
+            "evaluationHints": ["Assess clarity of plan and reflection"]
+          },
+          "ar": {
+            "titlePatterns": [
+              "تنظيم مهمة صغيرة بـ {{skill}}",
+              "مشروع مصغّر: تحسين عبر {{skill}}"
+            ],
+            "objectives": [
+              "تخطيط وتنفيذ مهمة من ٣ خطوات",
+              "التأمل في ما تحسّن"
+            ],
+            "durationBand": "٢٠–٣٠ دقيقة",
+            "outline": [
+              "التخطيط (١–٢ نقطة)",
+              "التنفيذ (٢–٣ خطوات)",
+              "الانعكاس (نقطتان)"
+            ],
+            "evaluationHints": ["تقييم وضوح الخطة والتأمل"]
+          }
+        }
+      }
+    },
+    {
+      "level": 3,
+      "templates": {
+        "article": {
+          "en": {
+            "titlePatterns": [
+              "{{skill}}: Solve Common Problems",
+              "Intermediate Guide to {{skill}}"
+            ],
+            "objectives": [
+              "Diagnose issues with a simple checklist",
+              "Use one framework or tool"
+            ],
+            "durationBand": "12–18 minutes",
+            "outline": ["Checklist", "Framework/tool", "Case example"]
+          },
+          "ar": {
+            "titlePatterns": [
+              "{{skill}}: حل المشكلات الشائعة",
+              "دليل متوسط لـ {{skill}}"
+            ],
+            "objectives": [
+              "تشخيص المشكلات عبر قائمة تحقق",
+              "استخدام إطار أو أداة واحدة"
+            ],
+            "durationBand": "١٢–١٨ دقيقة",
+            "outline": ["قائمة تحقق", "إطار/أداة", "حالة تطبيقية"]
+          }
+        },
+        "video": {
+          "en": {
+            "titlePatterns": [
+              "From Basics to Practice: {{skill}}",
+              "{{skill}} Troubleshooting Walkthrough"
+            ],
+            "objectives": [
+              "Follow a live troubleshooting demo",
+              "Practice with provided data or scenario"
+            ],
+            "durationBand": "10–15 minutes",
+            "outline": ["Demo", "Try it", "Wrap‑up"]
+          },
+          "ar": {
+            "titlePatterns": [
+              "من الأساسيات إلى التطبيق: {{skill}}",
+              "جولة حل مشكلات {{skill}}"
+            ],
+            "objectives": [
+              "متابعة عرض حي لحل مشكلة",
+              "تطبيق على بيانات/سيناريو مُرفق"
+            ],
+            "durationBand": "١٠–١٥ دقيقة",
+            "outline": ["عرض", "جرب", "خلاصة"]
+          }
+        },
+        "quiz": {
+          "en": {
+            "titlePatterns": [
+              "Can You Diagnose This? {{skill}}",
+              "Choose the Root Cause"
+            ],
+            "objectives": [
+              "Test analysis of 6–8 scenarios",
+              "Identify 1 root cause"
+            ],
+            "durationBand": "8–12 minutes",
+            "outline": ["8 MCQs with brief rationale"],
+            "evaluationHints": ["Score higher for valid reasoning"]
+          },
+          "ar": {
+            "titlePatterns": [
+              "هل يمكنك التشخيص؟ {{skill}}",
+              "اختر السبب الجذري"
+            ],
+            "objectives": [
+              "اختبار تحليل ٦–٨ سيناريوهات",
+              "تحديد سبب جذري واحد"
+            ],
+            "durationBand": "٨–١٢ دقيقة",
+            "outline": ["٨ أسئلة مع تبرير قصير"],
+            "evaluationHints": ["أولوية أعلى للتبرير الصحيح"]
+          }
+        },
+        "project": {
+          "en": {
+            "titlePatterns": [
+              "Plan and Execute: {{skill}} Mini Case",
+              "Apply a Framework with {{skill}}"
+            ],
+            "objectives": [
+              "Use a framework to solve a case",
+              "Write a short summary of results"
+            ],
+            "durationBand": "30–45 minutes",
+            "outline": [
+              "Select framework",
+              "Apply in 3–4 steps",
+              "Summarize outcome"
+            ],
+            "evaluationHints": ["Check method fit and clarity"]
+          },
+          "ar": {
+            "titlePatterns": [
+              "خطط ونفّذ: حالة مصغّرة في {{skill}}",
+              "تطبيق إطار مع {{skill}}"
+            ],
+            "objectives": ["استخدام إطار لحل حالة", "كتابة ملخص قصير للنتائج"],
+            "durationBand": "٣٠–٤٥ دقيقة",
+            "outline": ["اختيار إطار", "تطبيق من ٣–٤ خطوات", "تلخيص النتيجة"],
+            "evaluationHints": ["فحص ملاءمة الطريقة ووضوح العرض"]
+          }
+        }
+      }
+    },
+    {
+      "level": 4,
+      "templates": {
+        "article": {
+          "en": {
+            "titlePatterns": [
+              "Advanced {{skill}}: Automate or Integrate",
+              "{{skill}} Patterns for Efficiency"
+            ],
+            "objectives": [
+              "Automate a repetitive task",
+              "Compare trade‑offs of two patterns"
+            ],
+            "durationBand": "15–20 minutes",
+            "outline": [
+              "Problem and constraints",
+              "Two solution patterns",
+              "When to use each"
+            ]
+          },
+          "ar": {
+            "titlePatterns": [
+              "{{skill}} المتقدم: أتمتة أو دمج",
+              "أنماط {{skill}} لرفع الكفاءة"
+            ],
+            "objectives": ["أتمتة مهمة متكررة", "مقارنة مقايضات حلّين"],
+            "durationBand": "١٥–٢٠ دقيقة",
+            "outline": ["المشكلة والقيود", "حلّان بنمطين", "متى نستخدم كل واحد"]
+          }
+        },
+        "video": {
+          "en": {
+            "titlePatterns": [
+              "Build Something with {{skill}}",
+              "Integrate {{skill}} Step by Step"
+            ],
+            "objectives": [
+              "Follow an end‑to‑end build",
+              "Measure improvement with a simple KPI"
+            ],
+            "durationBand": "12–18 minutes",
+            "outline": ["Build steps", "Measure", "Next tweaks"]
+          },
+          "ar": {
+            "titlePatterns": [
+              "ابنِ شيئًا بـ {{skill}}",
+              "دمج {{skill}} خطوة بخطوة"
+            ],
+            "objectives": [
+              "متابعة بناء من البداية للنهاية",
+              "قياس التحسّن بمؤشر بسيط"
+            ],
+            "durationBand": "١٢–١٨ دقيقة",
+            "outline": ["خطوات البناء", "القياس", "تحسينات لاحقة"]
+          }
+        },
+        "quiz": {
+          "en": {
+            "titlePatterns": [
+              "Select the Right Pattern ({{skill}})",
+              "Trade‑offs Challenge"
+            ],
+            "objectives": [
+              "Evaluate trade‑offs across 6 scenarios",
+              "Choose pattern and justify"
+            ],
+            "durationBand": "10–15 minutes",
+            "outline": ["6 scenario MCQs with rationale"],
+            "evaluationHints": ["Higher score for considering constraints"]
+          },
+          "ar": {
+            "titlePatterns": [
+              "اختيار النمط المناسب ({{skill}})",
+              "تحدّي المقايضات"
+            ],
+            "objectives": [
+              "تقييم المقايضات عبر ٦ سيناريوهات",
+              "اختيار النمط مع تبرير"
+            ],
+            "durationBand": "١٠–١٥ دقيقة",
+            "outline": ["٦ سيناريوهات مع تبرير"],
+            "evaluationHints": ["درجة أعلى لمراعاة القيود"]
+          }
+        },
+        "project": {
+          "en": {
+            "titlePatterns": [
+              "Automation/Integration Project: {{skill}}",
+              "Design and Measure with {{skill}}"
+            ],
+            "objectives": [
+              "Design a small system or automation",
+              "Collect before/after metric"
+            ],
+            "durationBand": "45–60 minutes",
+            "outline": ["Design sketch", "Implement core", "Measure result"],
+            "evaluationHints": ["Check design clarity and measurable outcome"]
+          },
+          "ar": {
+            "titlePatterns": [
+              "مشروع أتمتة/دمج: {{skill}}",
+              "صمّم وقِس باستخدام {{skill}}"
+            ],
+            "objectives": ["تصميم نظام صغير أو أتمتة", "جمع قياس قبل/بعد"],
+            "durationBand": "٤٥–٦٠ دقيقة",
+            "outline": ["مخطط تصميم", "تنفيذ اللب", "قياس النتيجة"],
+            "evaluationHints": ["فحص وضوح التصميم والنتيجة القابلة للقياس"]
+          }
+        }
+      }
+    },
+    {
+      "level": 5,
+      "templates": {
+        "article": {
+          "en": {
+            "titlePatterns": [
+              "Design Thinking in {{skill}}",
+              "Scalable Approaches to {{skill}}"
+            ],
+            "objectives": [
+              "Compare scalable approaches",
+              "Connect to real‑world constraints"
+            ],
+            "durationBand": "18–25 minutes",
+            "outline": [
+              "Problem framing",
+              "Approach comparison",
+              "Decision guide"
+            ]
+          },
+          "ar": {
+            "titlePatterns": [
+              "تفكير التصميم في {{skill}}",
+              "مقاربات قابلة للتوسّع لـ {{skill}}"
+            ],
+            "objectives": [
+              "مقارنة مقاربات قابلة للتوسّع",
+              "الربط بقيود العالم الواقعي"
+            ],
+            "durationBand": "١٨–٢٥ دقيقة",
+            "outline": ["صياغة المشكلة", "مقارنة المقاربات", "دليل القرار"]
+          }
+        },
+        "video": {
+          "en": {
+            "titlePatterns": [
+              "Build and Review: {{skill}}",
+              "From Prototype to Improvement"
+            ],
+            "objectives": [
+              "Ship a working prototype",
+              "Review with performance/UX metric"
+            ],
+            "durationBand": "15–20 minutes",
+            "outline": ["Prototype steps", "Review criteria", "Improvements"]
+          },
+          "ar": {
+            "titlePatterns": [
+              "ابنِ وراجِع: {{skill}}",
+              "من نموذج أولي إلى تحسين"
+            ],
+            "objectives": ["إصدار نموذج أولي يعمل", "مراجعته بمؤشر أداء/تجربة"],
+            "durationBand": "١٥–٢٠ دقيقة",
+            "outline": ["خطوات النموذج", "معايير المراجعة", "التحسينات"]
+          }
+        },
+        "quiz": {
+          "en": {
+            "titlePatterns": [
+              "Evaluate Trade‑offs at Scale ({{skill}})",
+              "Design Choices Quiz"
+            ],
+            "objectives": [
+              "Judge solutions under constraints",
+              "Defend a choice with criteria"
+            ],
+            "durationBand": "10–15 minutes",
+            "outline": ["6 scenario questions with criteria"],
+            "evaluationHints": ["Value criteria‑based reasoning"]
+          },
+          "ar": {
+            "titlePatterns": [
+              "تقييم المقايضات على نطاق ({{skill}})",
+              "اختبار خيارات التصميم"
+            ],
+            "objectives": [
+              "الحكم على الحلول تحت القيود",
+              "الدفاع عن الاختيار بمعايير"
+            ],
+            "durationBand": "١٠–١٥ دقيقة",
+            "outline": ["٦ سيناريوهات مع معايير"],
+            "evaluationHints": ["تقدير التفكير المبني على المعايير"]
+          }
+        },
+        "project": {
+          "en": {
+            "titlePatterns": [
+              "Capstone Mini‑Project: {{skill}}",
+              "Design, Implement, Share"
+            ],
+            "objectives": [
+              "Design a small but realistic solution",
+              "Share results with a short write‑up"
+            ],
+            "durationBand": "60–90 minutes",
+            "outline": [
+              "Design decisions",
+              "Implementation core",
+              "Share and reflect"
+            ],
+            "evaluationHints": [
+              "Assess design trade‑offs, result quality, reflection"
+            ]
+          },
+          "ar": {
+            "titlePatterns": [
+              "مشروع ختامي مصغّر: {{skill}}",
+              "صمّم ونفّذ وشارك"
+            ],
+            "objectives": ["تصميم حل صغير واقعي", "مشاركة النتائج بموجز قصير"],
+            "durationBand": "٦٠–٩٠ دقيقة",
+            "outline": ["قرارات التصميم", "تنفيذ اللب", "مشاركة وتأمل"],
+            "evaluationHints": ["تقييم المقايضات وجودة النتيجة والتأمل"]
+          }
+        }
+      }
+    }
+  ]
+}
