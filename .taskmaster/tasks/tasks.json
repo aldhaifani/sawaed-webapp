@@ -179,7 +179,7 @@
             "description": "Create mechanisms to dynamically generate and inject system prompts that include AI role definitions, skill templates, user profiles, and conversation rules.",
             "dependencies": ["4.2"],
             "details": "Develop prompt construction logic that integrates skill definitions, assessment rules, and module templates into system prompts. Ensure prompts support dynamic difficulty adaptation and maintain conversation flow according to defined rules.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -493,7 +493,7 @@
     ],
     "metadata": {
       "created": "2025-08-27T16:15:53.164Z",
-      "updated": "2025-08-30T18:00:01.274Z",
+      "updated": "2025-08-30T18:33:58.821Z",
       "description": "Tasks for master context"
     }
   }

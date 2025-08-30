@@ -22,6 +22,7 @@ import { fetchMutation } from "convex/nextjs";
 import { api } from "@/../convex/_generated/api";
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import type { Id } from "@/../convex/_generated/dataModel";
+import { buildSystemPrompt } from "../prompt-builder";
 
 export type SendRequest = {
   readonly skillId: string;
@@ -75,6 +76,7 @@ async function runGeminiGeneration(
     readonly locale: "ar" | "en";
     readonly conversationId?: string | null;
     readonly convexToken?: string | null;
+    readonly systemPrompt?: string | null;
   },
 ): Promise<void> {
   setRunning(sessionId);
@@ -94,71 +96,73 @@ async function runGeminiGeneration(
     parts: [
       {
         text:
-          params.locale === "ar"
-            ? [
-                "أنت مساعد يقيم مهارات المستخدم ويقترح مسار تعلم.",
-                "اكتب إجابة موجزة وصحيحة.",
-                "أخرج في النهاية مقطع JSON صالح وفق المخطط التالي فقط داخل كتلة ```json:",
-                "{",
-                "  skill?: string,",
-                "  level: number (1-5),",
-                "  confidence: number (0-1),",
-                "  reasoning?: string,",
-                "  learningModules: Array<",
-                "    { id: string, title: string, type: 'article'|'video'|'quiz'|'project', duration: string }",
-                "  > بطول من 3 إلى 6",
-                "}",
-                "لا تستخدم مفاتيح إضافية. إذا استخدمت 'modules' حوِّلها إلى 'learningModules'.",
-                "مثال:",
-                "```json",
-                "{",
-                "  skill: 'math',",
-                "  level: 3,",
-                "  confidence: 0.8,",
-                "  reasoning: 'الطالب يحتاج إلى تعلم أساسيات الجبر.',",
-                "  learningModules: [",
-                "    { id: 'module-1', title: 'الجبر', type: 'article', duration: '10 دقائق' },",
-                "    { id: 'module-2', title: 'المعادلات', type: 'video', duration: '20 دقيقة' },",
-                "    { id: 'module-3', title: 'التفاضل', type: 'quiz', duration: '30 دقيقة' },",
-                "    { id: 'module-4', title: 'التكامل', type: 'project', duration: '1 ساعة' },",
-                "    { id: 'module-5', title: 'الاحصاء', type: 'article', duration: '40 دقيقة' },",
-                "    { id: 'module-6', title: 'الجبر الخطي', type: 'video', duration: '50 دقيقة' }",
-                "  ]",
-                "}",
-                "```",
-              ].join("\n")
-            : [
-                "You assess the user's skill and propose a learning path.",
-                "Respond clearly and concisely.",
-                "At the end, output a valid JSON block inside ```json matching this schema only:",
-                "{",
-                "  skill?: string,",
-                "  level: number (1-5),",
-                "  confidence: number (0-1),",
-                "  reasoning?: string,",
-                "  learningModules: Array<",
-                "    { id: string, title: string, type: 'article'|'video'|'quiz'|'project', duration: string }",
-                "  > with length between 3 and 6",
-                "}",
-                "Do not include extra keys. If you used 'modules', rename to 'learningModules'.",
-                "Example:",
-                "```json",
-                "{",
-                "  skill: 'math',",
-                "  level: 3,",
-                "  confidence: 0.8,",
-                "  reasoning: 'The student needs to learn algebra basics.',",
-                "  learningModules: [",
-                "    { id: 'module-1', title: 'Algebra', type: 'article', duration: '10 minutes' },",
-                "    { id: 'module-2', title: 'Equations', type: 'video', duration: '20 minutes' },",
-                "    { id: 'module-3', title: 'Differential', type: 'quiz', duration: '30 minutes' },",
-                "    { id: 'module-4', title: 'Integral', type: 'project', duration: '1 hour' },",
-                "    { id: 'module-5', title: 'Statistics', type: 'article', duration: '40 minutes' },",
-                "    { id: 'module-6', title: 'Linear Algebra', type: 'video', duration: '50 minutes' }",
-                "  ]",
-                "}",
-                "```",
-              ].join("\n"),
+          params.systemPrompt && params.systemPrompt.trim().length > 0
+            ? params.systemPrompt
+            : params.locale === "ar"
+              ? [
+                  "أنت مساعد يقيم مهارات المستخدم ويقترح مسار تعلم.",
+                  "اكتب إجابة موجزة وصحيحة.",
+                  "أخرج في النهاية مقطع JSON صالح وفق المخطط التالي فقط داخل كتلة ```json:",
+                  "{",
+                  "  skill?: string,",
+                  "  level: number (1-5),",
+                  "  confidence: number (0-1),",
+                  "  reasoning?: string,",
+                  "  learningModules: Array<",
+                  "    { id: string, title: string, type: 'article'|'video'|'quiz'|'project', duration: string }",
+                  "  > بطول من 3 إلى 6",
+                  "}",
+                  "لا تستخدم مفاتيح إضافية. إذا استخدمت 'modules' حوِّلها إلى 'learningModules'.",
+                  "مثال:",
+                  "```json",
+                  "{",
+                  "  skill: 'math',",
+                  "  level: 3,",
+                  "  confidence: 0.8,",
+                  "  reasoning: 'الطالب يحتاج إلى تعلم أساسيات الجبر.',",
+                  "  learningModules: [",
+                  "    { id: 'module-1', title: 'الجبر', type: 'article', duration: '10 دقائق' },",
+                  "    { id: 'module-2', title: 'المعادلات', type: 'video', duration: '20 دقيقة' },",
+                  "    { id: 'module-3', title: 'التفاضل', type: 'quiz', duration: '30 دقيقة' },",
+                  "    { id: 'module-4', title: 'التكامل', type: 'project', duration: '1 ساعة' },",
+                  "    { id: 'module-5', title: 'الاحصاء', type: 'article', duration: '40 دقيقة' },",
+                  "    { id: 'module-6', title: 'الجبر الخطي', type: 'video', duration: '50 دقيقة' }",
+                  "  ]",
+                  "}",
+                  "```",
+                ].join("\n")
+              : [
+                  "You assess the user's skill and propose a learning path.",
+                  "Respond clearly and concisely.",
+                  "At the end, output a valid JSON block inside ```json matching this schema only:",
+                  "{",
+                  "  skill?: string,",
+                  "  level: number (1-5),",
+                  "  confidence: number (0-1),",
+                  "  reasoning?: string,",
+                  "  learningModules: Array<",
+                  "    { id: string, title: string, type: 'article'|'video'|'quiz'|'project', duration: string }",
+                  "  > with length between 3 and 6",
+                  "}",
+                  "Do not include extra keys. If you used 'modules', rename to 'learningModules'.",
+                  "Example:",
+                  "```json",
+                  "{",
+                  "  skill: 'math',",
+                  "  level: 3,",
+                  "  confidence: 0.8,",
+                  "  reasoning: 'The student needs to learn algebra basics.',",
+                  "  learningModules: [",
+                  "    { id: 'module-1', title: 'Algebra', type: 'article', duration: '10 minutes' },",
+                  "    { id: 'module-2', title: 'Equations', type: 'video', duration: '20 minutes' },",
+                  "    { id: 'module-3', title: 'Differential', type: 'quiz', duration: '30 minutes' },",
+                  "    { id: 'module-4', title: 'Integral', type: 'project', duration: '1 hour' },",
+                  "    { id: 'module-5', title: 'Statistics', type: 'article', duration: '40 minutes' },",
+                  "    { id: 'module-6', title: 'Linear Algebra', type: 'video', duration: '50 minutes' }",
+                  "  ]",
+                  "}",
+                  "```",
+                ].join("\n"),
       },
     ],
   };
@@ -580,14 +584,27 @@ export async function POST(req: Request): Promise<NextResponse<SendResponse>> {
       // Prepare Convex auth token and create/reuse conversation, persist user message
       let conversationId: string | null = null;
       let token: string | null = null;
+      let systemPrompt: string | null = null;
       try {
         token = (await convexAuthNextjsToken()) ?? null;
+        // Build dynamic system prompt (non-blocking if it fails, we fallback inside generator)
+        try {
+          const built = await buildSystemPrompt({
+            aiSkillId: parsed.data.skillId,
+            locale,
+            convexToken: token,
+          });
+          systemPrompt = built.systemPrompt;
+        } catch (err) {
+          Sentry.captureException(err);
+        }
         if (token) {
           const convoRes = await fetchMutation(
             api.aiConversations.createOrGetActive,
             {
               aiSkillId: parsed.data.skillId as unknown as Id<"aiSkills">,
               language: locale,
+              systemPrompt: systemPrompt ?? undefined,
             },
             { token },
           );
@@ -618,6 +635,7 @@ export async function POST(req: Request): Promise<NextResponse<SendResponse>> {
         locale,
         conversationId,
         convexToken: token,
+        systemPrompt,
       });
       return NextResponse.json({
         sessionId: session.sessionId,
