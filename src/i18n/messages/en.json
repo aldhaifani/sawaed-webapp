@@ -753,6 +753,8 @@
     "backToSettings": "Back to settings",
     "emptyHint": "Start the conversation by asking a question. Arabic and English are supported.",
     "footerDisclaimer": "AI responses may contain mistakes. Always verify important information.",
+    "assessmentComplete": "Assessment complete. Your learning path has been generated.",
+    "jsonInvalid": "Could not detect a valid assessment JSON",
     "connectionState": {
       "connecting": "Connecting to chat server...",
       "connected": "Connected to chat server",

@@ -12,6 +12,10 @@ import * as Sentry from "@sentry/nextjs";
 import { DotStream } from "ldrs/react";
 import "ldrs/react/DotStream.css";
 import { usePersistedTranscript } from "@/hooks/usePersistedTranscript";
+import { useMutation } from "convex/react";
+import { api } from "@/../convex/_generated/api";
+import { detectAssessmentFromText } from "@/shared/ai/detect-assessment";
+import { useChatStatusPoll } from "@/hooks/use-chat-status-poll";
 import {
   ChatContainerContent,
   ChatContainerRoot,
@@ -52,21 +56,133 @@ export default function ChatInitPage(): ReactElement {
   const [input, setInput] = useState<string>("");
   const [messages, setMessages] = useState<readonly Message[]>([]);
   // Typing state removed; we render a loader inside the AI message bubble instead
-  const [pollAbort, setPollAbort] = useState<AbortController | null>(null);
-  const pollIntervalRef = useRef<number | null>(null);
   const [connectionState, setConnectionState] = useState<
     "connecting" | "connected" | "reconnecting" | "disconnected" | null
   >(null);
+  const [isAssessmentComplete, setIsAssessmentComplete] =
+    useState<boolean>(false);
 
   const skillParam = params.get("skill") ?? "";
   const skillId = skillParam as unknown as Id<"aiSkills">;
   const { load: loadTranscript, save: saveTranscript } = usePersistedTranscript(
     skillParam || undefined,
   );
+  const storeAssessment = useMutation(api.aiAssessments.storeAssessment);
   const sessionStorageKey = useMemo(
     () => `chatSession:${skillParam}`,
     [skillParam],
   );
+  const hasPersistedRef = useRef<boolean>(false);
+
+  const { startPolling, stopPolling, sendMessage } = useChatStatusPoll({
+    onProgress: ({ aiMessageId, text, status, progressed }) => {
+      setConnectionState("connected");
+      if (progressed) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiMessageId
+              ? {
+                  ...m,
+                  content: text,
+                  streaming: status !== "done" && status !== "error",
+                }
+              : m,
+          ),
+        );
+        if (!hasPersistedRef.current) {
+          void (async () => {
+            try {
+              const detected = detectAssessmentFromText(text);
+              if (detected.valid && detected.data && skillParam) {
+                await storeAssessment({
+                  aiSkillId: skillId,
+                  result: detected.data,
+                });
+                hasPersistedRef.current = true;
+                setIsAssessmentComplete(true);
+                try {
+                  window.localStorage.removeItem(sessionStorageKey);
+                } catch {}
+                toast.success(
+                  (() => {
+                    try {
+                      return t("assessmentComplete");
+                    } catch {
+                      return locale === "ar"
+                        ? "تم اكتمال التقييم"
+                        : "Assessment complete";
+                    }
+                  })(),
+                );
+              }
+            } catch (e) {
+              Sentry.captureException(e);
+            }
+          })();
+        }
+      } else {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiMessageId
+              ? {
+                  ...m,
+                  streaming: status !== "done" && status !== "error",
+                }
+              : m,
+          ),
+        );
+      }
+    },
+    onDone: ({
+      aiMessageId: _aiMessageId,
+      text,
+    }: {
+      aiMessageId: string;
+      text: string;
+    }) => {
+      // Final parse/persist if not done
+      if (!hasPersistedRef.current) {
+        void (async () => {
+          const detected = detectAssessmentFromText(text);
+          if (detected.valid && detected.data && skillParam) {
+            try {
+              await storeAssessment({
+                aiSkillId: skillId,
+                result: detected.data,
+              });
+              hasPersistedRef.current = true;
+              setIsAssessmentComplete(true);
+            } catch (e) {
+              Sentry.captureException(e);
+            }
+          } else {
+            toast.error(
+              (() => {
+                try {
+                  return t("jsonInvalid");
+                } catch {
+                  return locale === "ar"
+                    ? "تعذّر التعرّف على نتيجة التقييم بصيغة JSON"
+                    : "Could not detect a valid assessment JSON";
+                }
+              })(),
+            );
+          }
+        })();
+      }
+      try {
+        window.localStorage.removeItem(sessionStorageKey);
+      } catch {}
+      setConnectionState(null);
+    },
+    onError: () => {
+      toast(t("errorLoading"));
+      try {
+        window.localStorage.removeItem(sessionStorageKey);
+      } catch {}
+      setConnectionState("disconnected");
+    },
+  });
 
   useEffect(() => {
     if (!skillParam) return;
@@ -113,23 +229,20 @@ export default function ChatInitPage(): ReactElement {
         };
         setMessages((prev) => [...prev, aiMsg]);
       }
-      pollStatus(parsed.sessionId, parsed.aiMessageId);
+      hasPersistedRef.current = false;
+      startPolling({
+        sessionId: parsed.sessionId,
+        aiMessageId: parsed.aiMessageId,
+      });
     } catch {}
     // We intentionally omit dependencies like pollStatus to avoid re-running unexpectedly
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [booted, skillParam, sessionStorageKey]);
 
-  // Cleanup timers and abort controller on unmount
+  // Cleanup on unmount via hook
   useEffect(() => {
     return () => {
-      try {
-        pollAbort?.abort();
-      } catch {}
-      if (pollIntervalRef.current != null) {
-        try {
-          window.clearTimeout(pollIntervalRef.current);
-        } catch {}
-      }
+      stopPolling();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -182,183 +295,7 @@ export default function ChatInitPage(): ReactElement {
     }
   };
 
-  // Polling utilities
-  const POLL_INTERVAL_MS = 750;
-
-  type SendPayload = {
-    readonly skillId: string;
-    readonly message: string;
-  };
-
-  type SendResponse = {
-    readonly sessionId: string;
-  };
-
-  type StatusResponse = {
-    readonly sessionId: string;
-    readonly status: "queued" | "running" | "partial" | "done" | "error";
-    readonly text: string;
-    readonly updatedAt: number;
-    readonly error?: string;
-  };
-
-  const sendToServer = async ({
-    skillId,
-    message,
-  }: SendPayload): Promise<string | null> => {
-    try {
-      const res = await fetch("/api/chat/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-locale": locale,
-          "cache-control": "no-store",
-        },
-        body: JSON.stringify({ skillId, message }),
-      });
-      if (!res.ok) return null;
-      const data = (await res.json()) as SendResponse;
-      return data.sessionId || null;
-    } catch (err) {
-      Sentry.captureException(err);
-      return null;
-    }
-  };
-
-  const pollStatus = (sessionId: string, aiMessageId: string): void => {
-    // Stop prior poll, start a new controlled loop with adaptive delays
-    pollAbort?.abort();
-    const controller = new AbortController();
-    setPollAbort(controller);
-    setConnectionState("connecting");
-
-    let consecutiveErrors = 0;
-    let lastUpdatedAt = 0;
-    let baseDelay: number = POLL_INTERVAL_MS; // start with current default
-    let lastEtag: string | null = null;
-
-    const loop = async (): Promise<void> => {
-      if (controller.signal.aborted) return;
-      try {
-        const res = await fetch(
-          `/api/chat/status?sessionId=${encodeURIComponent(sessionId)}`,
-          {
-            headers: {
-              "cache-control": "no-store",
-              ...(lastEtag ? { "if-none-match": lastEtag } : {}),
-            },
-          },
-        );
-        if (res.status === 304) {
-          setConnectionState("connected");
-          // No changes since last poll; widen delay slightly and continue
-          baseDelay = Math.min(2000, baseDelay + 150);
-          // schedule next
-          if (!controller.signal.aborted) {
-            const jitter = Math.random() * 0.4 - 0.2;
-            const nextDelay = Math.max(
-              300,
-              Math.round(baseDelay * (1 + jitter)),
-            );
-            const id = window.setTimeout(() => {
-              void loop();
-            }, nextDelay);
-            pollIntervalRef.current = id;
-          }
-          return;
-        }
-        if (!res.ok) throw new Error("status_not_ok");
-        const data = (await res.json()) as StatusResponse;
-        consecutiveErrors = 0;
-        lastEtag = res.headers.get("etag");
-        setConnectionState("connected");
-
-        // Adjust polling adaptively based on status and progress
-        const progressed = data.updatedAt > lastUpdatedAt;
-        lastUpdatedAt = Math.max(lastUpdatedAt, data.updatedAt);
-        if (data.status === "running" || data.status === "partial") {
-          baseDelay = progressed ? 500 : Math.min(2000, baseDelay + 250);
-        } else if (data.status === "queued") {
-          baseDelay = 1000;
-        }
-
-        // Update message content progressively (only when changed)
-        if (progressed) {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === aiMessageId
-                ? {
-                    ...m,
-                    content: data.text,
-                    streaming:
-                      data.status !== "done" && data.status !== "error",
-                  }
-                : m,
-            ),
-          );
-        } else {
-          // Ensure streaming flag is accurate even without text change
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === aiMessageId
-                ? {
-                    ...m,
-                    streaming:
-                      data.status !== "done" && data.status !== "error",
-                  }
-                : m,
-            ),
-          );
-        }
-
-        if (data.status === "done") {
-          controller.abort();
-          try {
-            window.localStorage.removeItem(sessionStorageKey);
-          } catch {}
-          setConnectionState(null);
-          return; // stop
-        }
-        if (data.status === "error") {
-          controller.abort();
-          toast(t("errorLoading"));
-          try {
-            window.localStorage.removeItem(sessionStorageKey);
-          } catch {}
-          setConnectionState("disconnected");
-          return; // stop
-        }
-      } catch (err) {
-        Sentry.captureException(err);
-        consecutiveErrors += 1;
-        // Increase delay with capped backoff on errors
-        baseDelay = Math.min(4000, baseDelay + 500);
-        setConnectionState(
-          consecutiveErrors >= 3 ? "disconnected" : "reconnecting",
-        );
-        if (consecutiveErrors >= 3) {
-          controller.abort();
-          toast(t("errorLoading"));
-          try {
-            window.localStorage.removeItem(sessionStorageKey);
-          } catch {}
-          return; // stop
-        }
-      }
-
-      // Schedule next tick with jitter
-      if (!controller.signal.aborted) {
-        const jitter = Math.random() * 0.4 - 0.2; // -20%..+20%
-        const nextDelay = Math.max(300, Math.round(baseDelay * (1 + jitter)));
-        const id = window.setTimeout(() => {
-          void loop();
-        }, nextDelay);
-        pollIntervalRef.current = id;
-      }
-    };
-
-    void loop();
-  };
+  // Polling utilities moved into useChatStatusPoll hook
 
   // Keep focus in the textarea after sending
   const focusInput = (): void => {
@@ -396,6 +333,19 @@ export default function ChatInitPage(): ReactElement {
           <p className="text-destructive mx-auto mt-3 text-sm">
             {t("missingSkill")}
           </p>
+        )}
+        {isAssessmentComplete && (
+          <div className="mx-auto mt-3 w-full max-w-3xl rounded-md border bg-green-50 p-3 text-sm text-green-900 dark:bg-green-950 dark:text-green-200">
+            {(() => {
+              try {
+                return t("assessmentComplete");
+              } catch {
+                return locale === "ar"
+                  ? "تم اكتمال التقييم"
+                  : "Assessment complete";
+              }
+            })()}
+          </div>
         )}
         {isLoading && (
           <p className="text-muted-foreground mx-auto mt-3 text-sm">
@@ -606,9 +556,10 @@ export default function ChatInitPage(): ReactElement {
                 };
                 setMessages((prev) => [...prev, aiMsg]);
 
-                const sessionId = await sendToServer({
+                const sessionId = await sendMessage({
                   skillId: skillParam,
                   message: trimmed,
+                  locale,
                 });
                 if (!sessionId) {
                   // mark AI message as error
@@ -633,7 +584,8 @@ export default function ChatInitPage(): ReactElement {
                     JSON.stringify({ sessionId, aiMessageId: aiMsg.id }),
                   );
                 } catch {}
-                pollStatus(sessionId, aiMsg.id);
+                hasPersistedRef.current = false;
+                startPolling({ sessionId, aiMessageId: aiMsg.id });
                 focusInput();
               }}
               className="bg-transparent p-0 shadow-none"
@@ -687,9 +639,10 @@ export default function ChatInitPage(): ReactElement {
                         };
                         setMessages((prev) => [...prev, aiMsg]);
 
-                        const sessionId = await sendToServer({
+                        const sessionId = await sendMessage({
                           skillId: skillParam,
                           message: trimmed,
+                          locale,
                         });
                         if (!sessionId) {
                           setMessages((prev) =>
@@ -716,7 +669,8 @@ export default function ChatInitPage(): ReactElement {
                             }),
                           );
                         } catch {}
-                        pollStatus(sessionId, aiMsg.id);
+                        hasPersistedRef.current = false;
+                        startPolling({ sessionId, aiMessageId: aiMsg.id });
                         focusInput();
                       }}
                       disabled={!input.trim()}

@@ -131,7 +131,7 @@
             "description": "Implement logic to detect JSON-formatted AI output within chat messages and trigger chat completion events accordingly.",
             "dependencies": ["3.2"],
             "details": "Parse incoming AI messages to identify JSON structures representing assessment results. Validate JSON format and trigger UI or backend events to mark chat completion. Include error handling for invalid JSON and loading states during detection.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -493,7 +493,7 @@
     ],
     "metadata": {
       "created": "2025-08-27T16:15:53.164Z",
-      "updated": "2025-08-30T14:32:20.395Z",
+      "updated": "2025-08-30T15:20:13.318Z",
       "description": "Tasks for master context"
     }
   }
