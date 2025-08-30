@@ -16,6 +16,7 @@ import {
 import { cleanupStaleSessions } from "../_store";
 import { checkRateLimit, getClientIp } from "../_rateLimit";
 import { generateOnce, generateWithStreaming } from "@/lib/gemini";
+import { retryAsync } from "@/lib/retry";
 import { detectAssessmentFromText } from "@/shared/ai/detect-assessment";
 import { z } from "zod";
 import { fetchMutation } from "convex/nextjs";
@@ -192,93 +193,139 @@ async function runGeminiGeneration(
 
       // Try streaming on primary model
       try {
-        await generateWithStreaming(
-          {
-            model: modelPrimary,
-            apiKey,
-            contents,
-            systemInstruction,
-            generationConfig: {
-              temperature: 0.3,
-              topP: 0.9,
-              maxOutputTokens: 2048,
-            },
-          },
-          {
-            onChunkText: (t) => {
-              gotChunk = true;
-              appendPartial(sessionId, t);
-            },
-            onDone: () => {
-              void (async () => {
-                // If streaming yielded nothing, try one-shot generation before finishing
-                if (!gotChunk) {
-                  try {
-                    const textPrimary = await generateOnce({
-                      model: modelPrimary,
-                      apiKey,
-                      contents,
-                      systemInstruction,
-                      generationConfig: {
-                        temperature: 0.2,
-                        topP: 0.9,
-                        maxOutputTokens: 2048,
-                      },
-                    });
-                    if (textPrimary && textPrimary.trim().length > 0) {
-                      appendPartial(sessionId, textPrimary);
-                    } else {
-                      const textFallback = await generateOnce({
-                        model: modelFallback,
-                        apiKey,
-                        contents,
-                        systemInstruction,
-                        generationConfig: {
-                          temperature: 0.2,
-                          topP: 0.9,
-                          maxOutputTokens: 2048,
-                        },
-                      });
-                      if (textFallback && textFallback.trim().length > 0) {
-                        appendPartial(sessionId, textFallback);
+        await retryAsync(
+          () =>
+            generateWithStreaming(
+              {
+                model: modelPrimary,
+                apiKey,
+                contents,
+                systemInstruction,
+                generationConfig: {
+                  temperature: 0.3,
+                  topP: 0.9,
+                  maxOutputTokens: 2048,
+                },
+              },
+              {
+                onChunkText: (t) => {
+                  gotChunk = true;
+                  appendPartial(sessionId, t);
+                },
+                onDone: () => {
+                  void (async () => {
+                    // If streaming yielded nothing, try one-shot generation before finishing
+                    if (!gotChunk) {
+                      try {
+                        const textPrimary = await retryAsync(
+                          () =>
+                            generateOnce({
+                              model: modelPrimary,
+                              apiKey,
+                              contents,
+                              systemInstruction,
+                              generationConfig: {
+                                temperature: 0.2,
+                                topP: 0.9,
+                                maxOutputTokens: 2048,
+                              },
+                            }),
+                          {
+                            attempts: 3,
+                            onAttempt: ({ attempt, delayMs }) => {
+                              Sentry.addBreadcrumb({
+                                category: "ai.retry",
+                                level: "info",
+                                message: "generateOnce primary retry",
+                                data: { attempt, delayMs, model: modelPrimary },
+                              });
+                            },
+                          },
+                        );
+                        if (textPrimary && textPrimary.trim().length > 0) {
+                          appendPartial(sessionId, textPrimary);
+                        } else {
+                          const textFallback = await retryAsync(
+                            () =>
+                              generateOnce({
+                                model: modelFallback,
+                                apiKey,
+                                contents,
+                                systemInstruction,
+                                generationConfig: {
+                                  temperature: 0.2,
+                                  topP: 0.9,
+                                  maxOutputTokens: 2048,
+                                },
+                              }),
+                            {
+                              attempts: 3,
+                              onAttempt: ({ attempt, delayMs }) => {
+                                Sentry.addBreadcrumb({
+                                  category: "ai.retry",
+                                  level: "info",
+                                  message: "generateOnce fallback retry",
+                                  data: {
+                                    attempt,
+                                    delayMs,
+                                    model: modelFallback,
+                                  },
+                                });
+                              },
+                            },
+                          );
+                          if (textFallback && textFallback.trim().length > 0) {
+                            appendPartial(sessionId, textFallback);
+                          }
+                        }
+                      } catch (err) {
+                        Sentry.captureException(err);
                       }
                     }
-                  } catch (err) {
-                    Sentry.captureException(err);
-                  }
-                }
-                await validateAndMaybeRepair(
-                  sessionId,
-                  params.locale,
-                  apiKey,
-                  modelPrimary,
-                  modelFallback,
-                  contents,
-                  systemInstruction,
-                );
-                const s1 = getSession(sessionId);
-                if (!s1?.text?.trim()) {
-                  setError(sessionId, "empty_response");
-                } else {
-                  setDone(sessionId);
-                  // Persist assistant final message if conversation context available
-                  try {
-                    if (params.conversationId && params.convexToken) {
-                      await fetchMutation(
-                        api.aiMessages.addAssistantMessage,
-                        {
-                          conversationId:
-                            params.conversationId as unknown as Id<"aiConversations">,
-                          content: s1.text,
-                        },
-                        { token: params.convexToken },
-                      );
+                    await validateAndMaybeRepair(
+                      sessionId,
+                      params.locale,
+                      apiKey,
+                      modelPrimary,
+                      modelFallback,
+                      contents,
+                      systemInstruction,
+                    );
+                    const s1 = getSession(sessionId);
+                    if (!s1?.text?.trim()) {
+                      setError(sessionId, "empty_response");
+                    } else {
+                      setDone(sessionId);
+                      // Persist assistant final message if conversation context available
+                      try {
+                        if (params.conversationId && params.convexToken) {
+                          await fetchMutation(
+                            api.aiMessages.addAssistantMessage,
+                            {
+                              conversationId:
+                                params.conversationId as unknown as Id<"aiConversations">,
+                              content: s1.text,
+                            },
+                            { token: params.convexToken },
+                          );
+                        }
+                      } catch (err) {
+                        Sentry.captureException(err);
+                      }
                     }
-                  } catch (err) {
-                    Sentry.captureException(err);
-                  }
-                }
-              })();
+                  })();
+                },
+              },
+            ),
+          {
+            attempts: 3,
+            onAttempt: ({ attempt, delayMs }) => {
+              Sentry.addBreadcrumb({
+                category: "ai.retry",
+                level: "info",
+                message: "streaming primary retry",
+                data: { attempt, delayMs, model: modelPrimary },
+              });
             },
           },
         );
@@ -363,17 +410,31 @@ async function runGeminiGeneration(
 
       // Final fallback: non-streaming on primary, then fallback
       try {
-        const text = await generateOnce({
-          model: modelPrimary,
-          apiKey,
-          contents,
-          systemInstruction,
-          generationConfig: {
-            temperature: 0.3,
-            topP: 0.9,
-            maxOutputTokens: 2048,
+        const text = await retryAsync(
+          () =>
+            generateOnce({
+              model: modelPrimary,
+              apiKey,
+              contents,
+              systemInstruction,
+              generationConfig: {
+                temperature: 0.3,
+                topP: 0.9,
+                maxOutputTokens: 2048,
+              },
+            }),
+          {
+            attempts: 3,
+            onAttempt: ({ attempt, delayMs }) => {
+              Sentry.addBreadcrumb({
+                category: "ai.retry",
+                level: "info",
+                message: "generateOnce primary retry",
+                data: { attempt, delayMs, model: modelPrimary },
+              });
+            },
           },
-        });
+        );
         appendPartial(sessionId, text);
         await validateAndMaybeRepair(
           sessionId,
@@ -407,17 +468,31 @@ async function runGeminiGeneration(
       }
 
       try {
-        const text = await generateOnce({
-          model: modelFallback,
-          apiKey,
-          contents,
-          systemInstruction,
-          generationConfig: {
-            temperature: 0.3,
-            topP: 0.9,
-            maxOutputTokens: 2048,
+        const text = await retryAsync(
+          () =>
+            generateOnce({
+              model: modelFallback,
+              apiKey,
+              contents,
+              systemInstruction,
+              generationConfig: {
+                temperature: 0.3,
+                topP: 0.9,
+                maxOutputTokens: 2048,
+              },
+            }),
+          {
+            attempts: 3,
+            onAttempt: ({ attempt, delayMs }) => {
+              Sentry.addBreadcrumb({
+                category: "ai.retry",
+                level: "info",
+                message: "generateOnce fallback retry",
+                data: { attempt, delayMs, model: modelFallback },
+              });
+            },
           },
-        });
+        );
         appendPartial(sessionId, text);
         setDone(sessionId);
         try {
