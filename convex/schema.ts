@@ -442,6 +442,54 @@ const schema = defineSchema({
   })
     .index("by_user", ["userId"]) // fetch/update the user's config
     .index("by_user_skill", ["userId", "aiSkillId"]), // fast lookup by user and skill
+
+  // Persistent AI Conversations (MVP)
+  // Stores high-level chat sessions to allow resuming and history.
+  aiConversations: defineTable({
+    userId: v.id("appUsers"),
+    aiSkillId: v.id("aiSkills"),
+    // Conversation lifecycle status; MVP uses active/closed. Archived reserved for future.
+    status: v.union(
+      v.literal("active"),
+      v.literal("closed"),
+      v.literal("archived"),
+    ),
+    // Conversation language for UI rendering and prompting
+    language: v.union(v.literal("ar"), v.literal("en")),
+    // Snapshot of the system prompt used for this conversation (optional)
+    systemPrompt: v.optional(v.string()),
+    // For listing by recent activity
+    lastMessageAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"]) // list conversations for a user
+    .index("by_user_skill", ["userId", "aiSkillId"]) // filter by skill
+    .index("by_user_skill_status", ["userId", "aiSkillId", "status"]) // active per skill
+    .index("by_user_skill_created", ["userId", "aiSkillId", "createdAt"]) // newest first
+    .index("by_status", ["status"]) // operational views
+    .index("by_last_message", ["lastMessageAt"]) // recent conversations
+    .index("by_user_last_message", ["userId", "lastMessageAt"]) // recent by user
+    .index("by_user_status_last", ["userId", "status", "lastMessageAt"]), // recent active by user
+
+  // Persistent AI Messages (MVP)
+  // Stores the discrete turns of a conversation. We persist final user and assistant turns.
+  aiMessages: defineTable({
+    conversationId: v.id("aiConversations"),
+    role: v.union(
+      v.literal("user"),
+      v.literal("assistant"),
+      v.literal("system"),
+    ),
+    content: v.string(),
+    // Optional JSON string to carry extra info (e.g., detected assessment, tool results)
+    metadataJson: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_conversation", ["conversationId"]) // fetch all messages for a conversation
+    .index("by_conversation_created", ["conversationId", "createdAt"]) // ordered history
+    .index("by_role", ["role"]) // analytics/debugging
+    .index("by_created", ["createdAt"]), // global timeline (ops)
 });
 
 export default schema;

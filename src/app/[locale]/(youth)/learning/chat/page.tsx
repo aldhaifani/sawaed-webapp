@@ -12,7 +12,7 @@ import * as Sentry from "@sentry/nextjs";
 import { DotStream } from "ldrs/react";
 import "ldrs/react/DotStream.css";
 import { usePersistedTranscript } from "@/hooks/usePersistedTranscript";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
 import { detectAssessmentFromText } from "@/shared/ai/detect-assessment";
 import { useChatStatusPoll } from "@/hooks/use-chat-status-poll";
@@ -55,6 +55,8 @@ export default function ChatInitPage(): ReactElement {
   const [booted, setBooted] = useState<boolean>(false);
   const [input, setInput] = useState<string>("");
   const [messages, setMessages] = useState<readonly Message[]>([]);
+  const [conversationId, setConversationId] =
+    useState<Id<"aiConversations"> | null>(null);
   // Typing state removed; we render a loader inside the AI message bubble instead
   const [connectionState, setConnectionState] = useState<
     "connecting" | "connected" | "reconnecting" | "disconnected" | null
@@ -70,6 +72,10 @@ export default function ChatInitPage(): ReactElement {
   const storeAssessment = useMutation(api.aiAssessments.storeAssessment);
   const sessionStorageKey = useMemo(
     () => `chatSession:${skillParam}`,
+    [skillParam],
+  );
+  const conversationStorageKey = useMemo(
+    () => `chatConversation:${skillParam}`,
     [skillParam],
   );
   const hasPersistedRef = useRef<boolean>(false);
@@ -199,6 +205,11 @@ export default function ChatInitPage(): ReactElement {
   // Load persisted transcript once booted and when skill changes
   useEffect(() => {
     if (!booted || !skillParam) return;
+    // Load known conversationId if any
+    try {
+      const cid = window.localStorage.getItem(conversationStorageKey);
+      if (cid) setConversationId(cid as unknown as Id<"aiConversations">);
+    } catch {}
     const existing = loadTranscript();
     if (existing.length > 0) {
       setMessages(existing);
@@ -216,8 +227,20 @@ export default function ChatInitPage(): ReactElement {
       const parsed = JSON.parse(raw) as {
         sessionId: string;
         aiMessageId: string;
+        conversationId?: string | null;
       } | null;
       if (!parsed?.sessionId || !parsed.aiMessageId) return;
+      if (parsed.conversationId) {
+        setConversationId(
+          parsed.conversationId as unknown as Id<"aiConversations">,
+        );
+        try {
+          window.localStorage.setItem(
+            conversationStorageKey,
+            parsed.conversationId,
+          );
+        } catch {}
+      }
       const exists = messages.some((m) => m.id === parsed.aiMessageId);
       if (!exists) {
         const aiMsg: Message = {
@@ -251,6 +274,29 @@ export default function ChatInitPage(): ReactElement {
   useEffect(() => {
     saveTranscript(messages);
   }, [messages, saveTranscript]);
+
+  // Load message history from Convex when we have a conversationId and no in-memory messages
+  const history = useQuery(
+    api.aiMessages.listByConversation,
+    conversationId ? { conversationId } : "skip",
+  );
+  useEffect(() => {
+    if (!conversationId) return;
+    if (!history) return; // loading or skipped
+    if (history.length === 0) return;
+    // Only hydrate if we don't have any messages yet
+    setMessages((prev) => {
+      if (prev.length > 0) return prev;
+      const mapped: Message[] = history.map((m) => ({
+        id: m._id,
+        role: m.role === "assistant" ? "ai" : "user",
+        content: m.content,
+        streaming: false,
+        createdAt: m.createdAt,
+      }));
+      return mapped;
+    });
+  }, [conversationId, history]);
 
   const title = useMemo(() => t("title"), [t]);
   const senderLabels = useMemo(
@@ -556,12 +602,12 @@ export default function ChatInitPage(): ReactElement {
                 };
                 setMessages((prev) => [...prev, aiMsg]);
 
-                const sessionId = await sendMessage({
+                const result = await sendMessage({
                   skillId: skillParam,
                   message: trimmed,
                   locale,
                 });
-                if (!sessionId) {
+                if (!result) {
                   // mark AI message as error
                   setMessages((prev) =>
                     prev.map((m) =>
@@ -578,10 +624,27 @@ export default function ChatInitPage(): ReactElement {
                   toast(t("errorLoading"));
                   return;
                 }
+                const { sessionId, conversationId: nextConversationId } =
+                  result;
+                if (nextConversationId) {
+                  setConversationId(
+                    nextConversationId as unknown as Id<"aiConversations">,
+                  );
+                  try {
+                    window.localStorage.setItem(
+                      conversationStorageKey,
+                      nextConversationId,
+                    );
+                  } catch {}
+                }
                 try {
                   window.localStorage.setItem(
                     sessionStorageKey,
-                    JSON.stringify({ sessionId, aiMessageId: aiMsg.id }),
+                    JSON.stringify({
+                      sessionId,
+                      aiMessageId: aiMsg.id,
+                      conversationId: nextConversationId ?? null,
+                    }),
                   );
                 } catch {}
                 hasPersistedRef.current = false;
@@ -639,12 +702,12 @@ export default function ChatInitPage(): ReactElement {
                         };
                         setMessages((prev) => [...prev, aiMsg]);
 
-                        const sessionId = await sendMessage({
+                        const result = await sendMessage({
                           skillId: skillParam,
                           message: trimmed,
                           locale,
                         });
-                        if (!sessionId) {
+                        if (!result) {
                           setMessages((prev) =>
                             prev.map((m) =>
                               m.id === aiMsg.id
@@ -660,12 +723,28 @@ export default function ChatInitPage(): ReactElement {
                           toast(t("errorLoading"));
                           return;
                         }
+                        const {
+                          sessionId,
+                          conversationId: nextConversationId,
+                        } = result;
+                        if (nextConversationId) {
+                          setConversationId(
+                            nextConversationId as unknown as Id<"aiConversations">,
+                          );
+                          try {
+                            window.localStorage.setItem(
+                              conversationStorageKey,
+                              nextConversationId,
+                            );
+                          } catch {}
+                        }
                         try {
                           window.localStorage.setItem(
                             sessionStorageKey,
                             JSON.stringify({
                               sessionId,
                               aiMessageId: aiMsg.id,
+                              conversationId: nextConversationId ?? null,
                             }),
                           );
                         } catch {}

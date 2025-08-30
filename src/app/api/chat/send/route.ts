@@ -18,6 +18,10 @@ import { checkRateLimit, getClientIp } from "../_rateLimit";
 import { generateOnce, generateWithStreaming } from "@/lib/gemini";
 import { detectAssessmentFromText } from "@/shared/ai/detect-assessment";
 import { z } from "zod";
+import { fetchMutation } from "convex/nextjs";
+import { api } from "@/../convex/_generated/api";
+import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
+import type { Id } from "@/../convex/_generated/dataModel";
 
 export type SendRequest = {
   readonly skillId: string;
@@ -26,6 +30,7 @@ export type SendRequest = {
 
 export type SendResponse = {
   readonly sessionId: string;
+  readonly conversationId?: string | null;
 };
 
 function simulateStreaming(sessionId: string, locale: "ar" | "en"): void {
@@ -68,6 +73,8 @@ async function runGeminiGeneration(
     readonly message: string;
     readonly skillId: string;
     readonly locale: "ar" | "en";
+    readonly conversationId?: string | null;
+    readonly convexToken?: string | null;
   },
 ): Promise<void> {
   setRunning(sessionId);
@@ -250,6 +257,22 @@ async function runGeminiGeneration(
                   setError(sessionId, "empty_response");
                 } else {
                   setDone(sessionId);
+                  // Persist assistant final message if conversation context available
+                  try {
+                    if (params.conversationId && params.convexToken) {
+                      await fetchMutation(
+                        api.aiMessages.addAssistantMessage,
+                        {
+                          conversationId:
+                            params.conversationId as unknown as Id<"aiConversations">,
+                          content: s1.text,
+                        },
+                        { token: params.convexToken },
+                      );
+                    }
+                  } catch (err) {
+                    Sentry.captureException(err);
+                  }
                 }
               })();
             },
@@ -309,6 +332,21 @@ async function runGeminiGeneration(
                   setError(sessionId, "empty_response");
                 } else {
                   setDone(sessionId);
+                  try {
+                    if (params.conversationId && params.convexToken) {
+                      await fetchMutation(
+                        api.aiMessages.addAssistantMessage,
+                        {
+                          conversationId:
+                            params.conversationId as unknown as Id<"aiConversations">,
+                          content: s2.text,
+                        },
+                        { token: params.convexToken },
+                      );
+                    }
+                  } catch (err) {
+                    Sentry.captureException(err);
+                  }
                 }
               })();
             },
@@ -343,6 +381,22 @@ async function runGeminiGeneration(
           systemInstruction,
         );
         setDone(sessionId);
+        try {
+          const s = getSession(sessionId);
+          if (s?.text && params.conversationId && params.convexToken) {
+            await fetchMutation(
+              api.aiMessages.addAssistantMessage,
+              {
+                conversationId:
+                  params.conversationId as unknown as Id<"aiConversations">,
+                content: s.text,
+              },
+              { token: params.convexToken },
+            );
+          }
+        } catch (err) {
+          Sentry.captureException(err);
+        }
         return;
       } catch (err) {
         Sentry.captureException(err);
@@ -362,6 +416,22 @@ async function runGeminiGeneration(
         });
         appendPartial(sessionId, text);
         setDone(sessionId);
+        try {
+          const s = getSession(sessionId);
+          if (s?.text && params.conversationId && params.convexToken) {
+            await fetchMutation(
+              api.aiMessages.addAssistantMessage,
+              {
+                conversationId:
+                  params.conversationId as unknown as Id<"aiConversations">,
+                content: s.text,
+              },
+              { token: params.convexToken },
+            );
+          }
+        } catch (err) {
+          Sentry.captureException(err);
+        }
         return;
       } catch (err) {
         Sentry.captureException(err);
@@ -506,6 +576,39 @@ export async function POST(req: Request): Promise<NextResponse<SendResponse>> {
       }
 
       const session = createSession();
+
+      // Prepare Convex auth token and create/reuse conversation, persist user message
+      let conversationId: string | null = null;
+      let token: string | null = null;
+      try {
+        token = (await convexAuthNextjsToken()) ?? null;
+        if (token) {
+          const convoRes = await fetchMutation(
+            api.aiConversations.createOrGetActive,
+            {
+              aiSkillId: parsed.data.skillId as unknown as Id<"aiSkills">,
+              language: locale,
+            },
+            { token },
+          );
+          if (convoRes?.conversationId) {
+            conversationId = convoRes.conversationId as unknown as string;
+            // Save user message
+            await fetchMutation(
+              api.aiMessages.addUserMessage,
+              {
+                conversationId:
+                  conversationId as unknown as Id<"aiConversations">,
+                content: parsed.data.message,
+              },
+              { token },
+            );
+          }
+        }
+      } catch (err) {
+        // Non-blocking: continue streaming even if persistence fails
+        Sentry.captureException(err);
+      }
       // Bridge Gemini streaming responses into in-memory store used by polling endpoint
       // Fire-and-forget to keep the route fast
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -513,8 +616,13 @@ export async function POST(req: Request): Promise<NextResponse<SendResponse>> {
         message: parsed.data.message,
         skillId: parsed.data.skillId,
         locale,
+        conversationId,
+        convexToken: token,
       });
-      return NextResponse.json({ sessionId: session.sessionId });
+      return NextResponse.json({
+        sessionId: session.sessionId,
+        conversationId,
+      });
     },
   );
 }

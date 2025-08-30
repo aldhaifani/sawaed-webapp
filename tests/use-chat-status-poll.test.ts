@@ -132,7 +132,7 @@ describe("useChatStatusPoll", () => {
     expect(onError).toHaveBeenCalled();
   });
 
-  it("sendMessage returns session id on success and null on failure", async () => {
+  it("sendMessage returns {sessionId, conversationId} on success and null on failure", async () => {
     // First POST ok, second POST fails
     const sessionId = "s3";
 
@@ -146,7 +146,7 @@ describe("useChatStatusPoll", () => {
           (global.fetch as any).__count = 1;
           return {
             ok: true,
-            json: async () => ({ sessionId }),
+            json: async () => ({ sessionId, conversationId: null }),
           } as unknown as Response;
         }
         // status polling not used here
@@ -161,7 +161,7 @@ describe("useChatStatusPoll", () => {
       message: "m",
       locale: "en",
     });
-    expect(ok).toBe(sessionId);
+    expect(ok).toEqual({ sessionId, conversationId: null });
 
     const fail = await result.current.sendMessage({
       skillId: "k",

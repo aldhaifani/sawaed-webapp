@@ -40,7 +40,7 @@ export type UseChatStatusPollReturn = {
     skillId: string;
     message: string;
     locale: "ar" | "en";
-  }) => Promise<string | null>;
+  }) => Promise<{ sessionId: string; conversationId: string | null } | null>;
 };
 
 export function useChatStatusPoll(
@@ -78,7 +78,10 @@ export function useChatStatusPoll(
       skillId: string;
       message: string;
       locale: "ar" | "en";
-    }): Promise<string | null> => {
+    }): Promise<{
+      sessionId: string;
+      conversationId: string | null;
+    } | null> => {
       try {
         const res = await fetch("/api/chat/send", {
           method: "POST",
@@ -90,8 +93,15 @@ export function useChatStatusPoll(
           body: JSON.stringify({ skillId, message }),
         });
         if (!res.ok) return null;
-        const data = (await res.json()) as { sessionId?: string };
-        return data.sessionId ?? null;
+        const data = (await res.json()) as {
+          sessionId?: string;
+          conversationId?: string | null;
+        };
+        if (!data.sessionId) return null;
+        return {
+          sessionId: data.sessionId,
+          conversationId: data.conversationId ?? null,
+        };
       } catch {
         return null;
       }

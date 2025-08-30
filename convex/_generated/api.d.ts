@@ -15,6 +15,8 @@ import type * as adminProfiles from "../adminProfiles.js";
 import type * as aggregates from "../aggregates.js";
 import type * as aiAssessments from "../aiAssessments.js";
 import type * as aiChatConfigs from "../aiChatConfigs.js";
+import type * as aiConversations from "../aiConversations.js";
+import type * as aiMessages from "../aiMessages.js";
 import type * as aiSkills from "../aiSkills.js";
 import type * as analytics from "../analytics.js";
 import type * as auth from "../auth.js";
@@ -64,6 +66,8 @@ declare const fullApi: ApiFromModules<{
   aggregates: typeof aggregates;
   aiAssessments: typeof aiAssessments;
   aiChatConfigs: typeof aiChatConfigs;
+  aiConversations: typeof aiConversations;
+  aiMessages: typeof aiMessages;
   aiSkills: typeof aiSkills;
   analytics: typeof analytics;
   auth: typeof auth;
