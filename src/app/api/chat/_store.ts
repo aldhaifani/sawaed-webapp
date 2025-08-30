@@ -15,7 +15,14 @@ export type ChatSession = {
   error?: string;
 };
 
-const sessions = new Map<string, ChatSession>();
+// Persist across Next.js dev HMR by hoisting to globalThis (typed)
+type GlobalWithChat = typeof globalThis & {
+  __chatSessions?: Map<string, ChatSession>;
+};
+const g = globalThis as GlobalWithChat;
+const sessions: Map<string, ChatSession> =
+  g.__chatSessions ?? new Map<string, ChatSession>();
+g.__chatSessions = sessions;
 
 function randomId(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).slice(2)}_${Date.now()}`;
