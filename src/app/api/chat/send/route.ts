@@ -18,6 +18,10 @@ import { checkRateLimit, getClientIp } from "../_rateLimit";
 import { generateOnce, generateWithStreaming } from "@/lib/gemini";
 import { retryAsync } from "@/lib/retry";
 import { detectAssessmentFromText } from "@/shared/ai/detect-assessment";
+import {
+  AssessmentResultSchema,
+  type AssessmentResultParsed,
+} from "@/shared/ai/assessment-result.schema";
 import { z } from "zod";
 import { fetchMutation } from "convex/nextjs";
 import { api } from "@/../convex/_generated/api";
@@ -34,6 +38,57 @@ export type SendResponse = {
   readonly sessionId: string;
   readonly conversationId?: string | null;
 };
+
+export async function persistIfValidAssessment(params: {
+  readonly text: string;
+  readonly skillId: string;
+  readonly convexToken: string | null | undefined;
+}): Promise<void> {
+  const { text, skillId, convexToken } = params;
+  if (!text || !convexToken) return;
+  await Sentry.startSpan(
+    { op: "ai.persist", name: "storeAssessment" },
+    async (span) => {
+      try {
+        const detected = detectAssessmentFromText(text);
+        span?.setAttribute?.("detected.valid", detected.valid);
+        if (!detected.valid || !detected.data) return;
+        const parsed = AssessmentResultSchema.safeParse(detected.data);
+        if (!parsed.success) {
+          span?.setAttribute?.("detected.parsed", false);
+          Sentry.addBreadcrumb({
+            category: "ai.assessment",
+            level: "warning",
+            message: "assessment_parse_failed",
+            data: { issues: parsed.error.issues },
+          });
+          return;
+        }
+        span?.setAttribute?.("detected.parsed", true);
+        Sentry.addBreadcrumb({
+          category: "ai.assessment",
+          level: "info",
+          message: "valid_assessment_detected",
+          data: {
+            level: parsed.data.level,
+            modules: parsed.data.learningModules.length,
+          },
+        });
+        await fetchMutation(
+          api.aiAssessments.storeAssessment,
+          {
+            aiSkillId: skillId as unknown as Id<"aiSkills">,
+            result: parsed.data as unknown as AssessmentResultParsed,
+          },
+          { token: convexToken },
+        );
+        Sentry.captureMessage("assessment_persisted", { level: "info" });
+      } catch (err) {
+        Sentry.captureException(err);
+      }
+    },
+  );
+}
 
 function simulateStreaming(sessionId: string, locale: "ar" | "en"): void {
   try {
@@ -308,6 +363,12 @@ async function runGeminiGeneration(
                             },
                             { token: params.convexToken },
                           );
+                          // Also persist assessment if valid
+                          await persistIfValidAssessment({
+                            text: s1.text,
+                            skillId: params.skillId,
+                            convexToken: params.convexToken,
+                          });
                         }
                       } catch (err) {
                         Sentry.captureException(err);
@@ -394,6 +455,11 @@ async function runGeminiGeneration(
                         },
                         { token: params.convexToken },
                       );
+                      await persistIfValidAssessment({
+                        text: s2.text,
+                        skillId: params.skillId,
+                        convexToken: params.convexToken,
+                      });
                     }
                   } catch (err) {
                     Sentry.captureException(err);
@@ -458,6 +524,11 @@ async function runGeminiGeneration(
               },
               { token: params.convexToken },
             );
+            await persistIfValidAssessment({
+              text: s.text,
+              skillId: params.skillId,
+              convexToken: params.convexToken,
+            });
           }
         } catch (err) {
           Sentry.captureException(err);
@@ -507,6 +578,11 @@ async function runGeminiGeneration(
               },
               { token: params.convexToken },
             );
+            await persistIfValidAssessment({
+              text: s.text,
+              skillId: params.skillId,
+              convexToken: params.convexToken,
+            });
           }
         } catch (err) {
           Sentry.captureException(err);
@@ -540,91 +616,116 @@ async function validateAndMaybeRepair(
 ): Promise<void> {
   const s = getSession(sessionId);
   if (!s?.text) return;
-  const first = detectAssessmentFromText(s.text);
-  if (first.valid) return;
 
-  // Stricter instruction to convert the prior answer into valid JSON only
-  const strictInstruction = {
-    role: "system" as const,
-    parts: [
-      {
-        text:
-          locale === "ar"
-            ? "أخرج فقط JSON صالح وفق المخطط المذكور سابقاً داخل كتلة ```json دون أي نص إضافي."
-            : "Output only valid JSON per the above schema inside a ```json block with no extra text.",
-      },
-    ],
-  };
+  await Sentry.startSpan(
+    { op: "ai.validate", name: "validateAndMaybeRepair" },
+    async (span) => {
+      span?.setAttribute?.("sessionId", sessionId);
+      span?.setAttribute?.("locale", locale);
+      const first = detectAssessmentFromText(s.text);
+      span?.setAttribute?.("first.valid", first.valid);
+      if (first.valid) return;
 
-  // Ask the model to transform its prior answer into valid JSON
-  const repairContents = [
-    ...contents,
-    { role: "model" as const, parts: [{ text: s.text.slice(-2000) }] },
-    {
-      role: "user" as const,
-      parts: [
+      // Stricter instruction to convert the prior answer into valid JSON only
+      const strictInstruction = {
+        role: "system" as const,
+        parts: [
+          {
+            text:
+              locale === "ar"
+                ? "أخرج فقط JSON صالح وفق المخطط المذكور سابقاً داخل كتلة ```json دون أي نص إضافي."
+                : "Output only valid JSON per the above schema inside a ```json block with no extra text.",
+          },
+        ],
+      };
+
+      // Ask the model to transform its prior answer into valid JSON
+      const repairContents = [
+        ...contents,
+        { role: "model" as const, parts: [{ text: s.text.slice(-2000) }] },
         {
-          text:
-            locale === "ar"
-              ? "حوّل الإجابة السابقة إلى JSON صالح حسب المخطط فقط."
-              : "Transform the previous answer into valid JSON only per the schema.",
+          role: "user" as const,
+          parts: [
+            {
+              text:
+                locale === "ar"
+                  ? "حوّل الإجابة السابقة إلى JSON صالح حسب المخطط فقط."
+                  : "Transform the previous answer into valid JSON only per the schema.",
+            },
+          ],
         },
-      ],
+      ] as const;
+
+      // Helper to run a repair attempt with retries and span
+      const tryRepairWithModel = async (
+        model: string,
+        label: "primary" | "fallback",
+      ): Promise<boolean> => {
+        return Sentry.startSpan(
+          { op: "ai.repair.attempt", name: `repair_${label}` },
+          async (repairSpan) => {
+            repairSpan?.setAttribute?.("model", model);
+            try {
+              const text = await retryAsync(
+                () =>
+                  generateOnce({
+                    model,
+                    apiKey,
+                    contents: repairContents,
+                    systemInstruction: strictInstruction,
+                    generationConfig: {
+                      temperature: 0.1,
+                      topP: 0.9,
+                      maxOutputTokens: 1024,
+                    },
+                  }),
+                {
+                  attempts: 2,
+                  onAttempt: ({ attempt, delayMs }) => {
+                    Sentry.addBreadcrumb({
+                      category: "ai.repair",
+                      level: "info",
+                      message: `repair retry (${label})`,
+                      data: { attempt, delayMs, model },
+                    });
+                  },
+                },
+              );
+              const res = detectAssessmentFromText(text);
+              repairSpan?.setAttribute?.("valid", res.valid);
+              if (res.valid) {
+                appendPartial(
+                  sessionId,
+                  `\n\n\u200e\n\n\`\`\`json\n${JSON.stringify(res.data)}\n\`\`\``,
+                );
+                Sentry.captureMessage(
+                  label === "primary"
+                    ? "gemini_assessment_repaired"
+                    : "gemini_assessment_repaired_fallback",
+                  { level: "info", extra: { sessionId, locale } },
+                );
+                return true;
+              }
+            } catch (err) {
+              Sentry.captureException(err);
+            }
+            return false;
+          },
+        );
+      };
+
+      // Try primary then fallback
+      const okPrimary = await tryRepairWithModel(modelPrimary, "primary");
+      if (okPrimary) return;
+      const okFallback = await tryRepairWithModel(modelFallback, "fallback");
+      if (okFallback) return;
+
+      Sentry.captureMessage("gemini_assessment_repair_failed", {
+        level: "warning",
+        extra: { sessionId, locale },
+      });
     },
-  ] as const;
-
-  try {
-    const text = await generateOnce({
-      model: modelPrimary,
-      apiKey,
-      contents: repairContents,
-      systemInstruction: strictInstruction,
-      generationConfig: { temperature: 0.1, topP: 0.9, maxOutputTokens: 1024 },
-    });
-    const second = detectAssessmentFromText(text);
-    if (second.valid) {
-      appendPartial(
-        sessionId,
-        `\n\n\u200e\n\n\`\`\`json\n${JSON.stringify(second.data)}\n\`\`\``,
-      );
-      Sentry.captureMessage("gemini_assessment_repaired", {
-        level: "info",
-        extra: { sessionId, locale },
-      });
-      return;
-    }
-  } catch (err) {
-    Sentry.captureException(err);
-  }
-
-  try {
-    const text = await generateOnce({
-      model: modelFallback,
-      apiKey,
-      contents: repairContents,
-      systemInstruction: strictInstruction,
-      generationConfig: { temperature: 0.1, topP: 0.9, maxOutputTokens: 1024 },
-    });
-    const second = detectAssessmentFromText(text);
-    if (second.valid) {
-      appendPartial(
-        sessionId,
-        `\n\n\u200e\n\n\`\`\`json\n${JSON.stringify(second.data)}\n\`\`\``,
-      );
-      Sentry.captureMessage("gemini_assessment_repaired_fallback", {
-        level: "info",
-        extra: { sessionId, locale },
-      });
-      return;
-    }
-  } catch (err) {
-    Sentry.captureException(err);
-  }
-
-  Sentry.captureMessage("gemini_assessment_repair_failed", {
-    level: "warning",
-    extra: { sessionId, locale },
-  });
+  );
 }
 
 export async function POST(req: Request): Promise<NextResponse<SendResponse>> {

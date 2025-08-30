@@ -223,8 +223,8 @@ function schemaInstruction(locale: Locale): string {
     ),
     pick(
       locale === "ar",
-      "في النهاية أخرج مقطع JSON صالح فقط داخل كتلة ```json يطابق هذا المخطط:",
-      "At the end, output only a valid JSON block inside ```json matching this schema:",
+      "في النهاية أخرج كتلة واحدة فقط من JSON الصالح داخل سياج ```json بدون أي نص قبلها أو بعدها، وتطابق هذا المخطط:",
+      "At the end, output exactly one valid JSON block inside a ```json fenced code block with no prose before or after, matching this schema:",
     ),
     "{",
     "  skill?: string,",
@@ -241,8 +241,75 @@ function schemaInstruction(locale: Locale): string {
     "}",
     pick(
       locale === "ar",
-      "لا تضف مفاتيح إضافية. إذا كنت قد استخدمت 'modules' فحوِّلها إلى 'learningModules'.",
-      "Do not include extra keys. If you used 'modules', rename to 'learningModules'.",
+      "لا تضف مفاتيح إضافية ولا تعليقات. إذا استخدمت 'modules' فحوِّلها إلى 'learningModules'.",
+      "Do not include extra keys or comments. If you used 'modules', rename it to 'learningModules'.",
+    ),
+    pick(
+      locale === "ar",
+      "تأكَّد من إغلاق الكتلة بـ ``` وعدم إضافة أي نص بعد JSON.",
+      "Ensure the block ends with ``` and no trailing text after the JSON.",
+    ),
+  ]);
+}
+
+function bilingualToneRules(locale: Locale): string {
+  return safeJoin([
+    pick(
+      locale === "ar",
+      "\n\nقواعد اللغة والنبرة:",
+      "\n\nLanguage and tone rules:",
+    ),
+    pick(
+      locale === "ar",
+      "- استخدم لغة المستخدم الحالية (عربي/إنجليزي). إذا غيّر المستخدم اللغة فغيّر معها.",
+      "- Use the user's current language (Arabic/English). If the user switches, switch too.",
+    ),
+    pick(
+      locale === "ar",
+      "- أسلوب ودود ومهني ومشجِّع. اجعل الجمل قصيرة وواضحة.",
+      "- Friendly, professional, and encouraging tone. Keep sentences short and clear.",
+    ),
+  ]);
+}
+
+function turnTakingRules(locale: Locale): string {
+  return safeJoin([
+    pick(locale === "ar", "\n\nقواعد تبادل الأدوار:", "\n\nTurn-taking rules:"),
+    pick(
+      locale === "ar",
+      "- اطرح سؤالاً واحدًا في كل مرة وانتظر رد المستخدم قبل المتابعة.",
+      "- Ask one question at a time and wait for the user's reply before proceeding.",
+    ),
+    pick(
+      locale === "ar",
+      "- إذا كان الرد غير واضح، اطلُب توضيحاً بسؤال قصير محدد.",
+      "- If the reply is unclear, ask a brief clarifying follow-up.",
+    ),
+  ]);
+}
+
+function dynamicDifficultyRules(locale: Locale, latestLevel?: number): string {
+  const base = latestLevel ?? 3;
+  return safeJoin([
+    pick(
+      locale === "ar",
+      "\n\nالتكيُّف مع الصعوبة:",
+      "\n\nDynamic difficulty:",
+    ),
+    pick(
+      locale === "ar",
+      `- ابدأ من مستوى L${base} تقريبيًا وتحرك تدريجيًا لأعلى/أسفل بحسب إجابات المستخدم وثقته الظاهرة.`,
+      `- Start roughly at level L${base} and move gradually up/down based on the user's demonstrated answers and confidence.`,
+    ),
+    pick(
+      locale === "ar",
+      "- استخدم أسئلة استكشافية قبل رفع الصعوبة. لا تقفز بين المستويات بسرعة.",
+      "- Use probing questions before increasing difficulty. Avoid large jumps across levels.",
+    ),
+    pick(
+      locale === "ar",
+      "- إذا تعثّر المستخدم، بسِّط السؤال وقدِّم تلميحًا قصيرًا.",
+      "- If the user struggles, simplify the question and offer a brief hint.",
     ),
   ]);
 }
@@ -334,17 +401,30 @@ export async function buildSystemPrompt(
   const constraints = moduleConstraints(locale);
   const schema = schemaInstruction(locale);
   const templates = levelTemplatesSection(locale, localLevels, latestLevel);
+  const tone = bilingualToneRules(locale);
+  const turns = turnTakingRules(locale);
+  const adapt = dynamicDifficultyRules(locale, latestLevel);
 
-  const systemPrompt = safeJoin([
-    header,
-    nameLine,
-    defLine,
-    lvlSummary,
-    userContext,
-    templates,
-    constraints,
-    schema,
-  ]);
-
-  return { systemPrompt } as const;
+  return Sentry.startSpan(
+    { op: "ai.prompt", name: "buildSystemPrompt" },
+    async (span) => {
+      span?.setAttribute?.("locale", locale);
+      if (latestLevel !== undefined)
+        span?.setAttribute?.("latestLevel", latestLevel);
+      const systemPrompt = safeJoin([
+        header,
+        nameLine,
+        defLine,
+        lvlSummary,
+        userContext,
+        tone,
+        turns,
+        adapt,
+        templates,
+        constraints,
+        schema,
+      ]);
+      return { systemPrompt } as const;
+    },
+  );
 }
