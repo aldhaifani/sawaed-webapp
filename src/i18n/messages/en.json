@@ -750,7 +750,15 @@
     "errorLoading": "An error occurred while loading",
     "skill": "Skill:",
     "lastLevel": "Last level:",
-    "backToSettings": "Back to settings"
+    "backToSettings": "Back to settings",
+    "emptyHint": "Start the conversation by asking a question. Arabic and English are supported.",
+    "footerDisclaimer": "AI responses may contain mistakes. Always verify important information.",
+    "connectionState": {
+      "connecting": "Connecting to chat server...",
+      "connected": "Connected to chat server",
+      "disconnected": "Disconnected from chat server",
+      "reconnecting": "Reconnecting to chat server..."
+    }
   },
 
   "notFound": {

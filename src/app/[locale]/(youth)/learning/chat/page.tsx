@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactElement } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,8 @@ import { useAiChatInit } from "@/hooks/use-ai-chat-init";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { toast } from "sonner";
 import * as Sentry from "@sentry/nextjs";
-import { TypingLoader } from "@/components/ui/loader";
+import { DotStream } from "ldrs/react";
+import "ldrs/react/DotStream.css";
 import { usePersistedTranscript } from "@/hooks/usePersistedTranscript";
 import {
   ChatContainerContent,
@@ -22,7 +23,6 @@ import {
   PromptInputActions,
   PromptInputAction,
 } from "@/components/ui/prompt-input";
-import { ResponseStream } from "@/components/ui/response-stream";
 import { Send } from "lucide-react";
 import { Markdown } from "@/components/ui/markdown";
 
@@ -51,12 +51,21 @@ export default function ChatInitPage(): ReactElement {
   const [booted, setBooted] = useState<boolean>(false);
   const [input, setInput] = useState<string>("");
   const [messages, setMessages] = useState<readonly Message[]>([]);
-  const [isAiTyping, setIsAiTyping] = useState<boolean>(false);
+  // Typing state removed; we render a loader inside the AI message bubble instead
+  const [pollAbort, setPollAbort] = useState<AbortController | null>(null);
+  const pollIntervalRef = useRef<number | null>(null);
+  const [connectionState, setConnectionState] = useState<
+    "connecting" | "connected" | "reconnecting" | "disconnected" | null
+  >(null);
 
   const skillParam = params.get("skill") ?? "";
   const skillId = skillParam as unknown as Id<"aiSkills">;
   const { load: loadTranscript, save: saveTranscript } = usePersistedTranscript(
     skillParam || undefined,
+  );
+  const sessionStorageKey = useMemo(
+    () => `chatSession:${skillParam}`,
+    [skillParam],
   );
 
   useEffect(() => {
@@ -81,6 +90,49 @@ export default function ChatInitPage(): ReactElement {
     // don't include loadTranscript as dependency to avoid re-load loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [booted, skillParam]);
+
+  // Resume in-flight polling session on reload (if any)
+  useEffect(() => {
+    if (!booted || !skillParam) return;
+    try {
+      const raw = window.localStorage.getItem(sessionStorageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        sessionId: string;
+        aiMessageId: string;
+      } | null;
+      if (!parsed?.sessionId || !parsed.aiMessageId) return;
+      const exists = messages.some((m) => m.id === parsed.aiMessageId);
+      if (!exists) {
+        const aiMsg: Message = {
+          id: parsed.aiMessageId,
+          role: "ai",
+          content: "",
+          streaming: true,
+          createdAt: Date.now(),
+        };
+        setMessages((prev) => [...prev, aiMsg]);
+      }
+      pollStatus(parsed.sessionId, parsed.aiMessageId);
+    } catch {}
+    // We intentionally omit dependencies like pollStatus to avoid re-running unexpectedly
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [booted, skillParam, sessionStorageKey]);
+
+  // Cleanup timers and abort controller on unmount
+  useEffect(() => {
+    return () => {
+      try {
+        pollAbort?.abort();
+      } catch {}
+      if (pollIntervalRef.current != null) {
+        try {
+          window.clearTimeout(pollIntervalRef.current);
+        } catch {}
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Persist transcript on every change
   useEffect(() => {
@@ -130,6 +182,184 @@ export default function ChatInitPage(): ReactElement {
     }
   };
 
+  // Polling utilities
+  const POLL_INTERVAL_MS = 750;
+
+  type SendPayload = {
+    readonly skillId: string;
+    readonly message: string;
+  };
+
+  type SendResponse = {
+    readonly sessionId: string;
+  };
+
+  type StatusResponse = {
+    readonly sessionId: string;
+    readonly status: "queued" | "running" | "partial" | "done" | "error";
+    readonly text: string;
+    readonly updatedAt: number;
+    readonly error?: string;
+  };
+
+  const sendToServer = async ({
+    skillId,
+    message,
+  }: SendPayload): Promise<string | null> => {
+    try {
+      const res = await fetch("/api/chat/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-locale": locale,
+          "cache-control": "no-store",
+        },
+        body: JSON.stringify({ skillId, message }),
+      });
+      if (!res.ok) return null;
+      const data = (await res.json()) as SendResponse;
+      return data.sessionId || null;
+    } catch (err) {
+      Sentry.captureException(err);
+      return null;
+    }
+  };
+
+  const pollStatus = (sessionId: string, aiMessageId: string): void => {
+    // Stop prior poll, start a new controlled loop with adaptive delays
+    pollAbort?.abort();
+    const controller = new AbortController();
+    setPollAbort(controller);
+    setConnectionState("connecting");
+
+    let consecutiveErrors = 0;
+    let lastUpdatedAt = 0;
+    let baseDelay: number = POLL_INTERVAL_MS; // start with current default
+    let lastEtag: string | null = null;
+
+    const loop = async (): Promise<void> => {
+      if (controller.signal.aborted) return;
+      try {
+        const res = await fetch(
+          `/api/chat/status?sessionId=${encodeURIComponent(sessionId)}`,
+          {
+            headers: {
+              "cache-control": "no-store",
+              ...(lastEtag ? { "if-none-match": lastEtag } : {}),
+            },
+          },
+        );
+        if (res.status === 304) {
+          setConnectionState("connected");
+          // No changes since last poll; widen delay slightly and continue
+          baseDelay = Math.min(2000, baseDelay + 150);
+          // schedule next
+          if (!controller.signal.aborted) {
+            const jitter = Math.random() * 0.4 - 0.2;
+            const nextDelay = Math.max(
+              300,
+              Math.round(baseDelay * (1 + jitter)),
+            );
+            const id = window.setTimeout(() => {
+              void loop();
+            }, nextDelay);
+            pollIntervalRef.current = id;
+          }
+          return;
+        }
+        if (!res.ok) throw new Error("status_not_ok");
+        const data = (await res.json()) as StatusResponse;
+        consecutiveErrors = 0;
+        lastEtag = res.headers.get("etag");
+        setConnectionState("connected");
+
+        // Adjust polling adaptively based on status and progress
+        const progressed = data.updatedAt > lastUpdatedAt;
+        lastUpdatedAt = Math.max(lastUpdatedAt, data.updatedAt);
+        if (data.status === "running" || data.status === "partial") {
+          baseDelay = progressed ? 500 : Math.min(2000, baseDelay + 250);
+        } else if (data.status === "queued") {
+          baseDelay = 1000;
+        }
+
+        // Update message content progressively (only when changed)
+        if (progressed) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === aiMessageId
+                ? {
+                    ...m,
+                    content: data.text,
+                    streaming:
+                      data.status !== "done" && data.status !== "error",
+                  }
+                : m,
+            ),
+          );
+        } else {
+          // Ensure streaming flag is accurate even without text change
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === aiMessageId
+                ? {
+                    ...m,
+                    streaming:
+                      data.status !== "done" && data.status !== "error",
+                  }
+                : m,
+            ),
+          );
+        }
+
+        if (data.status === "done") {
+          controller.abort();
+          try {
+            window.localStorage.removeItem(sessionStorageKey);
+          } catch {}
+          setConnectionState(null);
+          return; // stop
+        }
+        if (data.status === "error") {
+          controller.abort();
+          toast(t("errorLoading"));
+          try {
+            window.localStorage.removeItem(sessionStorageKey);
+          } catch {}
+          setConnectionState("disconnected");
+          return; // stop
+        }
+      } catch (err) {
+        Sentry.captureException(err);
+        consecutiveErrors += 1;
+        // Increase delay with capped backoff on errors
+        baseDelay = Math.min(4000, baseDelay + 500);
+        setConnectionState(
+          consecutiveErrors >= 3 ? "disconnected" : "reconnecting",
+        );
+        if (consecutiveErrors >= 3) {
+          controller.abort();
+          toast(t("errorLoading"));
+          try {
+            window.localStorage.removeItem(sessionStorageKey);
+          } catch {}
+          return; // stop
+        }
+      }
+
+      // Schedule next tick with jitter
+      if (!controller.signal.aborted) {
+        const jitter = Math.random() * 0.4 - 0.2; // -20%..+20%
+        const nextDelay = Math.max(300, Math.round(baseDelay * (1 + jitter)));
+        const id = window.setTimeout(() => {
+          void loop();
+        }, nextDelay);
+        pollIntervalRef.current = id;
+      }
+    };
+
+    void loop();
+  };
+
   // Keep focus in the textarea after sending
   const focusInput = (): void => {
     const el = document.getElementById(
@@ -175,6 +405,36 @@ export default function ChatInitPage(): ReactElement {
         {error && (
           <p className="text-destructive mx-auto mt-3 text-sm">
             {t("errorLoading")}
+          </p>
+        )}
+        {connectionState && (
+          <p
+            className="text-muted-foreground mx-auto mt-2 text-xs"
+            aria-live="polite"
+          >
+            {(() => {
+              try {
+                return t(`connectionState.${connectionState}`);
+              } catch {
+                // Fallback short strings if i18n keys are missing
+                switch (connectionState) {
+                  case "connecting":
+                    return locale === "ar"
+                      ? "جارٍ الاتصال..."
+                      : "Connecting...";
+                  case "connected":
+                    return locale === "ar" ? "متصل" : "Connected";
+                  case "reconnecting":
+                    return locale === "ar"
+                      ? "إعادة الاتصال..."
+                      : "Reconnecting...";
+                  case "disconnected":
+                    return locale === "ar" ? "انقطع الاتصال" : "Disconnected";
+                  default:
+                    return "";
+                }
+              }
+            })()}
           </p>
         )}
         {/* Context line */}
@@ -230,22 +490,18 @@ export default function ChatInitPage(): ReactElement {
                       <span className="sr-only">{senderLabels[m.role]}: </span>
                       {m.role === "ai" ? (
                         m.streaming ? (
-                          <ResponseStream
-                            textStream={m.content}
-                            mode="typewriter"
-                            speed={24}
-                            className="break-words whitespace-pre-wrap"
-                            onComplete={() => {
-                              // Once streaming finishes, re-render this message with Markdown
-                              setMessages((prev) =>
-                                prev.map((msg) =>
-                                  msg.id === m.id
-                                    ? { ...msg, streaming: false }
-                                    : msg,
-                                ),
-                              );
-                            }}
-                          />
+                          <div className="flex items-center gap-2">
+                            <DotStream
+                              size="50"
+                              speed="2"
+                              color="currentColor"
+                            />
+                            <span className="sr-only">
+                              {locale === "ar"
+                                ? "المساعد يكتب"
+                                : "Assistant is typing"}
+                            </span>
+                          </div>
                         ) : m.error ? (
                           <div className="space-y-2">
                             <p className="text-[16px] leading-6 break-words whitespace-pre-wrap md:text-[15px]">
@@ -261,14 +517,12 @@ export default function ChatInitPage(): ReactElement {
                                     .reverse()
                                     .find((mm) => mm.role === "user");
                                   if (!lastUser) return;
-                                  setIsAiTyping(true);
                                   // Dummy retry path uses same mock response
                                   const aiText =
                                     locale === "ar"
                                       ? "تمت إعادة المحاولة بنجاح."
                                       : "Retry succeeded.";
                                   window.setTimeout(() => {
-                                    setIsAiTyping(false);
                                     const aiMsg: Message = {
                                       id: `a-${Date.now()}`,
                                       role: "ai",
@@ -316,27 +570,7 @@ export default function ChatInitPage(): ReactElement {
                 );
               })}
 
-              {isAiTyping && (
-                <div className="flex w-full justify-start">
-                  <div
-                    className="bg-muted text-foreground w-fit max-w-[75%] rounded-2xl px-4 py-2"
-                    dir={locale === "ar" ? "rtl" : "ltr"}
-                  >
-                    <div aria-live="polite" aria-atomic="true">
-                      <TypingLoader size="md" />
-                      <span className="sr-only">
-                        {locale === "ar"
-                          ? "المساعد يكتب"
-                          : "Assistant is typing"}
-                      </span>
-                    </div>
-                    <div className="text-foreground/70 mt-1 text-xs">
-                      {senderLabels.ai} •{" "}
-                      {locale === "ar" ? "يكتب…" : "typing…"}
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Removed separate typing bubble; loader is shown within the AI message bubble while streaming */}
 
               <ChatContainerScrollAnchor />
             </ChatContainerContent>
@@ -344,15 +578,15 @@ export default function ChatInitPage(): ReactElement {
         </div>
 
         {/* Footer input like ChatGPT */}
-        <div className="sticky bottom-0 z-10 mx-auto w-full max-w-3xl py-4">
+        <div className="bg-background/70 supports-[backdrop-filter]:bg-background/70 sticky bottom-0 z-10 mx-auto w-full max-w-3xl rounded-t-2xl pb-4 backdrop-blur">
           <div className="bg-card rounded-xl border p-2 shadow-sm">
             {/* Define one submit function to reuse for Enter and button click */}
             <PromptInput
               value={input}
               onValueChange={setInput}
-              onSubmit={() => {
+              onSubmit={async () => {
                 const trimmed = input.trim();
-                if (!trimmed) return;
+                if (!trimmed || !skillParam) return;
                 const userMsg: Message = {
                   id: `u-${Date.now()}`,
                   role: "user",
@@ -362,24 +596,45 @@ export default function ChatInitPage(): ReactElement {
                 setMessages((prev) => [...prev, userMsg]);
                 setInput("");
 
-                setIsAiTyping(true);
-                const aiText =
-                  locale === "ar"
-                    ? "## مثال ماركداون\n\n- عنصر أول\n- عنصر ثانٍ\n\n```ts\nfunction greet(name: string): string {\n  return `مرحبا، ${name}`;\n}\n```\n\n> تذكير: هذا رد تجريبي للتأكد من دعم الـ Markdown."
-                    : "## Markdown Example\n\n- First item\n- Second item\n\n```ts\nfunction greet(name: string): string {\n  return `Hello, ${name}`;\n}\n```\n\n> Note: This is a dummy reply to verify Markdown rendering.";
+                // Placeholder AI message that will be progressively updated
+                const aiMsg: Message = {
+                  id: `a-${Date.now()}`,
+                  role: "ai",
+                  content: "",
+                  streaming: true,
+                  createdAt: Date.now(),
+                };
+                setMessages((prev) => [...prev, aiMsg]);
 
-                window.setTimeout(() => {
-                  setIsAiTyping(false);
-                  const aiMsg: Message = {
-                    id: `a-${Date.now()}`,
-                    role: "ai",
-                    content: aiText,
-                    streaming: false,
-                    createdAt: Date.now(),
-                  };
-                  setMessages((prev) => [...prev, aiMsg]);
-                  focusInput();
-                }, 400);
+                const sessionId = await sendToServer({
+                  skillId: skillParam,
+                  message: trimmed,
+                });
+                if (!sessionId) {
+                  // mark AI message as error
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === aiMsg.id
+                        ? {
+                            ...m,
+                            content: t("errorLoading"),
+                            streaming: false,
+                            error: true,
+                          }
+                        : m,
+                    ),
+                  );
+                  toast(t("errorLoading"));
+                  return;
+                }
+                try {
+                  window.localStorage.setItem(
+                    sessionStorageKey,
+                    JSON.stringify({ sessionId, aiMessageId: aiMsg.id }),
+                  );
+                } catch {}
+                pollStatus(sessionId, aiMsg.id);
+                focusInput();
               }}
               className="bg-transparent p-0 shadow-none"
             >
@@ -411,11 +666,9 @@ export default function ChatInitPage(): ReactElement {
                       type="button"
                       size="icon"
                       className="rounded-full"
-                      onClick={() => {
+                      onClick={async () => {
                         const trimmed = input.trim();
-                        if (!trimmed) return;
-                        // Reuse the same logic by triggering onSubmit through key path
-                        // Simpler: duplicate minimal logic for clarity
+                        if (!trimmed || !skillParam) return;
                         const userMsg: Message = {
                           id: `u-${Date.now()}`,
                           role: "user",
@@ -425,23 +678,46 @@ export default function ChatInitPage(): ReactElement {
                         setMessages((prev) => [...prev, userMsg]);
                         setInput("");
 
-                        setIsAiTyping(true);
-                        const aiText =
-                          locale === "ar"
-                            ? "## مثال ماركداون\n\n- عنصر أول\n- عنصر ثانٍ\n\n```ts\nfunction greet(name: string): string {\n  return `مرحبا، ${name}`;\n}\n```\n\n> تذكير: هذا رد تجريبي للتأكد من دعم الـ Markdown."
-                            : "## Markdown Example\n\n- First item\n- Second item\n\n```ts\nfunction greet(name: string): string {\n  return `Hello, ${name}`;\n}\n```\n\n> Note: This is a dummy reply to verify Markdown rendering.";
-                        window.setTimeout(() => {
-                          setIsAiTyping(false);
-                          const aiMsg: Message = {
-                            id: `a-${Date.now()}`,
-                            role: "ai",
-                            content: aiText,
-                            streaming: false,
-                            createdAt: Date.now(),
-                          };
-                          setMessages((prev) => [...prev, aiMsg]);
-                          focusInput();
-                        }, 400);
+                        const aiMsg: Message = {
+                          id: `a-${Date.now()}`,
+                          role: "ai",
+                          content: "",
+                          streaming: true,
+                          createdAt: Date.now(),
+                        };
+                        setMessages((prev) => [...prev, aiMsg]);
+
+                        const sessionId = await sendToServer({
+                          skillId: skillParam,
+                          message: trimmed,
+                        });
+                        if (!sessionId) {
+                          setMessages((prev) =>
+                            prev.map((m) =>
+                              m.id === aiMsg.id
+                                ? {
+                                    ...m,
+                                    content: t("errorLoading"),
+                                    streaming: false,
+                                    error: true,
+                                  }
+                                : m,
+                            ),
+                          );
+                          toast(t("errorLoading"));
+                          return;
+                        }
+                        try {
+                          window.localStorage.setItem(
+                            sessionStorageKey,
+                            JSON.stringify({
+                              sessionId,
+                              aiMessageId: aiMsg.id,
+                            }),
+                          );
+                        } catch {}
+                        pollStatus(sessionId, aiMsg.id);
+                        focusInput();
                       }}
                       disabled={!input.trim()}
                     >

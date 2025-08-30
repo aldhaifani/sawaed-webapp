@@ -48,6 +48,7 @@
     "convex": "^1.25.4",
     "date-fns": "^4.1.0",
     "input-otp": "^1.4.2",
+    "ldrs": "^1.1.7",
     "lucide-react": "^0.539.0",
     "marked": "^16.2.1",
     "motion": "^12.23.12",
