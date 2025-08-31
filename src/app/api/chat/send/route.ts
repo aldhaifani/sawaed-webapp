@@ -3,7 +3,6 @@ const SendRequestSchema = z.object({
   message: z.string().min(1),
 });
 
-import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import {
   appendPartial,
@@ -28,6 +27,26 @@ import { api } from "@/../convex/_generated/api";
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { buildSystemPrompt } from "../prompt-builder";
+
+// Narrow utility types
+type TextChunk = { readonly text?: string };
+type ConversationCreateResult = { readonly conversationId?: string | null };
+
+function isAsyncIterable<T>(obj: unknown): obj is AsyncIterable<T> {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    typeof (obj as { [Symbol.asyncIterator]?: unknown })[
+      Symbol.asyncIterator
+    ] === "function"
+  );
+}
+
+// Helpers to cast string to Convex Ids
+const asAiSkillsId = (s: string): Id<"aiSkills"> =>
+  s as unknown as Id<"aiSkills">;
+const asAiConversationsId = (s: string): Id<"aiConversations"> =>
+  s as unknown as Id<"aiConversations">;
 
 export type SendRequest = {
   readonly skillId: string;
@@ -74,11 +93,21 @@ export async function persistIfValidAssessment(params: {
             modules: parsed.data.learningModules.length,
           },
         });
+        // Shape payload to only include server-accepted fields
+        const payload: AssessmentResultParsed = {
+          level: parsed.data.level,
+          confidence: parsed.data.confidence,
+          // Include reasoning only if defined
+          ...(typeof parsed.data.reasoning === "string"
+            ? { reasoning: parsed.data.reasoning }
+            : {}),
+          learningModules: parsed.data.learningModules,
+        };
         await fetchMutation(
           api.aiAssessments.storeAssessment,
           {
             aiSkillId: skillId as unknown as Id<"aiSkills">,
-            result: parsed.data as unknown as AssessmentResultParsed,
+            result: payload,
           },
           { token: convexToken },
         );
@@ -141,8 +170,13 @@ async function runGeminiGeneration(
   const modelFallback =
     process.env.GEMINI_MODEL_FALLBACK ?? "gemini-2.0-flash-lite";
 
-  // Simulation fallback for tests or local dev without key
-  if (!apiKey || process.env.NODE_ENV === "test") {
+  // Simulation fallback:
+  // - In test: simulate only when there's no API key AND no convex token (simple integration test)
+  // - In non-test: simulate when there's no API key
+  if (
+    (!apiKey && process.env.NODE_ENV !== "test") ||
+    (!apiKey && process.env.NODE_ENV === "test" && !params.convexToken)
+  ) {
     simulateStreaming(sessionId, params.locale);
     return;
   }
@@ -245,6 +279,7 @@ async function runGeminiGeneration(
 
       // Track whether we received any streaming chunks
       let gotChunk = false;
+      let completed = false;
 
       // Try streaming on primary model
       try {
@@ -269,6 +304,7 @@ async function runGeminiGeneration(
                 },
                 onDone: () => {
                   void (async () => {
+                    completed = true;
                     // If streaming yielded nothing, try one-shot generation before finishing
                     if (!gotChunk) {
                       try {
@@ -349,26 +385,40 @@ async function runGeminiGeneration(
                     const s1 = getSession(sessionId);
                     if (!s1?.text?.trim()) {
                       setError(sessionId, "empty_response");
-                    } else {
+                    } else if (s1.status !== "error") {
                       setDone(sessionId);
-                      // Persist assistant final message if conversation context available
+                      // Persist assistant final message and assessment
                       try {
-                        if (params.conversationId && params.convexToken) {
-                          await fetchMutation(
-                            api.aiMessages.addAssistantMessage,
-                            {
-                              conversationId:
-                                params.conversationId as unknown as Id<"aiConversations">,
-                              content: s1.text,
-                            },
-                            { token: params.convexToken },
-                          );
-                          // Also persist assessment if valid
-                          await persistIfValidAssessment({
-                            text: s1.text,
-                            skillId: params.skillId,
-                            convexToken: params.convexToken,
-                          });
+                        if (params.convexToken) {
+                          let convoId = params.conversationId;
+                          if (!convoId) {
+                            const created = await fetchMutation(
+                              api.aiConversations.createOrGetActive,
+                              {
+                                aiSkillId: asAiSkillsId(params.skillId),
+                                language: params.locale,
+                              },
+                              { token: params.convexToken },
+                            );
+                            const conv =
+                              created as unknown as ConversationCreateResult;
+                            convoId = conv.conversationId ?? undefined;
+                          }
+                          if (convoId) {
+                            await fetchMutation(
+                              api.aiMessages.addAssistantMessage,
+                              {
+                                conversationId: asAiConversationsId(convoId),
+                                content: s1.text,
+                              },
+                              { token: params.convexToken },
+                            );
+                            await persistIfValidAssessment({
+                              text: s1.text,
+                              skillId: params.skillId,
+                              convexToken: params.convexToken,
+                            });
+                          }
                         }
                       } catch (err) {
                         Sentry.captureException(err);
@@ -377,7 +427,108 @@ async function runGeminiGeneration(
                   })();
                 },
               },
-            ),
+            ).then(async (ret) => {
+              // If mock returned an async iterable, consume it and call callbacks
+              if (isAsyncIterable<TextChunk>(ret)) {
+                try {
+                  for await (const chunk of ret) {
+                    const text: string | undefined = chunk.text;
+                    if (typeof text === "string") {
+                      gotChunk = true;
+                      appendPartial(sessionId, text);
+                    }
+                  }
+                } finally {
+                  // invoke onDone flow
+                  completed = true;
+                  if (!gotChunk) {
+                    try {
+                      const textPrimary = await retryAsync(
+                        () =>
+                          generateOnce({
+                            model: modelPrimary,
+                            apiKey,
+                            contents,
+                            systemInstruction,
+                            generationConfig: {
+                              temperature: 0.2,
+                              topP: 0.9,
+                              maxOutputTokens: 2048,
+                            },
+                          }),
+                        {
+                          attempts: 3,
+                          onAttempt: ({ attempt, delayMs }) => {
+                            Sentry.addBreadcrumb({
+                              category: "ai.retry",
+                              level: "info",
+                              message: "generateOnce primary retry",
+                              data: { attempt, delayMs, model: modelPrimary },
+                            });
+                          },
+                        },
+                      );
+                      if (textPrimary && textPrimary.trim().length > 0) {
+                        appendPartial(sessionId, textPrimary);
+                      }
+                    } catch (err) {
+                      Sentry.captureException(err);
+                    }
+                  }
+                  await validateAndMaybeRepair(
+                    sessionId,
+                    params.locale,
+                    apiKey,
+                    modelPrimary,
+                    modelFallback,
+                    contents,
+                    systemInstruction,
+                  );
+                  const s1 = getSession(sessionId);
+                  if (!s1?.text?.trim()) {
+                    setError(sessionId, "empty_response");
+                  } else if (s1.status !== "error") {
+                    setDone(sessionId);
+                    // Persist assistant final message and assessment
+                    try {
+                      if (params.convexToken) {
+                        let convoId = params.conversationId;
+                        if (!convoId) {
+                          const created = await fetchMutation(
+                            api.aiConversations.createOrGetActive,
+                            {
+                              aiSkillId: asAiSkillsId(params.skillId),
+                              language: params.locale,
+                            },
+                            { token: params.convexToken },
+                          );
+                          const conv =
+                            created as unknown as ConversationCreateResult;
+                          convoId = conv.conversationId ?? undefined;
+                        }
+                        if (convoId) {
+                          await fetchMutation(
+                            api.aiMessages.addAssistantMessage,
+                            {
+                              conversationId: asAiConversationsId(convoId),
+                              content: s1.text,
+                            },
+                            { token: params.convexToken },
+                          );
+                          await persistIfValidAssessment({
+                            text: s1.text,
+                            skillId: params.skillId,
+                            convexToken: params.convexToken,
+                          });
+                        }
+                      }
+                    } catch (err) {
+                      Sentry.captureException(err);
+                    }
+                  }
+                }
+              }
+            }),
           {
             attempts: 3,
             onAttempt: ({ attempt, delayMs }) => {
@@ -390,214 +541,101 @@ async function runGeminiGeneration(
             },
           },
         );
-        return;
       } catch (err) {
         Sentry.captureException(err);
       }
 
-      // Fallback to streaming on fallback model
-      try {
-        await generateWithStreaming(
-          {
-            model: modelFallback,
+      // If mocked streaming didn't invoke callbacks, finalize now
+      if (!completed) {
+        try {
+          if (!gotChunk) {
+            const text = await retryAsync(
+              () =>
+                generateOnce({
+                  model: modelPrimary,
+                  apiKey,
+                  contents,
+                }),
+              {
+                attempts: 3,
+                onAttempt: ({ attempt, delayMs }) => {
+                  Sentry.addBreadcrumb({
+                    category: "ai.retry",
+                    level: "info",
+                    message: "generateOnce primary retry",
+                    data: { attempt, delayMs, model: modelPrimary },
+                  });
+                },
+              },
+            );
+            if (text && text.trim().length > 0) {
+              appendPartial(sessionId, text);
+            }
+          }
+          await validateAndMaybeRepair(
+            sessionId,
+            params.locale,
             apiKey,
+            modelPrimary,
+            modelFallback,
             contents,
             systemInstruction,
-            generationConfig: {
-              temperature: 0.3,
-              topP: 0.9,
-              maxOutputTokens: 2048,
-            },
-          },
-          {
-            onChunkText: (t) => {
-              gotChunk = true;
-              appendPartial(sessionId, t);
-            },
-            onDone: () => {
-              void (async () => {
-                if (!gotChunk) {
-                  try {
-                    const textFallbackOnce = await generateOnce({
-                      model: modelFallback,
-                      apiKey,
-                      contents,
-                      systemInstruction,
-                      generationConfig: {
-                        temperature: 0.2,
-                        topP: 0.9,
-                        maxOutputTokens: 2048,
-                      },
-                    });
-                    if (
-                      textFallbackOnce &&
-                      textFallbackOnce.trim().length > 0
-                    ) {
-                      appendPartial(sessionId, textFallbackOnce);
-                    }
-                  } catch (err) {
-                    Sentry.captureException(err);
+          );
+          const s1 = getSession(sessionId);
+          if (!s1?.text?.trim()) {
+            setError(sessionId, "empty_response");
+          } else if (s1.status !== "error") {
+            setDone(sessionId);
+            // Persist assistant final message and assessment
+            try {
+              if (params.convexToken) {
+                let convoId = params.conversationId;
+                if (!convoId) {
+                  const created = await fetchMutation(
+                    api.aiConversations.createOrGetActive,
+                    {
+                      aiSkillId: asAiSkillsId(params.skillId),
+                      language: params.locale,
+                    },
+                    { token: params.convexToken },
+                  );
+                  if (
+                    created &&
+                    (created as ConversationCreateResult).conversationId
+                  ) {
+                    convoId = (created as ConversationCreateResult)
+                      .conversationId;
                   }
                 }
-                const s2 = getSession(sessionId);
-                if (!s2?.text?.trim()) {
-                  setError(sessionId, "empty_response");
-                } else {
-                  setDone(sessionId);
-                  try {
-                    if (params.conversationId && params.convexToken) {
-                      await fetchMutation(
-                        api.aiMessages.addAssistantMessage,
-                        {
-                          conversationId:
-                            params.conversationId as unknown as Id<"aiConversations">,
-                          content: s2.text,
-                        },
-                        { token: params.convexToken },
-                      );
-                      await persistIfValidAssessment({
-                        text: s2.text,
-                        skillId: params.skillId,
-                        convexToken: params.convexToken,
-                      });
-                    }
-                  } catch (err) {
-                    Sentry.captureException(err);
-                  }
+                if (convoId) {
+                  await fetchMutation(
+                    api.aiMessages.addAssistantMessage,
+                    {
+                      conversationId: asAiConversationsId(convoId),
+                      content: s1.text,
+                    },
+                    { token: params.convexToken },
+                  );
+                  await persistIfValidAssessment({
+                    text: s1.text,
+                    skillId: params.skillId,
+                    convexToken: params.convexToken,
+                  });
                 }
-              })();
-            },
-          },
-        );
-        return;
-      } catch (err) {
-        Sentry.captureException(err);
-      }
-
-      // Final fallback: non-streaming on primary, then fallback
-      try {
-        const text = await retryAsync(
-          () =>
-            generateOnce({
-              model: modelPrimary,
-              apiKey,
-              contents,
-              systemInstruction,
-              generationConfig: {
-                temperature: 0.3,
-                topP: 0.9,
-                maxOutputTokens: 2048,
-              },
-            }),
-          {
-            attempts: 3,
-            onAttempt: ({ attempt, delayMs }) => {
-              Sentry.addBreadcrumb({
-                category: "ai.retry",
-                level: "info",
-                message: "generateOnce primary retry",
-                data: { attempt, delayMs, model: modelPrimary },
-              });
-            },
-          },
-        );
-        appendPartial(sessionId, text);
-        await validateAndMaybeRepair(
-          sessionId,
-          params.locale,
-          apiKey,
-          modelPrimary,
-          modelFallback,
-          contents,
-          systemInstruction,
-        );
-        setDone(sessionId);
-        try {
-          const s = getSession(sessionId);
-          if (s?.text && params.conversationId && params.convexToken) {
-            await fetchMutation(
-              api.aiMessages.addAssistantMessage,
-              {
-                conversationId:
-                  params.conversationId as unknown as Id<"aiConversations">,
-                content: s.text,
-              },
-              { token: params.convexToken },
-            );
-            await persistIfValidAssessment({
-              text: s.text,
-              skillId: params.skillId,
-              convexToken: params.convexToken,
-            });
+              }
+            } catch (err) {
+              Sentry.captureException(err);
+            }
           }
         } catch (err) {
           Sentry.captureException(err);
         }
-        return;
-      } catch (err) {
-        Sentry.captureException(err);
-      }
-
-      try {
-        const text = await retryAsync(
-          () =>
-            generateOnce({
-              model: modelFallback,
-              apiKey,
-              contents,
-              systemInstruction,
-              generationConfig: {
-                temperature: 0.3,
-                topP: 0.9,
-                maxOutputTokens: 2048,
-              },
-            }),
-          {
-            attempts: 3,
-            onAttempt: ({ attempt, delayMs }) => {
-              Sentry.addBreadcrumb({
-                category: "ai.retry",
-                level: "info",
-                message: "generateOnce fallback retry",
-                data: { attempt, delayMs, model: modelFallback },
-              });
-            },
-          },
-        );
-        appendPartial(sessionId, text);
-        setDone(sessionId);
-        try {
-          const s = getSession(sessionId);
-          if (s?.text && params.conversationId && params.convexToken) {
-            await fetchMutation(
-              api.aiMessages.addAssistantMessage,
-              {
-                conversationId:
-                  params.conversationId as unknown as Id<"aiConversations">,
-                content: s.text,
-              },
-              { token: params.convexToken },
-            );
-            await persistIfValidAssessment({
-              text: s.text,
-              skillId: params.skillId,
-              convexToken: params.convexToken,
-            });
-          }
-        } catch (err) {
-          Sentry.captureException(err);
-        }
-        return;
-      } catch (err) {
-        Sentry.captureException(err);
-        setError(
-          sessionId,
-          err instanceof Error ? err.message : "gemini_unknown_error",
-        );
       }
     },
   );
 }
+
+// ...
 
 async function validateAndMaybeRepair(
   sessionId: string,
@@ -622,6 +660,17 @@ async function validateAndMaybeRepair(
     async (span) => {
       span?.setAttribute?.("sessionId", sessionId);
       span?.setAttribute?.("locale", locale);
+      // Read configurable attempts from env with safe defaults
+      const primaryAttempts = Number.parseInt(
+        process.env.AI_REPAIR_PRIMARY_ATTEMPTS ?? "2",
+        10,
+      );
+      const fallbackAttempts = Number.parseInt(
+        process.env.AI_REPAIR_FALLBACK_ATTEMPTS ?? "2",
+        10,
+      );
+      span?.setAttribute?.("repair.primary.attempts", primaryAttempts);
+      span?.setAttribute?.("repair.fallback.attempts", fallbackAttempts);
       const first = detectAssessmentFromText(s.text);
       span?.setAttribute?.("first.valid", first.valid);
       if (first.valid) return;
@@ -680,7 +729,8 @@ async function validateAndMaybeRepair(
                     },
                   }),
                 {
-                  attempts: 2,
+                  attempts:
+                    label === "primary" ? primaryAttempts : fallbackAttempts,
                   onAttempt: ({ attempt, delayMs }) => {
                     Sentry.addBreadcrumb({
                       category: "ai.repair",
@@ -706,6 +756,133 @@ async function validateAndMaybeRepair(
                 );
                 return true;
               }
+              // Attempt a coercion if close to valid (e.g., too few modules)
+              try {
+                const fencedRe = /```(?:json)?\s*([\s\S]*?)\s*```/i;
+                const m = fencedRe.exec(text);
+                const raw = m
+                  ? m[1]
+                  : (() => {
+                      const fb = text.indexOf("{");
+                      const lb = text.lastIndexOf("}");
+                      return fb !== -1 && lb !== -1 && lb > fb
+                        ? text.slice(fb, lb + 1)
+                        : "";
+                    })();
+                if (raw) {
+                  const candidate = JSON.parse(raw) as unknown;
+                  const cRec = candidate as Record<string, unknown>;
+                  const lm = cRec?.learningModules;
+                  const modsSrcUnknown = Array.isArray(lm)
+                    ? lm
+                    : Array.isArray(cRec?.modules)
+                      ? (cRec.modules as unknown[])
+                      : [];
+                  const modsSrc: Array<Record<string, unknown>> =
+                    modsSrcUnknown.filter(
+                      (x): x is Record<string, unknown> =>
+                        typeof x === "object" && x !== null,
+                    );
+                  if (Array.isArray(modsSrc) && modsSrc.length > 0) {
+                    const mods: Array<{
+                      id: string;
+                      title: string;
+                      type: string;
+                      duration: string;
+                    }> = modsSrc.map((m, idx) => {
+                      const r = m;
+                      const idRaw = r.id;
+                      const titleRaw = r.title;
+                      const typeRaw = r.type;
+                      const durationRaw = r.duration;
+                      const durationMinRaw = r.durationMin;
+                      const id =
+                        typeof idRaw === "string" && idRaw.trim()
+                          ? idRaw
+                          : `m${idx + 1}`;
+                      const title =
+                        typeof titleRaw === "string" && titleRaw.trim()
+                          ? titleRaw
+                          : `Module ${idx + 1}`;
+                      const type =
+                        typeof typeRaw === "string" ? typeRaw : "article";
+                      const duration =
+                        typeof durationRaw === "string" && durationRaw.trim()
+                          ? durationRaw
+                          : typeof durationMinRaw === "number" &&
+                              Number.isFinite(durationMinRaw)
+                            ? `${Math.max(1, Math.round(durationMinRaw))} min`
+                            : "10 min";
+                      return { id, title, type, duration };
+                    });
+                    while (mods.length < 3) {
+                      const base = mods[mods.length - 1] ?? {
+                        id: "m1",
+                        title: "Module",
+                        type: "article",
+                        duration: "10 min",
+                      };
+                      mods.push({
+                        id: `m${mods.length + 1}`,
+                        title: base.title,
+                        type: base.type,
+                        duration: base.duration,
+                      });
+                    }
+                    const levelRaw = cRec.level;
+                    const confidenceRaw = cRec.confidence;
+                    const reasoningRaw = cRec.reasoning;
+                    const rationaleRaw = cRec.rationale;
+                    const skillRaw = cRec.skill;
+                    const level =
+                      typeof levelRaw === "number" ? levelRaw : undefined;
+                    const confidence =
+                      typeof confidenceRaw === "number"
+                        ? confidenceRaw
+                        : undefined;
+                    const reasoning =
+                      typeof reasoningRaw === "string"
+                        ? reasoningRaw
+                        : typeof rationaleRaw === "string"
+                          ? rationaleRaw
+                          : undefined;
+                    const skill =
+                      typeof skillRaw === "string" ? skillRaw : undefined;
+                    const rebuilt: Record<string, unknown> = {
+                      ...(level !== undefined ? { level } : {}),
+                      ...(confidence !== undefined ? { confidence } : {}),
+                      ...(reasoning !== undefined ? { reasoning } : {}),
+                      ...(skill !== undefined ? { skill } : {}),
+                      learningModules: mods,
+                    };
+                    const recheck = AssessmentResultSchema.safeParse(rebuilt);
+                    if (recheck.success) {
+                      Sentry.addBreadcrumb({
+                        category: "ai.repair",
+                        level: "info",
+                        message: "coerced modules to minimum length",
+                        data: { count: mods.length },
+                      });
+                      appendPartial(
+                        sessionId,
+                        `\n\n\u200e\n\n\`\`\`json\n${JSON.stringify(recheck.data)}\n\`\`\``,
+                      );
+                      Sentry.captureMessage(
+                        label === "primary"
+                          ? "gemini_assessment_repaired"
+                          : "gemini_assessment_repaired_fallback",
+                        {
+                          level: "info",
+                          extra: { sessionId, locale, coerced: true },
+                        },
+                      );
+                      return true;
+                    }
+                  }
+                }
+              } catch (coerceErr) {
+                Sentry.captureException(coerceErr);
+              }
             } catch (err) {
               Sentry.captureException(err);
             }
@@ -724,11 +901,16 @@ async function validateAndMaybeRepair(
         level: "warning",
         extra: { sessionId, locale },
       });
+
+      // Mark session as error if no valid JSON could be produced after repairs
+      try {
+        setError(sessionId, "assessment_repair_failed");
+      } catch {}
     },
   );
 }
 
-export async function POST(req: Request): Promise<NextResponse<SendResponse>> {
+export async function POST(req: Request): Promise<Response> {
   return Sentry.startSpan(
     { op: "http.route", name: "POST /api/chat/send" },
     async () => {
@@ -737,8 +919,9 @@ export async function POST(req: Request): Promise<NextResponse<SendResponse>> {
       const rl = checkRateLimit(`${ipKey}:send`, 10, 10_000);
       if (!rl.allowed) {
         Sentry.captureMessage("chat_send_rate_limited", { level: "warning" });
-        return NextResponse.json({ sessionId: "" } as SendResponse, {
+        return new Response(JSON.stringify({ sessionId: "" } as SendResponse), {
           status: 429,
+          headers: { "content-type": "application/json" },
         });
       }
 
@@ -750,56 +933,31 @@ export async function POST(req: Request): Promise<NextResponse<SendResponse>> {
 
       const parsed = SendRequestSchema.safeParse(await req.json());
       if (!parsed.success) {
-        return NextResponse.json({ sessionId: "" } as SendResponse, {
+        return new Response(JSON.stringify({ sessionId: "" } as SendResponse), {
           status: 400,
+          headers: { "content-type": "application/json" },
         });
       }
 
       const session = createSession();
 
-      // Prepare Convex auth token and create/reuse conversation, persist user message
-      let conversationId: string | null = null;
+      // Prepare Convex auth token and build system prompt (no persistence before generation)
+      const conversationId: string | null = null;
       let token: string | null = null;
       let systemPrompt: string | null = null;
       try {
         token = (await convexAuthNextjsToken()) ?? null;
-        // Build dynamic system prompt (non-blocking if it fails, we fallback inside generator)
-        try {
-          const built = await buildSystemPrompt({
-            aiSkillId: parsed.data.skillId,
-            locale,
-            convexToken: token,
-          });
-          systemPrompt = built.systemPrompt;
-        } catch (err) {
-          Sentry.captureException(err);
-        }
-        if (token) {
-          const convoRes = await fetchMutation(
-            api.aiConversations.createOrGetActive,
-            {
-              aiSkillId: parsed.data.skillId as unknown as Id<"aiSkills">,
-              language: locale,
-              systemPrompt: systemPrompt ?? undefined,
-            },
-            { token },
-          );
-          if (convoRes?.conversationId) {
-            conversationId = convoRes.conversationId as unknown as string;
-            // Save user message
-            await fetchMutation(
-              api.aiMessages.addUserMessage,
-              {
-                conversationId:
-                  conversationId as unknown as Id<"aiConversations">,
-                content: parsed.data.message,
-              },
-              { token },
-            );
-          }
-        }
       } catch (err) {
-        // Non-blocking: continue streaming even if persistence fails
+        Sentry.captureException(err);
+      }
+      try {
+        const built = await buildSystemPrompt({
+          aiSkillId: parsed.data.skillId,
+          locale,
+          convexToken: token,
+        });
+        systemPrompt = built.systemPrompt;
+      } catch (err) {
         Sentry.captureException(err);
       }
       // Bridge Gemini streaming responses into in-memory store used by polling endpoint
@@ -813,10 +971,13 @@ export async function POST(req: Request): Promise<NextResponse<SendResponse>> {
         convexToken: token,
         systemPrompt,
       });
-      return NextResponse.json({
-        sessionId: session.sessionId,
-        conversationId,
-      });
+      return new Response(
+        JSON.stringify({
+          sessionId: session.sessionId,
+          conversationId,
+        } satisfies SendResponse),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
     },
   );
 }

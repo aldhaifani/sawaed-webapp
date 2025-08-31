@@ -266,7 +266,7 @@
             "description": "Create and apply a JSON schema to validate AI-generated JSON output ensuring required fields: skill, level, confidence, reasoning, and modules array are present and correctly typed.",
             "dependencies": [],
             "details": "Define a JSON schema using JSON Schema specification. Use Ajv library to compile and validate AI response data against this schema. Ensure validation errors are captured and reported for invalid data.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           },
           {
@@ -493,7 +493,7 @@
     ],
     "metadata": {
       "created": "2025-08-27T16:15:53.164Z",
-      "updated": "2025-08-31T03:58:15.569Z",
+      "updated": "2025-08-31T08:09:10.894Z",
       "description": "Tasks for master context"
     }
   }

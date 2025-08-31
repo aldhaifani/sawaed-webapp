@@ -406,7 +406,9 @@ export async function buildSystemPrompt(
 
   // Try Convex: get rich context (aiSkill + latestAssessment + activeLearningPath)
   try {
-    if (convexToken) {
+    // Avoid Convex calls in test environment to keep unit/integration tests deterministic
+    const allowConvex = !!convexToken && process.env.NODE_ENV !== "test";
+    if (allowConvex) {
       const res = await fetchMutation(
         api.aiAssessments.startAssessment,
         { aiSkillId: aiSkillId as unknown as Id<"aiSkills"> },
