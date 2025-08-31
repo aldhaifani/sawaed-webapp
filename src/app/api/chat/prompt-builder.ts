@@ -199,6 +199,73 @@ function moduleConstraints(locale: Locale): string {
   ]);
 }
 
+function exampleConversationSection(
+  locale: Locale,
+  params: { skillNameEn?: string; skillNameAr?: string; latestLevel?: number },
+): string {
+  const header = pick(
+    locale === "ar",
+    "\n\nمثال محادثة (إرشادي):",
+    "\n\nExample conversation (illustrative):",
+  );
+  const skill =
+    pick(locale === "ar", params.skillNameAr, params.skillNameEn) ??
+    pick(locale === "ar", "المهارة", "the skill");
+  const base = clamp(params.latestLevel ?? 3, 1, 5);
+  const nextUp = clamp(base + 1, 1, 5);
+  const nextDown = clamp(base - 1, 1, 5);
+
+  const lines: string[] = [header];
+  if (locale === "ar") {
+    lines.push(
+      `AI: مرحبًا! سنقيّم مستوى معرفتك في ${skill}. إليك سؤال متعدد الخيارات:`,
+      `AI: [L${base}] عندما تواجه مشكلة جديدة، أي نهج تتبعه أولًا؟`,
+      "A) أبحث عن مثال مشابه وأطبقه كما هو",
+      "B) أقسّم المشكلة إلى أجزاء صغيرة وأحل كل جزء",
+      "C) أكتب كودًا سريعًا ثم أصلح الأخطاء لاحقًا",
+      "D) أطلب الحل مباشرة من صديق",
+      "Other: اكتب إجابتك",
+      "User: B",
+      "AI: جيد! يبدو أنك تستخدم أسلوبًا منظمًا. دعنا نجرب سؤالًا أصعب قليلًا:",
+      `AI: [L${nextUp}] إذا تعارضت حلّان محتملان، كيف تختار بينهما في سياق ${skill}؟`,
+    );
+  } else {
+    lines.push(
+      `AI: Hi! We'll assess your proficiency in ${skill}. Here's a multiple-choice question:`,
+      `AI: [L${base}] When you face a new problem, what's your first approach?`,
+      "A) Look for a similar example and copy it",
+      "B) Break it into smaller parts and solve step by step",
+      "C) Hack a quick solution and fix later",
+      "D) Ask a friend for the answer",
+      "Other: write your own",
+      "User: B",
+      "AI: Nice! That shows structured thinking. Let's try something slightly harder:",
+      `AI: [L${nextUp}] If two potential solutions conflict, how do you decide between them in the context of ${skill}?`,
+    );
+  }
+  // Also show a downshift example cue
+  lines.push(
+    pick(
+      locale === "ar",
+      `AI: إذا كان ذلك صعبًا، يمكننا تبسيطه: [L${nextDown}] ما أفضل طريقة لبدء الفهم؟`,
+      `AI: If that's challenging, we can simplify: [L${nextDown}] What's the best way to start understanding?`,
+    ),
+  );
+  return lines.join("\n");
+}
+
+function exampleJsonSection(locale: Locale): string {
+  const header = pick(
+    locale === "ar",
+    "\n\nمثال JSON (للتوضيح فقط، لا تخرجه الآن):",
+    "\n\nExample JSON (illustrative only, do NOT output now):",
+  );
+  // Use tildes for fencing to avoid backticks inside template literals and avoid colliding with the final ```json instruction
+  const bodyEn = `\n~~~javascript\n{\n  skill: "Critical Thinking",\n  level: 3,\n  confidence: 0.74,\n  reasoning: "Shows structured problem decomposition with occasional guidance.",\n  learningModules: [\n    { id: "L3-ART-1", title: "Analyze assumptions in short case studies", type: "article", duration: "15 minutes" },\n    { id: "L3-VID-1", title: "Weighing trade-offs: a quick walkthrough", type: "video", duration: "10 minutes" },\n    { id: "L3-QUIZ-1", title: "Identify logical fallacies (basic)", type: "quiz", duration: "10 minutes" }\n  ]\n}\n~~~\n`;
+  const bodyAr = `\n~~~javascript\n{\n  skill: "التفكير النقدي",\n  level: 3,\n  confidence: 0.74,\n  reasoning: "يُظهر تفكيكًا منظمًا للمشكلة مع حاجة لإرشاد بسيط.",\n  learningModules: [\n    { id: "L3-ART-1", title: "تحليل الافتراضات في دراسات حالة قصيرة", type: "article", duration: "15 دقيقة" },\n    { id: "L3-VID-1", title: "موازنة المفاضلات: شرح سريع", type: "video", duration: "10 دقائق" },\n    { id: "L3-QUIZ-1", title: "التعرّف على المغالطات المنطقية (أساسي)", type: "quiz", duration: "10 دقائق" }\n  ]\n}\n~~~\n`;
+  return header + (locale === "ar" ? bodyAr : bodyEn);
+}
+
 function schemaInstruction(locale: Locale): string {
   return safeJoin([
     pick(
@@ -419,6 +486,12 @@ export async function buildSystemPrompt(
   const turns = turnTakingRules(locale);
   const mcq = multipleChoiceRules(locale);
   const adapt = dynamicDifficultyRules(locale, latestLevel);
+  const examples = exampleConversationSection(locale, {
+    skillNameEn,
+    skillNameAr,
+    latestLevel,
+  });
+  const exampleJson = exampleJsonSection(locale);
 
   return Sentry.startSpan(
     { op: "ai.prompt", name: "buildSystemPrompt" },
@@ -436,8 +509,10 @@ export async function buildSystemPrompt(
         turns,
         mcq,
         adapt,
+        examples,
         templates,
         constraints,
+        exampleJson,
         schema,
       ]);
       return { systemPrompt } as const;

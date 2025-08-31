@@ -210,7 +210,7 @@
         "testStrategy": "Prompt engineering validation, A/B testing different prompt versions, JSON output format validation, skill accuracy testing",
         "priority": "high",
         "dependencies": [4],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -245,7 +245,7 @@
             "description": "Incorporate examples for each skill type and level combination and provide instructions for dynamic difficulty adaptation within the system prompt.",
             "dependencies": ["5.3"],
             "details": "Add illustrative examples demonstrating expected AI outputs for various skill types and levels. Define rules and instructions for adjusting difficulty dynamically based on user performance.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": ""
           }
         ]
@@ -258,7 +258,7 @@
         "testStrategy": "Schema validation tests, invalid JSON handling tests, re-prompting logic verification, database storage integration tests",
         "priority": "medium",
         "dependencies": [4, 5],
-        "status": "pending",
+        "status": "in-progress",
         "subtasks": [
           {
             "id": 1,
@@ -493,7 +493,7 @@
     ],
     "metadata": {
       "created": "2025-08-27T16:15:53.164Z",
-      "updated": "2025-08-30T19:56:56.822Z",
+      "updated": "2025-08-31T03:58:15.569Z",
       "description": "Tasks for master context"
     }
   }
