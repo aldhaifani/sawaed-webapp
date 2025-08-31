@@ -9,20 +9,15 @@ describe("prompt-builder rules", () => {
       convexToken: null,
     });
     const p = out.systemPrompt;
-    expect(p).toContain("Language and tone rules:");
-    expect(p).toContain("Turn-taking rules:");
-    expect(p).toContain("Dynamic difficulty:");
+    expect(p).toContain("Tone: Friendly, professional, encouraging");
+    expect(p).toContain("Rules: One question at a time");
+    expect(p).toContain("MAXIMUM 5 questions STRICTLY");
     expect(p).toContain("Output Instructions:");
     expect(p).toContain(
       "exactly one valid JSON block inside a ```json fenced code block with no prose before or after",
     );
-    expect(p).toContain("Example conversation (illustrative):");
-    expect(p).toContain("Example JSON (illustrative only, do NOT output now):");
-    // Phase 2: contextual checks
-    expect(p).toContain("[L3]"); // base level when no latestLevel
-    expect(p).toContain("[L4]"); // upshift example cue
-    expect(p).toContain("[L2]"); // downshift example cue
-    expect(p).toContain("the skill"); // generic fallback skill token
+    expect(p).toContain("Question X/5");
+    expect(p).toContain("Use full 10-level system (1-10)");
   });
 
   it("includes bilingual tone, turn-taking, dynamic difficulty, and stricter JSON in AR", async () => {
@@ -32,17 +27,14 @@ describe("prompt-builder rules", () => {
       convexToken: null,
     });
     const p = out.systemPrompt;
-    expect(p).toContain("قواعد اللغة والنبرة:");
-    expect(p).toContain("قواعد تبادل الأدوار:");
-    expect(p).toContain("التكيُّف مع الصعوبة:");
-    expect(p).toContain("التعليمات الخاصة بالمخرجات:");
-    expect(p).toContain("أخرج كتلة واحدة فقط من JSON الصالح داخل سياج ```json");
-    expect(p).toContain("مثال محادثة (إرشادي):");
-    expect(p).toContain("مثال JSON (للتوضيح فقط، لا تخرجه الآن):");
-    // Phase 2: contextual checks
-    expect(p).toContain("[L3]");
-    expect(p).toContain("[L4]");
-    expect(p).toContain("[L2]");
-    expect(p).toContain("المهارة");
+    expect(p).toContain("النبرة: ودود ومهني ومشجِّع");
+    expect(p).toContain("قواعد المحادثة:");
+    expect(p).toContain("أقصى 5 أسئلة بدقة");
+    expect(p).toContain("Output Instructions:");
+    expect(p).toContain(
+      "exactly one valid JSON block inside a ```json fenced code block with no prose before or after",
+    );
+    expect(p).toContain("السؤال X من 5");
+    expect(p).toContain("استخدم نظام 10 مستويات كاملاً (1-10)");
   });
 });

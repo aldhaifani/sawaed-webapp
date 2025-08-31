@@ -6,7 +6,7 @@ import { ModuleItemSchema } from "./module-item.schema";
 
 export const AssessmentResultSchema = z
   .object({
-    level: z.number().int().min(1).max(5),
+    level: z.number().int().min(1).max(10), // Full 10-level system as defined in ai_skills.json
     confidence: z.number().min(0).max(1),
     reasoning: z.string().max(2000).optional(),
     // Optional skill label from AI output. We don't rely on this for persistence;
@@ -21,6 +21,6 @@ export const AssessmentResultSchema = z
         "duplicate module ids",
       ),
   })
-  .strict();
+  .passthrough(); // Allow extra fields but don't validate them
 
 export type AssessmentResultParsed = z.infer<typeof AssessmentResultSchema>;

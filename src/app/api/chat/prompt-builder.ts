@@ -1,13 +1,38 @@
 import { fetchMutation } from "convex/nextjs";
-import type { Id } from "@/../convex/_generated/dataModel";
 import { api } from "@/../convex/_generated/api";
+import type { Id } from "@/../convex/_generated/dataModel";
 import {
   ALLOWED_MODULE_TYPES,
   MIN_MODULES,
   MAX_MODULES,
 } from "@/shared/ai/constants";
 import * as Sentry from "@sentry/nextjs";
-import { ModuleTemplates } from "@/shared/ai/module-templates";
+
+// Simple in-memory cache for skill definitions and templates
+const skillCache = new Map<
+  string,
+  {
+    skill: LocalSkill;
+    timestamp: number;
+  }
+>();
+
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCachedSkill(skillId: string): LocalSkill | null {
+  const cached = skillCache.get(skillId);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.skill;
+  }
+  return null;
+}
+
+function setCachedSkill(skillId: string, skill: LocalSkill): void {
+  skillCache.set(skillId, {
+    skill,
+    timestamp: Date.now(),
+  });
+}
 
 // Local fallback data (static skill definitions and level descriptors)
 // Loaded only on the server; used when Convex context is unavailable or to enrich details
@@ -50,10 +75,6 @@ export type BuildPromptInput = {
 export type BuildPromptOutput = {
   readonly systemPrompt: string;
 };
-
-function pick<T>(cond: boolean, a: T, b: T): T {
-  return cond ? a : b;
-}
 
 // Narrow types for Convex result to avoid any usage
 type ConvexAiSkill = {
@@ -107,50 +128,33 @@ function safeJoin(lines: readonly (string | undefined | null)[]): string {
   return lines.filter(Boolean).join("\n");
 }
 
-function clamp(n: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, n));
-}
-
-function conciseModuleTemplatesSection(
-  locale: Locale,
-  params: { baseLevel?: number; skillNameEn?: string; skillNameAr?: string },
-): string {
-  const header =
-    locale === "ar" ? "قوالب الوحدات (مختصر):" : "Module Templates (concise):";
-  const version = ModuleTemplates.getVersion();
-  const skillToken = locale === "ar" ? params.skillNameAr : params.skillNameEn;
-  const base = clamp(params.baseLevel ?? 3, 1, 5);
-  const levelsToShow = [clamp(base - 1, 1, 5), base, clamp(base + 1, 1, 5)];
-  const seen = new Set<number>();
-  const lines: string[] = [`${header} v${version}`];
-  for (const lvl of levelsToShow) {
-    if (seen.has(lvl)) continue;
-    seen.add(lvl);
-    for (const type of ["article", "video", "quiz", "project"] as const) {
-      const line = ModuleTemplates.toConciseInstruction({
-        level: lvl,
-        type,
-        locale,
-        skillToken,
-      });
-      lines.push(`- ${line}`);
-    }
-  }
-  return lines.join("\n");
-}
-
 function findLocalSkillByNames(
   nameEn?: string | null,
   nameAr?: string | null,
 ): LocalSkill | undefined {
   if (!nameEn && !nameAr) return undefined;
-  return localSkills.find((s) => {
+
+  // Create cache key from skill names
+  const cacheKey = `${nameEn ?? ""}_${nameAr ?? ""}`;
+
+  // Check cache first
+  const cached = getCachedSkill(cacheKey);
+  if (cached) return cached;
+
+  // Find skill and cache result
+  const skill = localSkills.find((s) => {
     const nEn = s.nameEn?.toLowerCase();
     const nAr = s.nameAr?.toLowerCase();
     const enMatch = nameEn != null && nEn === nameEn.toLowerCase();
     const arMatch = nameAr != null && nAr === nameAr.toLowerCase();
     return enMatch || arMatch;
   });
+
+  if (skill) {
+    setCachedSkill(cacheKey, skill);
+  }
+
+  return skill;
 }
 
 function levelsSummary(
@@ -161,234 +165,107 @@ function levelsSummary(
     nameAr: string;
     descriptionEn?: string;
     descriptionAr?: string;
+    resources?: ReadonlyArray<{ url: string; title?: string }>;
   }>,
 ): string {
   const lines: string[] = [];
-  lines.push(pick(locale === "ar", "مستويات المهارة:", "Skill Levels:"));
+  lines.push("Skill Levels:");
   for (const lvl of levels) {
-    const title = pick(locale === "ar", lvl.nameAr, lvl.nameEn);
-    const desc = pick(
-      locale === "ar",
-      lvl.descriptionAr ?? "",
-      lvl.descriptionEn ?? "",
+    lines.push(
+      `- L${lvl.level}: ${lvl.nameEn}${lvl.descriptionEn ? ` — ${lvl.descriptionEn}` : ""}`,
     );
-    lines.push(`- L${lvl.level}: ${title}${desc ? ` — ${desc}` : ""}`);
   }
   return lines.join("\n");
 }
 
-function moduleConstraints(locale: Locale): string {
+function moduleConstraints(_locale: Locale): string {
   const types = Array.from(ALLOWED_MODULE_TYPES).join(" | ");
   return safeJoin([
-    pick(locale === "ar", "قيود مسار التعلم:", "Learning Path constraints:"),
-    pick(
-      locale === "ar",
-      `- استخدم من ${MIN_MODULES} إلى ${MAX_MODULES} عناصر تعليمية.`,
-      `- Use between ${MIN_MODULES} and ${MAX_MODULES} learning modules.`,
-    ),
-    pick(
-      locale === "ar",
-      `- الأنواع المسموح بها: ${types}.`,
-      `- Allowed types: ${types}.`,
-    ),
-    pick(
-      locale === "ar",
-      "- المدة بصيغة بشرية مثل: 10 دقائق، 1 ساعة.",
-      "- Duration must be human-readable (e.g., 10 minutes, 1 hour).",
-    ),
+    "Learning Path constraints:",
+    `- Use between ${MIN_MODULES} and ${MAX_MODULES} learning modules.`,
+    `- Allowed types: ${types}.`,
+    "- Duration must be human-readable (e.g., 10 minutes, 1 hour).",
+    "- For video modules: Use ONLY real YouTube URLs from the skill level resources or provide search keywords like 'YouTube: Python basics tutorial'",
+    "- For article modules: Use ONLY real URLs from the skill level resources or provide search keywords like 'Google: JavaScript fundamentals guide'",
+    "- NEVER generate fake or placeholder URLs. Always use real resources from the skill data or search instructions.",
+    "- Check the skill level resources for existing URLs that match the user's assessed level.",
   ]);
 }
 
-function exampleConversationSection(
-  locale: Locale,
-  params: { skillNameEn?: string; skillNameAr?: string; latestLevel?: number },
-): string {
-  const header = pick(
-    locale === "ar",
-    "\n\nمثال محادثة (إرشادي):",
-    "\n\nExample conversation (illustrative):",
-  );
-  const skill =
-    pick(locale === "ar", params.skillNameAr, params.skillNameEn) ??
-    pick(locale === "ar", "المهارة", "the skill");
-  const base = clamp(params.latestLevel ?? 3, 1, 5);
-  const nextUp = clamp(base + 1, 1, 5);
-  const nextDown = clamp(base - 1, 1, 5);
+// Removed verbose example conversation to reduce prompt size
 
-  const lines: string[] = [header];
-  if (locale === "ar") {
-    lines.push(
-      `AI: مرحبًا! سنقيّم مستوى معرفتك في ${skill}. إليك سؤال متعدد الخيارات:`,
-      `AI: [L${base}] عندما تواجه مشكلة جديدة، أي نهج تتبعه أولًا؟`,
-      "A) أبحث عن مثال مشابه وأطبقه كما هو",
-      "B) أقسّم المشكلة إلى أجزاء صغيرة وأحل كل جزء",
-      "C) أكتب كودًا سريعًا ثم أصلح الأخطاء لاحقًا",
-      "D) أطلب الحل مباشرة من صديق",
-      "Other: اكتب إجابتك",
-      "User: B",
-      "AI: جيد! يبدو أنك تستخدم أسلوبًا منظمًا. دعنا نجرب سؤالًا أصعب قليلًا:",
-      `AI: [L${nextUp}] إذا تعارضت حلّان محتملان، كيف تختار بينهما في سياق ${skill}؟`,
-    );
-  } else {
-    lines.push(
-      `AI: Hi! We'll assess your proficiency in ${skill}. Here's a multiple-choice question:`,
-      `AI: [L${base}] When you face a new problem, what's your first approach?`,
-      "A) Look for a similar example and copy it",
-      "B) Break it into smaller parts and solve step by step",
-      "C) Hack a quick solution and fix later",
-      "D) Ask a friend for the answer",
-      "Other: write your own",
-      "User: B",
-      "AI: Nice! That shows structured thinking. Let's try something slightly harder:",
-      `AI: [L${nextUp}] If two potential solutions conflict, how do you decide between them in the context of ${skill}?`,
-    );
-  }
-  // Also show a downshift example cue
-  lines.push(
-    pick(
-      locale === "ar",
-      `AI: إذا كان ذلك صعبًا، يمكننا تبسيطه: [L${nextDown}] ما أفضل طريقة لبدء الفهم؟`,
-      `AI: If that's challenging, we can simplify: [L${nextDown}] What's the best way to start understanding?`,
-    ),
-  );
-  return lines.join("\n");
-}
+// Removed verbose JSON example to reduce prompt size
 
-function exampleJsonSection(locale: Locale): string {
-  const header = pick(
-    locale === "ar",
-    "\n\nمثال JSON (للتوضيح فقط، لا تخرجه الآن):",
-    "\n\nExample JSON (illustrative only, do NOT output now):",
-  );
-  // Use tildes for fencing to avoid backticks inside template literals and avoid colliding with the final ```json instruction
-  const bodyEn = `\n~~~javascript\n{\n  skill: "Critical Thinking",\n  level: 3,\n  confidence: 0.74,\n  reasoning: "Shows structured problem decomposition with occasional guidance.",\n  learningModules: [\n    { id: "L3-ART-1", title: "Analyze assumptions in short case studies", type: "article", duration: "15 minutes" },\n    { id: "L3-VID-1", title: "Weighing trade-offs: a quick walkthrough", type: "video", duration: "10 minutes" },\n    { id: "L3-QUIZ-1", title: "Identify logical fallacies (basic)", type: "quiz", duration: "10 minutes" }\n  ]\n}\n~~~\n`;
-  const bodyAr = `\n~~~javascript\n{\n  skill: "التفكير النقدي",\n  level: 3,\n  confidence: 0.74,\n  reasoning: "يُظهر تفكيكًا منظمًا للمشكلة مع حاجة لإرشاد بسيط.",\n  learningModules: [\n    { id: "L3-ART-1", title: "تحليل الافتراضات في دراسات حالة قصيرة", type: "article", duration: "15 دقيقة" },\n    { id: "L3-VID-1", title: "موازنة المفاضلات: شرح سريع", type: "video", duration: "10 دقائق" },\n    { id: "L3-QUIZ-1", title: "التعرّف على المغالطات المنطقية (أساسي)", type: "quiz", duration: "10 دقائق" }\n  ]\n}\n~~~\n`;
-  return header + (locale === "ar" ? bodyAr : bodyEn);
-}
-
-function schemaInstruction(locale: Locale): string {
+function schemaInstruction(_locale: Locale): string {
   return safeJoin([
-    pick(
-      locale === "ar",
-      "\n\nالتعليمات الخاصة بالمخرجات:",
-      "\n\nOutput Instructions:",
-    ),
-    pick(
-      locale === "ar",
-      "في النهاية أخرج كتلة واحدة فقط من JSON الصالح داخل سياج ```json بدون أي نص قبلها أو بعدها، وتطابق هذا المخطط:",
-      "At the end, output exactly one valid JSON block inside a ```json fenced code block with no prose before or after, matching this schema:",
-    ),
+    "\n\nOutput Instructions:",
+    "At the end, output exactly one valid JSON block inside a ```json fenced code block with no prose before or after, matching this schema:",
     "{",
     "  skill?: string,",
-    "  level: number (1-5),",
+    "  level: number (1-10),",
     "  confidence: number (0-1),",
     "  reasoning?: string,",
     "  learningModules: Array<",
     "    { id: string, title: string, type: 'article'|'video'|'quiz'|'project', duration: string }",
-    pick(
-      locale === "ar",
-      "  > بطول من 3 إلى 6",
-      "  > with length between 3 and 6",
-    ),
+    "  > with length between 3 and 6",
     "}",
-    pick(
-      locale === "ar",
-      "لا تضف مفاتيح إضافية ولا تعليقات. إذا استخدمت 'modules' فحوِّلها إلى 'learningModules'.",
-      "Do not include extra keys or comments. If you used 'modules', rename it to 'learningModules'.",
-    ),
-    pick(
-      locale === "ar",
-      "تأكَّد من إغلاق الكتلة بـ ``` وعدم إضافة أي نص بعد JSON.",
-      "Ensure the block ends with ``` and no trailing text after the JSON.",
-    ),
+    "Do not include extra keys or comments. Ensure the block ends with ``` and no trailing text after the JSON.",
   ]);
 }
 
 function bilingualToneRules(locale: Locale): string {
-  return safeJoin([
-    pick(
-      locale === "ar",
-      "\n\nقواعد اللغة والنبرة:",
-      "\n\nLanguage and tone rules:",
-    ),
-    pick(
-      locale === "ar",
-      "- استخدم لغة المستخدم الحالية (عربي/إنجليزي). إذا غيّر المستخدم اللغة فغيّر معها.",
-      "- Use the user's current language (Arabic/English). If the user switches, switch too.",
-    ),
-    pick(
-      locale === "ar",
-      "- أسلوب ودود ومهني ومشجِّع. اجعل الجمل قصيرة وواضحة.",
-      "- Friendly, professional, and encouraging tone. Keep sentences short and clear.",
-    ),
-  ]);
+  return locale === "ar"
+    ? "\n\nالنبرة: ودود ومهني ومشجِّع. جمل قصيرة وواضحة. اطرح أسئلة محددة وعملية من مستويات المهارة."
+    : "\n\nTone: Friendly, professional, encouraging. Short, clear sentences. Ask specific, practical questions from the skill levels.";
 }
 
 function turnTakingRules(locale: Locale): string {
-  return safeJoin([
-    pick(locale === "ar", "\n\nقواعد تبادل الأدوار:", "\n\nTurn-taking rules:"),
-    pick(
-      locale === "ar",
-      "- اطرح سؤالاً واحدًا في كل مرة وانتظر رد المستخدم قبل المتابعة.",
-      "- Ask one question at a time and wait for the user's reply before proceeding.",
-    ),
-    pick(
-      locale === "ar",
-      "- إذا كان الرد غير واضح، اطلُب توضيحاً بسؤال قصير محدد.",
-      "- If the reply is unclear, ask a brief clarifying follow-up.",
-    ),
-  ]);
+  if (locale === "ar") {
+    return '\n\nقواعد المحادثة:\n• اطرح سؤالاً واحداً فقط في كل مرة\n• انتظر إجابة المستخدم قبل السؤال التالي\n• أقصى 5 أسئلة بدقة - لا تتجاوز هذا الحد\n• اعرض رقم السؤال: "السؤال X من 5" قبل كل سؤال\n• بعد السؤال الخامس، قدم التقييم النهائي فوراً\n• استخدم أسئلة محددة وعملية من مستويات المهارة المحددة';
+  }
+  return "\n\nRules: One question at a time. MAXIMUM 5 questions STRICTLY. Count questions and end assessment at question 5.\nUse specific, practical questions from the defined skill levels.";
 }
 
-function multipleChoiceRules(locale: Locale): string {
-  return safeJoin([
-    pick(
-      locale === "ar",
-      "\n\nصيغة الأسئلة متعددة الخيارات:",
-      "\n\nMultiple-choice format:",
-    ),
-    pick(
-      locale === "ar",
-      "- في كل دور، اطرح سؤال تقييم واحد فقط مع 5 خيارات: (A)، (B)، (C)، (D)، و(Other: اكتب إجابتك).",
-      "- Each turn, ask exactly one assessment question with 5 options: (A), (B), (C), (D), and (Other: write your own).",
-    ),
-    pick(
-      locale === "ar",
-      "- اجعل الخيارات الأربعة واضحة ومتميزة، واسمح للمستخدم بكتابة إجابة حرة إذا اختار (Other).",
-      "- Make the four options clear and distinct; allow the user to write a free-form answer if they choose (Other).",
-    ),
-    pick(
-      locale === "ar",
-      "- بعد اختيار المستخدم أو كتابة إجابة، قدّم تغذية راجعة قصيرة ثم انتقل للسؤال التالي أو قم بالتكييف في الصعوبة.",
-      "- After the user selects or writes an answer, give brief feedback, then proceed to the next question or adapt difficulty.",
-    ),
-  ]);
+function multipleChoiceRules(locale: Locale, _latestLevel?: number): string {
+  const rules =
+    locale === "ar"
+      ? [
+          "• استخدم نظام 10 مستويات كاملاً (1-10) لتقييم المهارة",
+          "• ابدأ بأسئلة متوسطة (مستوى 5) ثم اضبط حسب الإجابات",
+          "• إذا أجاب بشكل صحيح، انتقل لمستوى أعلى",
+          "• إذا أجاب بشكل خاطئ أو غير مكتمل، انتقل لمستوى أقل",
+          "• اهدف للوصول لمستوى دقيق خلال 5 أسئلة كحد أقصى",
+        ]
+      : [
+          "• Use full 10-level system (1-10) to assess the skill",
+          "• Start with medium questions (level 5) then adjust based on responses",
+          "• If answered correctly, move to higher level",
+          "• If answered incorrectly or incompletely, move to lower level",
+          "• Aim to reach accurate level within maximum 5 questions",
+        ];
+
+  return rules.map((rule) => `${rule}\n`).join("");
 }
 
-function dynamicDifficultyRules(locale: Locale, latestLevel?: number): string {
-  const base = latestLevel ?? 3;
-  return safeJoin([
-    pick(
-      locale === "ar",
-      "\n\nالتكيُّف مع الصعوبة:",
-      "\n\nDynamic difficulty:",
-    ),
-    pick(
-      locale === "ar",
-      `- ابدأ من مستوى L${base} تقريبيًا وتحرك تدريجيًا لأعلى/أسفل بحسب إجابات المستخدم وثقته الظاهرة.`,
-      `- Start roughly at level L${base} and move gradually up/down based on the user's demonstrated answers and confidence.`,
-    ),
-    pick(
-      locale === "ar",
-      "- استخدم أسئلة استكشافية قبل رفع الصعوبة. لا تقفز بين المستويات بسرعة.",
-      "- Use probing questions before increasing difficulty. Avoid large jumps across levels.",
-    ),
-    pick(
-      locale === "ar",
-      "- إذا تعثّر المستخدم، بسِّط السؤال وقدِّم تلميحًا قصيرًا.",
-      "- If the user struggles, simplify the question and offer a brief hint.",
-    ),
-  ]);
+function dynamicDifficultyRules(locale: Locale, _latestLevel?: number): string {
+  const rules =
+    locale === "ar"
+      ? [
+          "• استخدم نظام 10 مستويات كاملاً (1-10) لتقييم المهارة",
+          "• ابدأ بأسئلة متوسطة (مستوى 5) ثم اضبط حسب الإجابات",
+          "• إذا أجاب بشكل صحيح، انتقل لمستوى أعلى",
+          "• إذا أجاب بشكل خاطئ أو غير مكتمل، انتقل لمستوى أقل",
+          "• اهدف للوصول لمستوى دقيق خلال 5 أسئلة كحد أقصى",
+        ]
+      : [
+          "• Use full 10-level system (1-10) to assess the skill",
+          "• Start with medium questions (level 5) then adjust based on responses",
+          "• If answered correctly, move to higher level",
+          "• If answered incorrectly or incompletely, move to lower level",
+          "• Aim to reach accurate level within maximum 5 questions",
+        ];
+
+  return rules.map((rule) => `${rule}\n`).join("");
 }
 
 export async function buildSystemPrompt(
@@ -403,18 +280,24 @@ export async function buildSystemPrompt(
   let levels: ReadonlyArray<SummaryLevel> = [];
   let latestLevel: number | undefined;
   let latestConfidence: number | undefined;
+  let youthFirstName: string | undefined;
 
-  // Try Convex: get rich context (aiSkill + latestAssessment + activeLearningPath)
+  // Try Convex: get rich context with optimized single call
   try {
     // Avoid Convex calls in test environment to keep unit/integration tests deterministic
     const allowConvex = !!convexToken && process.env.NODE_ENV !== "test";
     if (allowConvex) {
       const res = await fetchMutation(
-        api.aiAssessments.startAssessment,
-        { aiSkillId: aiSkillId as unknown as Id<"aiSkills"> },
+        api.aiAssessments.startAssessmentWithProfile,
+        {
+          aiSkillId: aiSkillId as unknown as Id<"aiSkills">,
+          locale,
+        },
         { token: convexToken },
       );
-      const typed = res as unknown as StartAssessmentResult;
+      const typed = res as unknown as StartAssessmentResult & {
+        user?: { firstName?: string };
+      };
       if (typed.aiSkill) {
         skillNameEn = typed.aiSkill.nameEn;
         skillNameAr = typed.aiSkill.nameAr;
@@ -425,6 +308,10 @@ export async function buildSystemPrompt(
       if (typed.latestAssessment) {
         latestLevel = typed.latestAssessment.level;
         latestConfidence = typed.latestAssessment.confidence;
+      }
+      // Extract first name from optimized response
+      if (typed.user?.firstName) {
+        youthFirstName = typed.user.firstName.trim();
       }
     }
   } catch (err) {
@@ -446,54 +333,58 @@ export async function buildSystemPrompt(
   if (!definitionEn && local?.definitionEn) definitionEn = local.definitionEn;
   if (!definitionAr && local?.definitionAr) definitionAr = local.definitionAr;
 
-  // Compose prompt
-  const header = pick(
-    locale === "ar",
-    "أنت مساعد يقيم مهارة المستخدم ويقترح مسار تعلم مناسب.",
-    "You assess the user's skill and propose an appropriate learning path.",
-  );
+  // Include skill resources for URL validation
+  const skillResources =
+    levels.length > 0
+      ? `\n\nSkill Level Resources:\n${levels
+          .map(
+            (l) =>
+              `Level ${l.level}: ${l.descriptionEn ?? l.descriptionAr}\n${
+                local?.levels
+                  ?.find((ll) => ll.level === l.level)
+                  ?.resources?.map((r) => `- ${r.url}`)
+                  .join("\n") ?? ""
+              }`,
+          )
+          .join("\n\n")}`
+      : "";
 
-  const nameLine = pick(
-    locale === "ar",
-    skillNameAr ? `المهارة: ${skillNameAr}` : undefined,
-    skillNameEn ? `Skill: ${skillNameEn}` : undefined,
-  );
+  // Compose prompt - ALL IN ENGLISH
+  const header =
+    "You are an AI assessment assistant that evaluates the user's skill level and proposes an appropriate learning path.";
 
-  const defLine = pick(
-    locale === "ar",
-    definitionAr ? `التعريف: ${definitionAr}` : undefined,
-    definitionEn ? `Definition: ${definitionEn}` : undefined,
-  );
+  const nameLine = skillNameEn ? `Skill: ${skillNameEn}` : undefined;
+
+  const defLine = definitionEn ? `Definition: ${definitionEn}` : undefined;
 
   const lvlSummary =
     levels.length > 0 ? levelsSummary(locale, levels) : undefined;
 
   const userContext =
     latestLevel !== undefined && latestConfidence !== undefined
-      ? pick(
-          locale === "ar",
-          `السياق السابق: آخر تقييم مستوى ${latestLevel} بثقة ${latestConfidence}.`,
-          `Previous context: latest assessment level ${latestLevel} with confidence ${latestConfidence}.`,
-        )
+      ? `Previous context: latest assessment level ${latestLevel} with confidence ${latestConfidence}.`
       : undefined;
 
   const constraints = moduleConstraints(locale);
   const schema = schemaInstruction(locale);
-  const templates = conciseModuleTemplatesSection(locale, {
-    baseLevel: latestLevel,
-    skillNameEn,
-    skillNameAr,
-  });
+  // Remove unused variable
+  // const moduleTemplatesByLevel = ModuleTemplates.filter(
+  //   (t: any) => t.level === latestLevel ?? t.level === 0,
+  // );
   const tone = bilingualToneRules(locale);
   const turns = turnTakingRules(locale);
-  const mcq = multipleChoiceRules(locale);
+  const mcq = multipleChoiceRules(locale, latestLevel);
   const adapt = dynamicDifficultyRules(locale, latestLevel);
-  const examples = exampleConversationSection(locale, {
-    skillNameEn,
-    skillNameAr,
-    latestLevel,
-  });
-  const exampleJson = exampleJsonSection(locale);
+
+  // Simplified language policy
+  const languagePolicy = `\n\nLanguage: Always respond in ${locale === "ar" ? "Arabic" : "English"}. Do not switch languages.`;
+
+  // Simplified first-turn rule with question tracking
+  const firstTurnRule = `\n\nStart: If input is '__start__', greet${youthFirstName ? ` ${youthFirstName}` : ""} briefly, explain assessment (exactly 5 questions → learning path), ask if ready. Otherwise, start assessment directly. Track question count: "Question X/5" before each question.`;
+
+  // Simplified Sawaed context
+  const sawaedFocus =
+    "\n\nSawaed: Youth skill development platform. If asked, answer briefly and return to assessment.";
 
   return Sentry.startSpan(
     { op: "ai.prompt", name: "buildSystemPrompt" },
@@ -507,15 +398,17 @@ export async function buildSystemPrompt(
         defLine,
         lvlSummary,
         userContext,
+        firstTurnRule,
         tone,
         turns,
         mcq,
         adapt,
-        examples,
-        templates,
+        // templates removed - unused variable
         constraints,
-        exampleJson,
+        skillResources,
         schema,
+        languagePolicy,
+        sawaedFocus,
       ]);
       return { systemPrompt } as const;
     },

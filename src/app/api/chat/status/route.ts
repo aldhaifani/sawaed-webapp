@@ -65,17 +65,41 @@ export async function GET(req: Request): Promise<Response> {
             { status: 404, headers: { "content-type": "application/json" } },
           );
         }
-        // Always return plain JSON payload for test stability
-        return new Response(
-          JSON.stringify({
-            sessionId: s.sessionId,
-            status: s.status,
-            text: s.text,
-            updatedAt: s.updatedAt,
-            error: s.error,
-          } satisfies StatusResponse),
-          { status: 200, headers: { "content-type": "application/json" } },
-        );
+        // Calculate ETag for caching
+        const responseData = {
+          sessionId: s.sessionId,
+          status: s.status,
+          text: s.text,
+          updatedAt: s.updatedAt,
+          error: s.error,
+        } satisfies StatusResponse;
+
+        const etag = `"${s.updatedAt}-${s.text.length}"`;
+        const ifNoneMatch = req.headers.get("if-none-match");
+
+        // Return 304 if content hasn't changed
+        if (
+          ifNoneMatch === etag &&
+          s.status !== "done" &&
+          s.status !== "error"
+        ) {
+          return new Response(null, {
+            status: 304,
+            headers: {
+              etag: etag,
+              "cache-control": "no-cache",
+            },
+          });
+        }
+
+        return new Response(JSON.stringify(responseData), {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            etag: etag,
+            "cache-control": "no-cache",
+          },
+        });
       } catch (err) {
         Sentry.captureException(err);
         return new Response(

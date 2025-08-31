@@ -63,6 +63,8 @@ export default function ChatInitPage(): ReactElement {
   >(null);
   const [isAssessmentComplete, setIsAssessmentComplete] =
     useState<boolean>(false);
+  const [isProcessingAssessment, setIsProcessingAssessment] =
+    useState<boolean>(false);
 
   const skillParam = params.get("skill") ?? "";
   const skillId = skillParam as unknown as Id<"aiSkills">;
@@ -95,37 +97,6 @@ export default function ChatInitPage(): ReactElement {
               : m,
           ),
         );
-        if (!hasPersistedRef.current) {
-          void (async () => {
-            try {
-              const detected = detectAssessmentFromText(text);
-              if (detected.valid && detected.data && skillParam) {
-                await storeAssessment({
-                  aiSkillId: skillId,
-                  result: detected.data,
-                });
-                hasPersistedRef.current = true;
-                setIsAssessmentComplete(true);
-                try {
-                  window.localStorage.removeItem(sessionStorageKey);
-                } catch {}
-                toast.success(
-                  (() => {
-                    try {
-                      return t("assessmentComplete");
-                    } catch {
-                      return locale === "ar"
-                        ? "تم اكتمال التقييم"
-                        : "Assessment complete";
-                    }
-                  })(),
-                );
-              }
-            } catch (e) {
-              Sentry.captureException(e);
-            }
-          })();
-        }
       } else {
         setMessages((prev) =>
           prev.map((m) =>
@@ -146,33 +117,52 @@ export default function ChatInitPage(): ReactElement {
       aiMessageId: string;
       text: string;
     }) => {
-      // Final parse/persist if not done
-      if (!hasPersistedRef.current) {
+      // Only check for assessment JSON if the message explicitly contains a JSON code block
+      if (!hasPersistedRef.current && text.includes("```json")) {
         void (async () => {
-          const detected = detectAssessmentFromText(text);
-          if (detected.valid && detected.data && skillParam) {
-            try {
+          try {
+            setIsProcessingAssessment(true);
+
+            const detected = detectAssessmentFromText(text);
+            if (detected.valid && detected.data && skillParam) {
               await storeAssessment({
                 aiSkillId: skillId,
                 result: detected.data,
               });
               hasPersistedRef.current = true;
               setIsAssessmentComplete(true);
-            } catch (e) {
-              Sentry.captureException(e);
+              setIsProcessingAssessment(false);
+
+              toast.success(
+                (() => {
+                  try {
+                    return t("assessmentComplete");
+                  } catch {
+                    return locale === "ar"
+                      ? "اكتمل التقييم"
+                      : "Assessment complete";
+                  }
+                })(),
+              );
+            } else {
+              // Only show error if JSON was explicitly sent but invalid
+              setIsProcessingAssessment(false);
+              console.warn("Invalid assessment JSON structure");
+              toast.error(
+                (() => {
+                  try {
+                    return t("assessmentFailed");
+                  } catch {
+                    return locale === "ar"
+                      ? "تعذّر إكمال التقييم. يرجى المحاولة مرة أخرى."
+                      : "Assessment could not be completed. Please try again.";
+                  }
+                })(),
+              );
             }
-          } else {
-            toast.error(
-              (() => {
-                try {
-                  return t("jsonInvalid");
-                } catch {
-                  return locale === "ar"
-                    ? "تعذّر التعرّف على نتيجة التقييم بصيغة JSON"
-                    : "Could not detect a valid assessment JSON";
-                }
-              })(),
-            );
+          } catch (e) {
+            setIsProcessingAssessment(false);
+            Sentry.captureException(e);
           }
         })();
       }
@@ -189,6 +179,9 @@ export default function ChatInitPage(): ReactElement {
       setConnectionState("disconnected");
     },
   });
+
+  // Prevent double auto-starts
+  const autoStartedRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!skillParam) return;
@@ -217,6 +210,72 @@ export default function ChatInitPage(): ReactElement {
     // don't include loadTranscript as dependency to avoid re-load loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [booted, skillParam]);
+
+  // Auto-start greeting when no history exists
+  useEffect(() => {
+    if (!booted || !skillParam) return;
+    if (autoStartedRef.current) return;
+    if (messages.length > 0) return;
+    // Create AI placeholder and trigger send
+    const aiMsg: Message = {
+      id: `a-${Date.now()}`,
+      role: "ai",
+      content: "",
+      streaming: true,
+      createdAt: Date.now(),
+    };
+    setMessages((prev) => [...prev, aiMsg]);
+    void (async () => {
+      const result = await sendMessage({
+        skillId: skillParam,
+        message: "__start__",
+        locale,
+      });
+      if (!result) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === aiMsg.id
+              ? {
+                  ...m,
+                  content: t("errorLoading"),
+                  streaming: false,
+                  error: true,
+                }
+              : m,
+          ),
+        );
+        toast(t("errorLoading"));
+        return;
+      }
+      const { sessionId, conversationId: nextConversationId } = result;
+      if (nextConversationId) {
+        setConversationId(
+          nextConversationId as unknown as Id<"aiConversations">,
+        );
+        try {
+          window.localStorage.setItem(
+            conversationStorageKey,
+            nextConversationId,
+          );
+        } catch {}
+      }
+      try {
+        window.localStorage.setItem(
+          sessionStorageKey,
+          JSON.stringify({
+            sessionId,
+            aiMessageId: aiMsg.id,
+            conversationId: nextConversationId ?? null,
+          }),
+        );
+      } catch {}
+      hasPersistedRef.current = false;
+      startPolling({ sessionId, aiMessageId: aiMsg.id });
+      autoStartedRef.current = true;
+    })();
+    // Only run once on initial empty state
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [booted, skillParam, messages.length]);
 
   // Resume in-flight polling session on reload (if any)
   useEffect(() => {
@@ -284,9 +343,12 @@ export default function ChatInitPage(): ReactElement {
     if (!conversationId) return;
     if (!history) return; // loading or skipped
     if (history.length === 0) return;
-    // Only hydrate if we don't have any messages yet
+    // Hydrate if we have no real history yet or only a placeholder AI bubble
     setMessages((prev) => {
-      if (prev.length > 0) return prev;
+      const first = prev[0];
+      const onlyPlaceholder =
+        prev.length === 1 && first?.role === "ai" && first?.streaming === true;
+      if (prev.length > 0 && !onlyPlaceholder) return prev;
       const mapped: Message[] = history.map((m) => ({
         id: m._id,
         role: m.role === "assistant" ? "ai" : "user",
@@ -379,6 +441,19 @@ export default function ChatInitPage(): ReactElement {
           <p className="text-destructive mx-auto mt-3 text-sm">
             {t("missingSkill")}
           </p>
+        )}
+        {isProcessingAssessment && (
+          <div className="mx-auto mt-3 w-full max-w-3xl rounded-md border bg-blue-50 p-3 text-sm text-blue-900 dark:bg-blue-950 dark:text-blue-200">
+            {(() => {
+              try {
+                return t("assessmentProcessing");
+              } catch {
+                return locale === "ar"
+                  ? "جارٍ معالجة نتائج التقييم..."
+                  : "Processing your assessment results...";
+              }
+            })()}
+          </div>
         )}
         {isAssessmentComplete && (
           <div className="mx-auto mt-3 w-full max-w-3xl rounded-md border bg-green-50 p-3 text-sm text-green-900 dark:bg-green-950 dark:text-green-200">
@@ -492,6 +567,11 @@ export default function ChatInitPage(): ReactElement {
                               speed="2"
                               color="currentColor"
                             />
+                            <span className="text-sm opacity-75">
+                              {locale === "ar"
+                                ? "المساعد يفكر ويكتب..."
+                                : "AI is thinking and writing..."}
+                            </span>
                             <span className="sr-only">
                               {locale === "ar"
                                 ? "المساعد يكتب"
@@ -507,30 +587,49 @@ export default function ChatInitPage(): ReactElement {
                               <Button
                                 size="sm"
                                 variant="secondary"
-                                onClick={() => {
+                                onClick={async () => {
                                   // Retry with last user message content
                                   const lastUser = [...messages]
                                     .reverse()
                                     .find((mm) => mm.role === "user");
-                                  if (!lastUser) return;
-                                  // Dummy retry path uses same mock response
-                                  const aiText =
-                                    locale === "ar"
-                                      ? "تمت إعادة المحاولة بنجاح."
-                                      : "Retry succeeded.";
-                                  window.setTimeout(() => {
-                                    const aiMsg: Message = {
-                                      id: `a-${Date.now()}`,
-                                      role: "ai",
-                                      content: aiText,
-                                      streaming: false,
-                                      createdAt: Date.now(),
-                                    };
-                                    setMessages((prev) => [...prev, aiMsg]);
-                                  }, 400);
+                                  if (!lastUser || !data?.aiSkill?._id) return;
+
+                                  // Remove the error message
+                                  setMessages((prev) =>
+                                    prev.filter((msg) => msg.id !== m.id),
+                                  );
+
+                                  // Resend the message
+                                  try {
+                                    const result = await sendMessage({
+                                      skillId: data.aiSkill._id,
+                                      message: lastUser.content,
+                                      locale,
+                                    });
+                                    if (result) {
+                                      startPolling({
+                                        sessionId: result.sessionId,
+                                        aiMessageId: `ai-${Date.now()}`,
+                                      });
+                                    }
+                                  } catch (error) {
+                                    console.error("Retry failed:", error);
+                                  }
                                 }}
                               >
                                 {locale === "ar" ? "إعادة المحاولة" : "Retry"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  // Clear error and continue
+                                  setMessages((prev) =>
+                                    prev.filter((msg) => msg.id !== m.id),
+                                  );
+                                }}
+                              >
+                                {locale === "ar" ? "تجاهل" : "Dismiss"}
                               </Button>
                             </div>
                           </div>
@@ -576,13 +675,34 @@ export default function ChatInitPage(): ReactElement {
         {/* Footer input like ChatGPT */}
         <div className="bg-background/70 supports-[backdrop-filter]:bg-background/70 sticky bottom-0 z-10 mx-auto w-full max-w-3xl rounded-t-2xl pb-4 backdrop-blur">
           <div className="bg-card rounded-xl border p-2 shadow-sm">
+            {/* Show processing indicator in input area */}
+            {isProcessingAssessment && (
+              <div className="text-muted-foreground mb-2 flex items-center gap-2 text-xs">
+                <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
+                {(() => {
+                  try {
+                    return t("jsonDetecting");
+                  } catch {
+                    return locale === "ar"
+                      ? "جارٍ تحليل إجاباتك..."
+                      : "Analyzing your responses...";
+                  }
+                })()}
+              </div>
+            )}
             {/* Define one submit function to reuse for Enter and button click */}
             <PromptInput
               value={input}
               onValueChange={setInput}
               onSubmit={async () => {
                 const trimmed = input.trim();
-                if (!trimmed || !skillParam) return;
+                if (
+                  !trimmed ||
+                  !skillParam ||
+                  isProcessingAssessment ||
+                  isAssessmentComplete
+                )
+                  return;
                 const userMsg: Message = {
                   id: `u-${Date.now()}`,
                   role: "user",
@@ -683,7 +803,13 @@ export default function ChatInitPage(): ReactElement {
                       className="rounded-full"
                       onClick={async () => {
                         const trimmed = input.trim();
-                        if (!trimmed || !skillParam) return;
+                        if (
+                          !trimmed ||
+                          !skillParam ||
+                          isProcessingAssessment ||
+                          isAssessmentComplete
+                        )
+                          return;
                         const userMsg: Message = {
                           id: `u-${Date.now()}`,
                           role: "user",
@@ -752,7 +878,11 @@ export default function ChatInitPage(): ReactElement {
                         startPolling({ sessionId, aiMessageId: aiMsg.id });
                         focusInput();
                       }}
-                      disabled={!input.trim()}
+                      disabled={
+                        !input.trim() ||
+                        isProcessingAssessment ||
+                        isAssessmentComplete
+                      }
                     >
                       <Send className="h-4 w-4" />
                       <span className="sr-only">

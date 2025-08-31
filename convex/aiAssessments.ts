@@ -28,47 +28,75 @@ export const getSkills = query({
   handler: async (ctx) => {
     const authUserId = await auth.getUserId(ctx);
     if (!authUserId) return [];
-    const skills = await ctx.db.query("aiSkills").collect();
-    const enriched = await Promise.all(
-      skills.map(async (s) => {
-        const relSkillIds = s.relatedSkillIds ?? [];
-        const relInterestIds = s.relatedInterestIds ?? [];
-        const relatedSkills = (
-          await Promise.all(relSkillIds.map((id) => ctx.db.get(id)))
-        )
-          .filter(Boolean)
-          .map((sk) => ({
-            _id: sk!._id,
-            nameEn: sk!.nameEn as string,
-            nameAr: sk!.nameAr as string,
-          }));
-        const relatedInterests = (
-          await Promise.all(relInterestIds.map((id) => ctx.db.get(id)))
-        )
-          .filter(Boolean)
-          .map((it) => ({
-            _id: it!._id,
-            nameEn: it!.nameEn as string,
-            nameAr: it!.nameAr as string,
-          }));
-        return {
-          _id: s._id as Id<"aiSkills">,
-          nameEn: s.nameEn as string,
-          nameAr: s.nameAr as string,
-          category: s.category,
-          // Added bilingual definitions for richer UI previews (non-breaking addition)
-          definitionEn: s.definitionEn as string,
-          definitionAr: s.definitionAr as string,
-          levels: s.levels.map((lvl) => ({
-            level: lvl.level,
-            nameEn: lvl.nameEn,
-            nameAr: lvl.nameAr,
-          })),
-          relatedSkills,
-          relatedInterests,
-        } as const;
-      }),
-    );
+
+    // Optimized: Use index and limit results for better performance
+    const skills = await ctx.db
+      .query("aiSkills")
+      .withIndex("by_creation_time")
+      .order("desc")
+      .take(50); // Limit to 50 most recent skills
+
+    // Batch related data fetching for better performance
+    const allRelSkillIds = skills.flatMap((s) => s.relatedSkillIds ?? []);
+    const allRelInterestIds = skills.flatMap((s) => s.relatedInterestIds ?? []);
+
+    const [relatedSkillsMap, relatedInterestsMap] = await Promise.all([
+      Promise.all(allRelSkillIds.map((id) => ctx.db.get(id))).then(
+        (results) =>
+          new Map(
+            results.filter(Boolean).map((sk) => [
+              sk!._id,
+              {
+                _id: sk!._id,
+                nameEn: sk!.nameEn as string,
+                nameAr: sk!.nameAr as string,
+              },
+            ]),
+          ),
+      ),
+      Promise.all(allRelInterestIds.map((id) => ctx.db.get(id))).then(
+        (results) =>
+          new Map(
+            results.filter(Boolean).map((it) => [
+              it!._id,
+              {
+                _id: it!._id,
+                nameEn: it!.nameEn as string,
+                nameAr: it!.nameAr as string,
+              },
+            ]),
+          ),
+      ),
+    ]);
+
+    const enriched = skills.map((s) => {
+      const relSkillIds = s.relatedSkillIds ?? [];
+      const relInterestIds = s.relatedInterestIds ?? [];
+      const relatedSkills = relSkillIds
+        .map((id) => relatedSkillsMap.get(id))
+        .filter(Boolean);
+      const relatedInterests = relInterestIds
+        .map((id) => relatedInterestsMap.get(id))
+        .filter(Boolean);
+
+      return {
+        _id: s._id as Id<"aiSkills">,
+        nameEn: s.nameEn as string,
+        nameAr: s.nameAr as string,
+        category: s.category,
+        // Added bilingual definitions for richer UI previews (non-breaking addition)
+        definitionEn: s.definitionEn as string,
+        definitionAr: s.definitionAr as string,
+        levels: s.levels.map((lvl) => ({
+          level: lvl.level,
+          nameEn: lvl.nameEn,
+          nameAr: lvl.nameAr,
+        })),
+        relatedSkills,
+        relatedInterests,
+      } as const;
+    });
+
     return enriched;
   },
 });
@@ -142,6 +170,98 @@ export const startAssessment = mutation({
             createdAt: activeLearningPath.createdAt,
           }
         : undefined,
+    } as const;
+  },
+});
+
+/**
+ * Optimized function that combines startAssessment and user profile data
+ * in a single database operation to reduce latency for prompt building.
+ */
+export const startAssessmentWithProfile = mutation({
+  args: {
+    aiSkillId: v.id("aiSkills"),
+    locale: v.union(v.literal("ar"), v.literal("en")),
+  },
+  handler: async (ctx, { aiSkillId, locale }) => {
+    const authUserId = await auth.getUserId(ctx);
+    if (!authUserId) return null;
+
+    // Batch fetch user data first, then profile
+    const appUser = await ctx.db
+      .query("appUsers")
+      .withIndex("by_auth_user", (q) => q.eq("authUserId", authUserId))
+      .unique();
+
+    if (!appUser || appUser.role !== "YOUTH") return null;
+
+    // Batch fetch all assessment-related data in parallel
+    const [skill, assessments, paths] = await Promise.all([
+      ctx.db.get(aiSkillId),
+      ctx.db
+        .query("aiAssessments")
+        .withIndex("by_user_skill", (q) =>
+          q
+            .eq("userId", appUser._id as Id<"appUsers">)
+            .eq("aiSkillId", aiSkillId),
+        )
+        .collect(),
+      ctx.db
+        .query("aiLearningPaths")
+        .withIndex("by_user_skill", (q) =>
+          q
+            .eq("userId", appUser._id as Id<"appUsers">)
+            .eq("aiSkillId", aiSkillId),
+        )
+        .collect(),
+    ]);
+
+    if (!skill) throw new Error("Skill not found");
+
+    const latestAssessment = assessments.sort(
+      (a, b) => b.createdAt - a.createdAt,
+    )[0];
+
+    const activeLearningPath = paths
+      .filter((p) => p.status === "active")
+      .sort((a, b) => b.createdAt - a.createdAt)[0];
+
+    // Extract first name based on locale
+    const firstName =
+      locale === "ar"
+        ? appUser.firstNameAr || appUser.firstNameEn
+        : appUser.firstNameEn || appUser.firstNameAr;
+
+    return {
+      aiSkill: {
+        _id: skill._id as Id<"aiSkills">,
+        nameEn: skill.nameEn as string,
+        nameAr: skill.nameAr as string,
+        category: skill.category,
+        definitionEn: skill.definitionEn as string,
+        definitionAr: skill.definitionAr as string,
+        levels: skill.levels,
+      },
+      latestAssessment: latestAssessment
+        ? {
+            _id: latestAssessment._id as Id<"aiAssessments">,
+            level: latestAssessment.level,
+            confidence: latestAssessment.confidence,
+            createdAt: latestAssessment.createdAt,
+          }
+        : undefined,
+      activeLearningPath: activeLearningPath
+        ? {
+            _id: activeLearningPath._id as Id<"aiLearningPaths">,
+            status: activeLearningPath.status,
+            modules: activeLearningPath.modules,
+            createdAt: activeLearningPath.createdAt,
+          }
+        : undefined,
+      user: {
+        firstName: firstName || undefined,
+        languagePreference: appUser.languagePreference,
+      },
     } as const;
   },
 });
@@ -257,5 +377,104 @@ export const storeAssessment = mutation({
     })) as Id<"aiLearningPaths">;
 
     return { assessmentId, learningPathId } as const;
+  },
+});
+
+/**
+ * Mark a module as completed in the specified learning path.
+ * - Validates ownership
+ * - Ensures the module exists in the path
+ * - Adds the moduleId to completedModuleIds (idempotent)
+ * - Auto-completes the path if all modules are completed
+ */
+export const markModuleCompleted = mutation({
+  args: {
+    learningPathId: v.id("aiLearningPaths"),
+    moduleId: v.string(),
+  },
+  handler: async (ctx, { learningPathId, moduleId }) => {
+    const authUserId = await auth.getUserId(ctx);
+    if (!authUserId) return null;
+    const appUser = await ctx.db
+      .query("appUsers")
+      .withIndex("by_auth_user", (q) => q.eq("authUserId", authUserId))
+      .unique();
+    if (!appUser || appUser.role !== "YOUTH") return null;
+
+    const path = await ctx.db.get(learningPathId);
+    if (!path) throw new Error("Learning path not found");
+    if (path.userId !== (appUser._id as Id<"appUsers">))
+      throw new Error("Forbidden");
+    if (path.status !== "active") return { status: path.status } as const;
+
+    const existsInModules = path.modules.some((m) => m.id === moduleId);
+    if (!existsInModules) throw new Error("Module not found in path");
+
+    const now = Date.now();
+    const prev = new Set<string>(path.completedModuleIds ?? []);
+    prev.add(moduleId);
+    const completed = Array.from(prev);
+
+    // Determine if the path is now fully completed
+    const allDone = path.modules.every((m) => completed.includes(m.id));
+    if (allDone) {
+      await ctx.db.patch(learningPathId, {
+        completedModuleIds: completed,
+        status: "completed",
+        updatedAt: now,
+      });
+      return { status: "completed", completedModuleIds: completed } as const;
+    }
+
+    await ctx.db.patch(learningPathId, {
+      completedModuleIds: completed,
+      updatedAt: now,
+    });
+    return { status: "active", completedModuleIds: completed } as const;
+  },
+});
+
+/**
+ * Mark a module as incomplete in the specified learning path.
+ * - Validates ownership
+ * - Ensures the module exists in the path
+ * - Removes the moduleId from completedModuleIds (idempotent)
+ * - If the path was completed, it will be re-opened to active
+ */
+export const markModuleIncomplete = mutation({
+  args: {
+    learningPathId: v.id("aiLearningPaths"),
+    moduleId: v.string(),
+  },
+  handler: async (ctx, { learningPathId, moduleId }) => {
+    const authUserId = await auth.getUserId(ctx);
+    if (!authUserId) return null;
+    const appUser = await ctx.db
+      .query("appUsers")
+      .withIndex("by_auth_user", (q) => q.eq("authUserId", authUserId))
+      .unique();
+    if (!appUser || appUser.role !== "YOUTH") return null;
+
+    const path = await ctx.db.get(learningPathId);
+    if (!path) throw new Error("Learning path not found");
+    if (path.userId !== (appUser._id as Id<"appUsers">))
+      throw new Error("Forbidden");
+
+    const existsInModules = path.modules.some((m) => m.id === moduleId);
+    if (!existsInModules) throw new Error("Module not found in path");
+
+    const now = Date.now();
+    const current = new Set<string>(path.completedModuleIds ?? []);
+    current.delete(moduleId);
+    const updated = Array.from(current);
+
+    // If any module is now incomplete, ensure status is active
+    const status = "active" as const;
+    await ctx.db.patch(learningPathId, {
+      completedModuleIds: updated,
+      status,
+      updatedAt: now,
+    });
+    return { status, completedModuleIds: updated } as const;
   },
 });

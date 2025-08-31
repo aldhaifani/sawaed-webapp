@@ -17,7 +17,7 @@ export const addUserMessage = mutation({
   handler: async (
     ctx,
     { conversationId, content, metadataJson },
-  ): Promise<{ messageId: Id<"aiMessages"> } | null> => {
+  ): Promise<{ messageId: Id<"aiMessages">; questionCount: number } | null> => {
     const authUserId = await auth.getUserId(ctx);
     if (!authUserId) return null;
 
@@ -32,6 +32,17 @@ export const addUserMessage = mutation({
       return null;
     }
 
+    // Count existing assistant messages (questions) in this conversation
+    const assistantMessages = await ctx.db
+      .query("aiMessages")
+      .withIndex("by_conversation", (q) =>
+        q.eq("conversationId", conversationId),
+      )
+      .filter((q) => q.eq(q.field("role"), "assistant"))
+      .collect();
+
+    const questionCount = assistantMessages.length;
+
     const now = Date.now();
 
     const messageId = (await ctx.db.insert("aiMessages", {
@@ -44,7 +55,7 @@ export const addUserMessage = mutation({
 
     await ctx.db.patch(conversationId, { lastMessageAt: now, updatedAt: now });
 
-    return { messageId };
+    return { messageId, questionCount };
   },
 });
 
@@ -53,10 +64,11 @@ export const addAssistantMessage = mutation({
     conversationId: v.id("aiConversations"),
     content: v.string(),
     metadataJson: v.optional(v.string()),
+    questionNumber: v.optional(v.number()),
   },
   handler: async (
     ctx,
-    { conversationId, content, metadataJson },
+    { conversationId, content, metadataJson, questionNumber },
   ): Promise<{ messageId: Id<"aiMessages"> } | null> => {
     const authUserId = await auth.getUserId(ctx);
     if (!authUserId) return null;
@@ -79,6 +91,7 @@ export const addAssistantMessage = mutation({
       role: "assistant",
       content,
       metadataJson,
+      questionNumber,
       createdAt: now,
     })) as Id<"aiMessages">;
 

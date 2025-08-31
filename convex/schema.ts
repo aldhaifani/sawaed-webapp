@@ -484,6 +484,8 @@ const schema = defineSchema({
     content: v.string(),
     // Optional JSON string to carry extra info (e.g., detected assessment, tool results)
     metadataJson: v.optional(v.string()),
+    // Track question number for assessment flow (1-5)
+    questionNumber: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index("by_conversation", ["conversationId"]) // fetch all messages for a conversation

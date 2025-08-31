@@ -769,8 +769,18 @@
     "startingLabel": "جاري البدء...",
     "startInitFailed": "تعذّر بدء التقييم",
     "startErrorGeneric": "حدث خطأ",
-    "learningPathTitle": "مسار التعلم (قريبًا)",
-    "learningPathHint": "سيظهر مسار التعلم هنا بعد تفعيل التوليد وربطه بالمحادثة."
+    "learningPathTitle": "مسار التعلم",
+    "learningPathHint": "سيظهر مسار التعلم الخاص بك هنا بعد إكمال التقييم.",
+    "selectSkillToViewPath": "اختر مهارة لعرض مسار التعلم.",
+    "pathLoading": "جارٍ تحميل مسار التعلم...",
+    "noPathTitle": "لا يوجد مسار تعلم بعد",
+    "noPathHint": "أكمل التقييم لإنشاء مسار مخصص.",
+    "progressLabel": "تم إكمال {done} من {total} وحدات",
+    "progressPercent": "%{percent} مكتمل",
+    "statusActive": "نشط",
+    "statusCompleted": "مكتمل",
+    "toggleCompleteError": "تعذّر تحديد الوحدة كمكتملة.",
+    "toggleIncompleteError": "تعذّر إلغاء تحديد الوحدة كمكتملة."
   },
 
   "chat": {
@@ -785,7 +795,11 @@
     "emptyHint": "ابدأ المحادثة بطرح سؤالك. يدعم الردود العربية والإنجليزية.",
     "footerDisclaimer": "قد تحتوي الردود على أخطاء. تحقّق دائمًا من المعلومات المهمة.",
     "assessmentComplete": "اكتمل التقييم. تم إنشاء مسار التعلم الخاص بك.",
+    "assessmentProcessing": "جارٍ معالجة نتائج التقييم...",
+    "assessmentFailed": "تعذّر إكمال التقييم. يرجى المحاولة مرة أخرى.",
     "jsonInvalid": "تعذّر التعرّف على نتيجة التقييم بصيغة JSON",
+    "jsonDetecting": "جارٍ تحليل إجاباتك...",
+    "conversationEnding": "جارٍ إنهاء التقييم...",
     "connectionState": {
       "connecting": "جارٍ الاتصال بخادم الدردشة...",
       "connected": "تم الاتصال بخادم الدردشة",

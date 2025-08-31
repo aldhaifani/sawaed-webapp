@@ -16,14 +16,14 @@ describe("prompt-builder", () => {
       locale: "en",
       convexToken: null,
     });
-    expect(out.systemPrompt).toContain("You assess the user's skill");
+    expect(out.systemPrompt).toContain("You are an AI assessment assistant");
     expect(out.systemPrompt).toContain("Learning Path constraints:");
     expect(out.systemPrompt).toContain("Allowed types:");
     expect(out.systemPrompt).toContain("Output Instructions:");
     expect(out.systemPrompt).toContain("```json");
     expect(out.systemPrompt).toContain("learningModules");
-    expect(out.systemPrompt).toContain("Multiple-choice format:");
-    expect(out.systemPrompt).toContain("Module Templates (concise): v");
+    expect(out.systemPrompt).toContain("MAXIMUM 5 questions STRICTLY");
+    expect(out.systemPrompt).toContain("Question X/5");
   });
 
   it("builds an Arabic prompt with constraints and schema", async () => {
@@ -32,12 +32,12 @@ describe("prompt-builder", () => {
       locale: "ar",
       convexToken: null,
     });
-    expect(out.systemPrompt).toContain("أنت مساعد يقيم مهارة المستخدم");
-    expect(out.systemPrompt).toContain("قيود مسار التعلم:");
-    expect(out.systemPrompt).toContain("التعليمات الخاصة بالمخرجات:");
+    expect(out.systemPrompt).toContain("You are an AI assessment assistant");
+    expect(out.systemPrompt).toContain("Learning Path constraints:");
+    expect(out.systemPrompt).toContain("Output Instructions:");
     expect(out.systemPrompt).toContain("```json");
-    expect(out.systemPrompt).toContain("صيغة الأسئلة متعددة الخيارات:");
-    expect(out.systemPrompt).toContain("قوالب الوحدات (مختصر):");
+    expect(out.systemPrompt).toContain("أقصى 5 أسئلة بدقة");
+    expect(out.systemPrompt).toContain("السؤال X من 5");
   });
 
   it("includes allowed module types and min/max module constraints", async () => {

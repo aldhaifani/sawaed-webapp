@@ -40,7 +40,7 @@ class ModuleTemplates {
   });
 
   private static readonly levelEntrySchema = z.object({
-    level: z.number().int().min(1).max(5),
+    level: z.number().int().min(1).max(10),
     templates: ModuleTemplates.levelTemplatesSchema,
   });
 
@@ -59,7 +59,7 @@ class ModuleTemplates {
   }
 
   /**
-   * Get level entry by numeric level (1..5).
+   * Get level entry by numeric level (1..10).
    */
   public static getLevel(
     level: number,

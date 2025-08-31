@@ -609,6 +609,564 @@
           }
         }
       }
+    },
+    {
+      "level": 6,
+      "templates": {
+        "article": {
+          "en": {
+            "titlePatterns": [
+              "{{skill}}: Define Problems Precisely",
+              "Problem Definition in {{skill}}"
+            ],
+            "objectives": [
+              "Write clear problem statements",
+              "Separate symptoms from root causes"
+            ],
+            "durationBand": "15-20 minutes",
+            "outline": [
+              "Problem definition framework",
+              "Symptoms vs causes",
+              "Practice exercise"
+            ]
+          },
+          "ar": {
+            "titlePatterns": [
+              "{{skill}}: تعريف المشكلات بدقة",
+              "تعريف المشكلة في {{skill}}"
+            ],
+            "objectives": [
+              "كتابة بيانات مشكلة واضحة",
+              "فصل الأعراض عن الأسباب الجذرية"
+            ],
+            "durationBand": "15-20 دقيقة",
+            "outline": [
+              "إطار تعريف المشكلة",
+              "الأعراض مقابل الأسباب",
+              "تمرين تطبيقي"
+            ]
+          }
+        },
+        "video": {
+          "en": {
+            "titlePatterns": [
+              "{{skill}}: Constraint Analysis",
+              "Working Within Limits"
+            ],
+            "objectives": [
+              "Identify constraints and limitations",
+              "Work effectively within boundaries"
+            ],
+            "durationBand": "12-15 minutes",
+            "outline": [
+              "Constraint identification",
+              "Working methods",
+              "Boundary management"
+            ]
+          },
+          "ar": {
+            "titlePatterns": ["{{skill}}: تحليل القيود", "العمل ضمن الحدود"],
+            "objectives": ["تحديد القيود والحدود", "العمل بفعالية ضمن الحدود"],
+            "durationBand": "12-15 دقيقة",
+            "outline": ["تحديد القيود", "طرق العمل", "إدارة الحدود"]
+          }
+        },
+        "quiz": {
+          "en": {
+            "titlePatterns": ["Problem vs Symptom Quiz", "Root Cause Analysis"],
+            "objectives": [
+              "Distinguish problems from symptoms",
+              "Apply root cause analysis"
+            ],
+            "durationBand": "8-12 minutes",
+            "outline": ["6 scenarios with analysis"],
+            "evaluationHints": ["Focus on analytical thinking"]
+          },
+          "ar": {
+            "titlePatterns": [
+              "اختبار المشكلة مقابل العرض",
+              "تحليل السبب الجذري"
+            ],
+            "objectives": [
+              "التمييز بين المشكلات والأعراض",
+              "تطبيق تحليل السبب الجذري"
+            ],
+            "durationBand": "8-12 دقيقة",
+            "outline": ["6 سيناريوهات مع تحليل"],
+            "evaluationHints": ["التركيز على التفكير التحليلي"]
+          }
+        },
+        "project": {
+          "en": {
+            "titlePatterns": [
+              "Problem Definition Project",
+              "Constraint Analysis Exercise"
+            ],
+            "objectives": [
+              "Define a real problem precisely",
+              "Document constraints and boundaries"
+            ],
+            "durationBand": "30-45 minutes",
+            "outline": [
+              "Problem statement",
+              "Constraint mapping",
+              "Solution scope"
+            ]
+          },
+          "ar": {
+            "titlePatterns": ["مشروع تعريف المشكلة", "تمرين تحليل القيود"],
+            "objectives": ["تعريف مشكلة حقيقية بدقة", "توثيق القيود والحدود"],
+            "durationBand": "30-45 دقيقة",
+            "outline": ["بيان المشكلة", "خريطة القيود", "نطاق الحل"]
+          }
+        }
+      }
+    },
+    {
+      "level": 7,
+      "templates": {
+        "article": {
+          "en": {
+            "titlePatterns": [
+              "{{skill}}: Generate and Compare Alternatives",
+              "Decision Making in {{skill}}"
+            ],
+            "objectives": [
+              "Generate multiple solution alternatives",
+              "Compare options systematically"
+            ],
+            "durationBand": "18-25 minutes",
+            "outline": [
+              "Alternative generation",
+              "Comparison framework",
+              "Decision criteria"
+            ]
+          },
+          "ar": {
+            "titlePatterns": [
+              "{{skill}}: توليد ومقارنة البدائل",
+              "اتخاذ القرار في {{skill}}"
+            ],
+            "objectives": [
+              "توليد بدائل متعددة للحل",
+              "مقارنة الخيارات بشكل منهجي"
+            ],
+            "durationBand": "18-25 دقيقة",
+            "outline": ["توليد البدائل", "إطار المقارنة", "معايير القرار"]
+          }
+        },
+        "video": {
+          "en": {
+            "titlePatterns": [
+              "{{skill}}: Trade-off Analysis",
+              "Choosing Between Options"
+            ],
+            "objectives": [
+              "Analyze trade-offs systematically",
+              "Make justified decisions"
+            ],
+            "durationBand": "15-20 minutes",
+            "outline": [
+              "Trade-off framework",
+              "Analysis demo",
+              "Decision process"
+            ]
+          },
+          "ar": {
+            "titlePatterns": [
+              "{{skill}}: تحليل المقايضات",
+              "الاختيار بين الخيارات"
+            ],
+            "objectives": ["تحليل المقايضات بشكل منهجي", "اتخاذ قرارات مبررة"],
+            "durationBand": "15-20 دقيقة",
+            "outline": ["إطار المقايضات", "عرض تحليلي", "عملية القرار"]
+          }
+        },
+        "quiz": {
+          "en": {
+            "titlePatterns": [
+              "Alternative Evaluation Quiz",
+              "Best Choice Challenge"
+            ],
+            "objectives": [
+              "Evaluate alternatives against criteria",
+              "Justify selection rationale"
+            ],
+            "durationBand": "10-15 minutes",
+            "outline": ["6 decision scenarios with justification"],
+            "evaluationHints": ["Reward systematic comparison"]
+          },
+          "ar": {
+            "titlePatterns": ["اختبار تقييم البدائل", "تحدي الخيار الأفضل"],
+            "objectives": ["تقييم البدائل وفق معايير", "تبرير منطق الاختيار"],
+            "durationBand": "10-15 دقيقة",
+            "outline": ["6 سيناريوهات قرار مع تبرير"],
+            "evaluationHints": ["مكافأة المقارنة المنهجية"]
+          }
+        },
+        "project": {
+          "en": {
+            "titlePatterns": [
+              "Multi-Option Analysis Project",
+              "Decision Framework Application"
+            ],
+            "objectives": [
+              "Apply decision framework to real scenario",
+              "Document analysis and rationale"
+            ],
+            "durationBand": "45-60 minutes",
+            "outline": [
+              "Option generation",
+              "Systematic comparison",
+              "Final decision"
+            ]
+          },
+          "ar": {
+            "titlePatterns": [
+              "مشروع تحليل متعدد الخيارات",
+              "تطبيق إطار القرار"
+            ],
+            "objectives": [
+              "تطبيق إطار قرار على سيناريو حقيقي",
+              "توثيق التحليل والمنطق"
+            ],
+            "durationBand": "45-60 دقيقة",
+            "outline": ["توليد الخيارات", "مقارنة منهجية", "القرار النهائي"]
+          }
+        }
+      }
+    },
+    {
+      "level": 8,
+      "templates": {
+        "article": {
+          "en": {
+            "titlePatterns": [
+              "{{skill}}: Pilot and Measure",
+              "Testing Solutions at Scale"
+            ],
+            "objectives": [
+              "Design pilot tests for solutions",
+              "Define success metrics and collect data"
+            ],
+            "durationBand": "20-30 minutes",
+            "outline": [
+              "Pilot design",
+              "Metrics definition",
+              "Data collection plan"
+            ]
+          },
+          "ar": {
+            "titlePatterns": [
+              "{{skill}}: تجريب وقياس",
+              "اختبار الحلول على نطاق"
+            ],
+            "objectives": [
+              "تصميم اختبارات تجريبية للحلول",
+              "تعريف مؤشرات النجاح وجمع البيانات"
+            ],
+            "durationBand": "20-30 دقيقة",
+            "outline": ["تصميم تجريبي", "تعريف المؤشرات", "خطة جمع البيانات"]
+          }
+        },
+        "video": {
+          "en": {
+            "titlePatterns": [
+              "{{skill}}: Implementation and Testing",
+              "From Concept to Results"
+            ],
+            "objectives": [
+              "Implement solution on small scale",
+              "Measure and evaluate impact"
+            ],
+            "durationBand": "18-25 minutes",
+            "outline": [
+              "Implementation steps",
+              "Testing process",
+              "Results analysis"
+            ]
+          },
+          "ar": {
+            "titlePatterns": [
+              "{{skill}}: التنفيذ والاختبار",
+              "من المفهوم إلى النتائج"
+            ],
+            "objectives": ["تنفيذ الحل على نطاق صغير", "قياس وتقييم الأثر"],
+            "durationBand": "18-25 دقيقة",
+            "outline": ["خطوات التنفيذ", "عملية الاختبار", "تحليل النتائج"]
+          }
+        },
+        "quiz": {
+          "en": {
+            "titlePatterns": ["Pilot Testing Quiz", "Metrics and Measurement"],
+            "objectives": [
+              "Design appropriate pilot tests",
+              "Select relevant success metrics"
+            ],
+            "durationBand": "12-18 minutes",
+            "outline": ["8 pilot design scenarios"],
+            "evaluationHints": ["Value practical measurement approaches"]
+          },
+          "ar": {
+            "titlePatterns": ["اختبار التجريب", "المؤشرات والقياس"],
+            "objectives": [
+              "تصميم اختبارات تجريبية مناسبة",
+              "اختيار مؤشرات نجاح ذات صلة"
+            ],
+            "durationBand": "12-18 دقيقة",
+            "outline": ["8 سيناريوهات تصميم تجريبي"],
+            "evaluationHints": ["تقدير المقاربات العملية للقياس"]
+          }
+        },
+        "project": {
+          "en": {
+            "titlePatterns": [
+              "Pilot Implementation Project",
+              "Test and Measure Initiative"
+            ],
+            "objectives": [
+              "Execute a pilot test of chosen solution",
+              "Collect and analyze performance data"
+            ],
+            "durationBand": "60-90 minutes",
+            "outline": ["Pilot execution", "Data collection", "Impact analysis"]
+          },
+          "ar": {
+            "titlePatterns": ["مشروع تنفيذ تجريبي", "مبادرة اختبار وقياس"],
+            "objectives": [
+              "تنفيذ اختبار تجريبي للحل المختار",
+              "جمع وتحليل بيانات الأداء"
+            ],
+            "durationBand": "60-90 دقيقة",
+            "outline": ["التنفيذ التجريبي", "جمع البيانات", "تحليل الأثر"]
+          }
+        }
+      }
+    },
+    {
+      "level": 9,
+      "templates": {
+        "article": {
+          "en": {
+            "titlePatterns": [
+              "{{skill}}: Multi-Stakeholder Management",
+              "Complex Problem Coordination"
+            ],
+            "objectives": [
+              "Coordinate multiple stakeholders effectively",
+              "Manage risks and communication streams"
+            ],
+            "durationBand": "25-35 minutes",
+            "outline": [
+              "Stakeholder mapping",
+              "Risk management",
+              "Communication planning"
+            ]
+          },
+          "ar": {
+            "titlePatterns": [
+              "{{skill}}: إدارة متعددة الأطراف",
+              "تنسيق المشكلات المعقدة"
+            ],
+            "objectives": [
+              "تنسيق أطراف متعددة بفعالية",
+              "إدارة المخاطر وقنوات التواصل"
+            ],
+            "durationBand": "25-35 دقيقة",
+            "outline": ["خريطة الأطراف", "إدارة المخاطر", "تخطيط التواصل"]
+          }
+        },
+        "video": {
+          "en": {
+            "titlePatterns": [
+              "{{skill}}: Leading Complex Projects",
+              "Stakeholder Coordination Demo"
+            ],
+            "objectives": [
+              "Lead multi-workstream initiatives",
+              "Navigate competing priorities"
+            ],
+            "durationBand": "20-30 minutes",
+            "outline": [
+              "Leadership approach",
+              "Priority management",
+              "Conflict resolution"
+            ]
+          },
+          "ar": {
+            "titlePatterns": [
+              "{{skill}}: قيادة المشاريع المعقدة",
+              "عرض تنسيق الأطراف"
+            ],
+            "objectives": [
+              "قيادة مبادرات متعددة المسارات",
+              "التنقل بين الأولويات المتنافسة"
+            ],
+            "durationBand": "20-30 دقيقة",
+            "outline": ["مقاربة القيادة", "إدارة الأولويات", "حل النزاعات"]
+          }
+        },
+        "quiz": {
+          "en": {
+            "titlePatterns": [
+              "Stakeholder Management Quiz",
+              "Complex Coordination Challenge"
+            ],
+            "objectives": [
+              "Handle multi-stakeholder scenarios",
+              "Balance competing interests"
+            ],
+            "durationBand": "15-20 minutes",
+            "outline": ["8 complex scenarios with stakeholder analysis"],
+            "evaluationHints": ["Reward balanced stakeholder consideration"]
+          },
+          "ar": {
+            "titlePatterns": ["اختبار إدارة الأطراف", "تحدي التنسيق المعقد"],
+            "objectives": [
+              "التعامل مع سيناريوهات متعددة الأطراف",
+              "توازن المصالح المتنافسة"
+            ],
+            "durationBand": "15-20 دقيقة",
+            "outline": ["8 سيناريوهات معقدة مع تحليل الأطراف"],
+            "evaluationHints": ["مكافأة الاعتبار المتوازن للأطراف"]
+          }
+        },
+        "project": {
+          "en": {
+            "titlePatterns": [
+              "Multi-Stakeholder Project",
+              "Complex Problem Leadership"
+            ],
+            "objectives": [
+              "Lead a multi-party initiative",
+              "Deliver results with stakeholder buy-in"
+            ],
+            "durationBand": "90-120 minutes",
+            "outline": [
+              "Stakeholder engagement",
+              "Execution coordination",
+              "Results delivery"
+            ]
+          },
+          "ar": {
+            "titlePatterns": ["مشروع متعدد الأطراف", "قيادة مشكلة معقدة"],
+            "objectives": [
+              "قيادة مبادرة متعددة الأطراف",
+              "تحقيق نتائج مع موافقة الأطراف"
+            ],
+            "durationBand": "90-120 دقيقة",
+            "outline": ["إشراك الأطراف", "تنسيق التنفيذ", "تسليم النتائج"]
+          }
+        }
+      }
+    },
+    {
+      "level": 10,
+      "templates": {
+        "article": {
+          "en": {
+            "titlePatterns": [
+              "{{skill}}: Institutionalize Solutions",
+              "Building Sustainable Systems"
+            ],
+            "objectives": [
+              "Create reusable frameworks and playbooks",
+              "Design continuous improvement loops"
+            ],
+            "durationBand": "30-40 minutes",
+            "outline": [
+              "Framework design",
+              "Automation opportunities",
+              "Improvement cycles"
+            ]
+          },
+          "ar": {
+            "titlePatterns": ["{{skill}}: مأسسة الحلول", "بناء أنظمة مستدامة"],
+            "objectives": [
+              "إنشاء أطر وأدلة قابلة للإعادة",
+              "تصميم حلقات تحسين مستمرة"
+            ],
+            "durationBand": "30-40 دقيقة",
+            "outline": ["تصميم الإطار", "فرص الأتمتة", "دورات التحسين"]
+          }
+        },
+        "video": {
+          "en": {
+            "titlePatterns": [
+              "{{skill}}: Systems and Automation",
+              "Scaling Solutions"
+            ],
+            "objectives": [
+              "Build scalable, automated solutions",
+              "Create governance and feedback loops"
+            ],
+            "durationBand": "25-35 minutes",
+            "outline": [
+              "System design",
+              "Automation implementation",
+              "Governance setup"
+            ]
+          },
+          "ar": {
+            "titlePatterns": ["{{skill}}: الأنظمة والأتمتة", "توسيع الحلول"],
+            "objectives": [
+              "بناء حلول قابلة للتوسع والأتمتة",
+              "إنشاء حوكمة وحلقات تغذية راجعة"
+            ],
+            "durationBand": "25-35 دقيقة",
+            "outline": ["تصميم النظام", "تنفيذ الأتمتة", "إعداد الحوكمة"]
+          }
+        },
+        "quiz": {
+          "en": {
+            "titlePatterns": [
+              "Systems Thinking Quiz",
+              "Institutionalization Challenge"
+            ],
+            "objectives": [
+              "Design sustainable systems",
+              "Plan for continuous improvement"
+            ],
+            "durationBand": "15-25 minutes",
+            "outline": ["8 system design scenarios"],
+            "evaluationHints": ["Focus on sustainability and scalability"]
+          },
+          "ar": {
+            "titlePatterns": ["اختبار التفكير النظمي", "تحدي المأسسة"],
+            "objectives": ["تصميم أنظمة مستدامة", "التخطيط للتحسين المستمر"],
+            "durationBand": "15-25 دقيقة",
+            "outline": ["8 سيناريوهات تصميم نظام"],
+            "evaluationHints": ["التركيز على الاستدامة والقابلية للتوسع"]
+          }
+        },
+        "project": {
+          "en": {
+            "titlePatterns": [
+              "Institutionalization Capstone",
+              "Build a Sustainable Framework"
+            ],
+            "objectives": [
+              "Create a complete framework or system",
+              "Document for reuse and continuous improvement"
+            ],
+            "durationBand": "120-180 minutes",
+            "outline": [
+              "Framework creation",
+              "Documentation",
+              "Improvement planning"
+            ]
+          },
+          "ar": {
+            "titlePatterns": ["مشروع ختامي للمأسسة", "بناء إطار مستدام"],
+            "objectives": [
+              "إنشاء إطار أو نظام متكامل",
+              "توثيق للإعادة والتحسين المستمر"
+            ],
+            "durationBand": "120-180 دقيقة",
+            "outline": ["إنشاء الإطار", "التوثيق", "تخطيط التحسين"]
+          }
+        }
+      }
     }
   ]
 }

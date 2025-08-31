@@ -738,8 +738,18 @@
     "startingLabel": "Starting...",
     "startInitFailed": "Could not start assessment",
     "startErrorGeneric": "Something went wrong",
-    "learningPathTitle": "Learning Path (Coming Soon)",
-    "learningPathHint": "Your generated learning path will appear here once generation is enabled and linked to the chat."
+    "learningPathTitle": "Learning Path",
+    "learningPathHint": "Your generated learning path appears here after your assessment.",
+    "selectSkillToViewPath": "Select a skill to view your learning path.",
+    "pathLoading": "Loading your learning path...",
+    "noPathTitle": "No learning path yet",
+    "noPathHint": "Complete the assessment to generate a personalized path.",
+    "progressLabel": "{done} of {total} modules completed",
+    "progressPercent": "{percent}% complete",
+    "statusActive": "Active",
+    "statusCompleted": "Completed",
+    "toggleCompleteError": "Couldn't mark module as completed.",
+    "toggleIncompleteError": "Couldn't mark module as incomplete."
   },
 
   "chat": {
@@ -754,7 +764,11 @@
     "emptyHint": "Start the conversation by asking a question. Arabic and English are supported.",
     "footerDisclaimer": "AI responses may contain mistakes. Always verify important information.",
     "assessmentComplete": "Assessment complete. Your learning path has been generated.",
+    "assessmentProcessing": "Processing your assessment results...",
+    "assessmentFailed": "Assessment could not be completed. Please try again.",
     "jsonInvalid": "Could not detect a valid assessment JSON",
+    "jsonDetecting": "Analyzing your responses...",
+    "conversationEnding": "Finalizing assessment...",
     "connectionState": {
       "connecting": "Connecting to chat server...",
       "connected": "Connected to chat server",

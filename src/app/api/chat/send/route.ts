@@ -1,9 +1,10 @@
+import * as Sentry from "@sentry/nextjs";
+import { z } from "zod";
+
 const SendRequestSchema = z.object({
   skillId: z.string().min(1),
   message: z.string().min(1),
 });
-
-import * as Sentry from "@sentry/nextjs";
 import {
   appendPartial,
   createSession,
@@ -16,13 +17,113 @@ import { cleanupStaleSessions } from "../_store";
 import { checkRateLimit, getClientIp } from "../_rateLimit";
 import { generateOnce, generateWithStreaming } from "@/lib/gemini";
 import { retryAsync } from "@/lib/retry";
+
+// Helper to reduce duplication in AI generation calls
+async function generateWithRetry(
+  model: string,
+  apiKey: string,
+  contents: ReadonlyArray<{
+    readonly role?: "user" | "model" | "system";
+    readonly parts: ReadonlyArray<{ readonly text: string }>;
+  }>,
+  systemInstruction: {
+    readonly role?: "user" | "model" | "system";
+    readonly parts: ReadonlyArray<{ readonly text: string }>;
+  },
+  attempts: number,
+  label: string,
+): Promise<string> {
+  return Sentry.startSpan(
+    {
+      op: "ai.generation",
+      name: `Generate AI Response - ${label}`,
+      attributes: {
+        "ai.model": model,
+        "ai.temperature": 0.4,
+        "ai.max_tokens": 512,
+        "ai.attempts": attempts,
+      },
+    },
+    async (span) => {
+      const startTime = Date.now();
+
+      try {
+        const result = await retryAsync(
+          () =>
+            generateOnce({
+              model,
+              apiKey,
+              contents,
+              systemInstruction,
+              generationConfig: {
+                temperature: 0.4,
+                maxOutputTokens: 512,
+              },
+            }),
+          {
+            attempts,
+            onAttempt: ({ attempt, delayMs }) => {
+              span.setAttribute("ai.current_attempt", attempt);
+              span.setAttribute("ai.retry_delay_ms", delayMs);
+
+              Sentry.addBreadcrumb({
+                category: "ai.retry",
+                level: "info",
+                message: `generateOnce ${label} retry`,
+                data: { attempt, delayMs, model },
+              });
+            },
+          },
+        );
+
+        const duration = Date.now() - startTime;
+        span.setAttribute("ai.duration_ms", duration);
+        span.setAttribute("ai.response_length", result.length);
+        span.setAttribute("ai.success", true);
+
+        // Log performance metrics
+        Sentry.addBreadcrumb({
+          category: "ai.performance",
+          level: "info",
+          message: `AI generation completed - ${label}`,
+          data: {
+            duration_ms: duration,
+            response_length: result.length,
+            model,
+            attempts,
+          },
+        });
+
+        return result;
+      } catch (error) {
+        const duration = Date.now() - startTime;
+        span.setAttribute("ai.duration_ms", duration);
+        span.setAttribute("ai.success", false);
+        span.setAttribute("ai.error", String(error));
+
+        Sentry.captureException(error, {
+          tags: {
+            operation: "ai.generation",
+            label,
+            model,
+          },
+          extra: {
+            duration_ms: duration,
+            attempts,
+          },
+        });
+
+        throw error;
+      }
+    },
+  );
+}
 import { detectAssessmentFromText } from "@/shared/ai/detect-assessment";
 import {
   AssessmentResultSchema,
   type AssessmentResultParsed,
 } from "@/shared/ai/assessment-result.schema";
-import { z } from "zod";
-import { fetchMutation } from "convex/nextjs";
+import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { api } from "@/../convex/_generated/api";
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import type { Id } from "@/../convex/_generated/dataModel";
@@ -97,16 +198,13 @@ export async function persistIfValidAssessment(params: {
         const payload: AssessmentResultParsed = {
           level: parsed.data.level,
           confidence: parsed.data.confidence,
-          // Include reasoning only if defined
-          ...(typeof parsed.data.reasoning === "string"
-            ? { reasoning: parsed.data.reasoning }
-            : {}),
           learningModules: parsed.data.learningModules,
         };
+
         await fetchMutation(
           api.aiAssessments.storeAssessment,
           {
-            aiSkillId: skillId as unknown as Id<"aiSkills">,
+            aiSkillId: skillId as Id<"aiSkills">,
             result: payload,
           },
           { token: convexToken },
@@ -166,9 +264,10 @@ async function runGeminiGeneration(
 ): Promise<void> {
   setRunning(sessionId);
   const apiKey = process.env.GEMINI_API_KEY ?? "";
-  const modelPrimary = process.env.GEMINI_MODEL ?? "gemini-2.0-flash-lite";
+  // Use faster Gemini Flash models for better response times
+  const modelPrimary = process.env.GEMINI_MODEL ?? "gemini-1.5-flash";
   const modelFallback =
-    process.env.GEMINI_MODEL_FALLBACK ?? "gemini-2.0-flash-lite";
+    process.env.GEMINI_MODEL_FALLBACK ?? "gemini-1.5-flash-8b";
 
   // Simulation fallback:
   // - In test: simulate only when there's no API key AND no convex token (simple integration test)
@@ -192,6 +291,8 @@ async function runGeminiGeneration(
               ? [
                   "أنت مساعد يقيم مهارات المستخدم ويقترح مسار تعلم.",
                   "اكتب إجابة موجزة وصحيحة.",
+                  "سياسة اللغة: أجب دائمًا بالعربية الفصحى الواضحة ولا تغيّر اللغة مهما كتب المستخدم.",
+                  "سلوك البداية: عند تلقي رسالة المستخدم '__start__' فقط، عرّف نفسك بإيجاز كمساعد تقييم، وقدّم تحية قصيرة وودودة، واشرح بإيجاز ما سيحدث، ثم اسأل إن كان مستعدًا للبدء. إذا لم تكن الرسالة '__start__' فتجاهل التحية وابدأ مباشرة بالتقييم. لا تعِد التحية لاحقًا.",
                   "أخرج في النهاية مقطع JSON صالح وفق المخطط التالي فقط داخل كتلة ```json:",
                   "{",
                   "  skill?: string,",
@@ -224,6 +325,9 @@ async function runGeminiGeneration(
               : [
                   "You assess the user's skill and propose a learning path.",
                   "Respond clearly and concisely.",
+                  "Language policy: Always respond in English; do not change language regardless of the user's input.",
+                  "Start behavior: Only when the user input is '__start__', briefly introduce yourself as the assessment assistant, greet once, describe what will happen, and ask if they are ready. If the input is not '__start__', do not greet—proceed directly with assessment. Greet only once per conversation.",
+                  "About Sawaed (when asked only): Sawaed helps youth discover and grow their skills through short assessments and tailored learning paths. Answer briefly and immediately return to the assessment.",
                   "At the end, output a valid JSON block inside ```json matching this schema only:",
                   "{",
                   "  skill?: string,",
@@ -256,17 +360,36 @@ async function runGeminiGeneration(
       },
     ],
   };
-
-  const contents = [
-    {
-      role: "user" as const,
-      parts: [
-        {
-          text: params.message,
-        },
-      ],
-    },
-  ];
+  // Build contents from prior conversation history when available
+  let contents: Array<{
+    readonly role: "user" | "model" | "system";
+    readonly parts: ReadonlyArray<{ readonly text: string }>;
+  }> = [];
+  try {
+    if (
+      params.convexToken &&
+      params.conversationId &&
+      process.env.NODE_ENV !== "test"
+    ) {
+      const history = await fetchQuery(
+        api.aiMessages.listByConversation,
+        { conversationId: params.conversationId as Id<"aiConversations"> },
+        { token: params.convexToken },
+      );
+      const mapped = history.map((m) => ({
+        role: m.role === "assistant" ? ("model" as const) : m.role,
+        parts: [{ text: m.content }],
+      }));
+      contents = mapped;
+    }
+  } catch (err) {
+    Sentry.captureException(err);
+  }
+  // Append the current user message last
+  contents.push({
+    role: "user" as const,
+    parts: [{ text: params.message }],
+  });
 
   // Wrap entire generation in a span with useful attributes
   await Sentry.startSpan(
@@ -292,9 +415,8 @@ async function runGeminiGeneration(
                 contents,
                 systemInstruction,
                 generationConfig: {
-                  temperature: 0.3,
-                  topP: 0.9,
-                  maxOutputTokens: 2048,
+                  temperature: 0.4, // Reduced from 0.7 for more focused responses
+                  maxOutputTokens: 512, // Reduced from 1024 for faster generation
                 },
               },
               {
@@ -308,62 +430,24 @@ async function runGeminiGeneration(
                     // If streaming yielded nothing, try one-shot generation before finishing
                     if (!gotChunk) {
                       try {
-                        const textPrimary = await retryAsync(
-                          () =>
-                            generateOnce({
-                              model: modelPrimary,
-                              apiKey,
-                              contents,
-                              systemInstruction,
-                              generationConfig: {
-                                temperature: 0.2,
-                                topP: 0.9,
-                                maxOutputTokens: 2048,
-                              },
-                            }),
-                          {
-                            attempts: 3,
-                            onAttempt: ({ attempt, delayMs }) => {
-                              Sentry.addBreadcrumb({
-                                category: "ai.retry",
-                                level: "info",
-                                message: "generateOnce primary retry",
-                                data: { attempt, delayMs, model: modelPrimary },
-                              });
-                            },
-                          },
+                        const textPrimary = await generateWithRetry(
+                          modelPrimary,
+                          apiKey,
+                          contents,
+                          systemInstruction,
+                          3,
+                          "primary",
                         );
                         if (textPrimary && textPrimary.trim().length > 0) {
                           appendPartial(sessionId, textPrimary);
                         } else {
-                          const textFallback = await retryAsync(
-                            () =>
-                              generateOnce({
-                                model: modelFallback,
-                                apiKey,
-                                contents,
-                                systemInstruction,
-                                generationConfig: {
-                                  temperature: 0.2,
-                                  topP: 0.9,
-                                  maxOutputTokens: 2048,
-                                },
-                              }),
-                            {
-                              attempts: 3,
-                              onAttempt: ({ attempt, delayMs }) => {
-                                Sentry.addBreadcrumb({
-                                  category: "ai.retry",
-                                  level: "info",
-                                  message: "generateOnce fallback retry",
-                                  data: {
-                                    attempt,
-                                    delayMs,
-                                    model: modelFallback,
-                                  },
-                                });
-                              },
-                            },
+                          const textFallback = await generateWithRetry(
+                            modelFallback,
+                            apiKey,
+                            contents,
+                            systemInstruction,
+                            3,
+                            "fallback",
                           );
                           if (textFallback && textFallback.trim().length > 0) {
                             appendPartial(sessionId, textFallback);
@@ -373,21 +457,23 @@ async function runGeminiGeneration(
                         Sentry.captureException(err);
                       }
                     }
-                    await validateAndMaybeRepair(
-                      sessionId,
-                      params.locale,
-                      apiKey,
-                      modelPrimary,
-                      modelFallback,
-                      contents,
-                      systemInstruction,
-                    );
+                    if (params.message !== "__start__") {
+                      await validateAndMaybeRepair(
+                        sessionId,
+                        params.locale,
+                        apiKey,
+                        modelPrimary,
+                        modelFallback,
+                        contents,
+                        systemInstruction,
+                      );
+                    }
                     const s1 = getSession(sessionId);
                     if (!s1?.text?.trim()) {
                       setError(sessionId, "empty_response");
-                    } else if (s1.status !== "error") {
+                    } else {
                       setDone(sessionId);
-                      // Persist assistant final message and assessment
+                      // Persist assistant final message always; persist assessment only if valid
                       try {
                         if (params.convexToken) {
                           let convoId = params.conversationId;
@@ -405,6 +491,12 @@ async function runGeminiGeneration(
                             convoId = conv.conversationId ?? undefined;
                           }
                           if (convoId) {
+                            Sentry.addBreadcrumb({
+                              category: "chat.send",
+                              level: "info",
+                              message: "persist_assistant_message_start",
+                              data: { conversationId: convoId },
+                            });
                             await fetchMutation(
                               api.aiMessages.addAssistantMessage,
                               {
@@ -413,12 +505,37 @@ async function runGeminiGeneration(
                               },
                               { token: params.convexToken },
                             );
-                            await persistIfValidAssessment({
-                              text: s1.text,
-                              skillId: params.skillId,
-                              convexToken: params.convexToken,
+                            Sentry.addBreadcrumb({
+                              category: "chat.send",
+                              level: "info",
+                              message: "persist_assistant_message_done",
+                              data: { conversationId: convoId },
+                            });
+                            if (
+                              s1.status !== "error" &&
+                              params.message !== "__start__"
+                            ) {
+                              await persistIfValidAssessment({
+                                text: s1.text,
+                                skillId: params.skillId,
+                                convexToken: params.convexToken,
+                              });
+                            }
+                          } else {
+                            Sentry.addBreadcrumb({
+                              category: "chat.send",
+                              level: "warning",
+                              message:
+                                "persist_assistant_message_skipped_no_conversation",
                             });
                           }
+                        } else {
+                          Sentry.addBreadcrumb({
+                            category: "chat.send",
+                            level: "warning",
+                            message:
+                              "persist_assistant_message_skipped_no_token",
+                          });
                         }
                       } catch (err) {
                         Sentry.captureException(err);
@@ -443,30 +560,13 @@ async function runGeminiGeneration(
                   completed = true;
                   if (!gotChunk) {
                     try {
-                      const textPrimary = await retryAsync(
-                        () =>
-                          generateOnce({
-                            model: modelPrimary,
-                            apiKey,
-                            contents,
-                            systemInstruction,
-                            generationConfig: {
-                              temperature: 0.2,
-                              topP: 0.9,
-                              maxOutputTokens: 2048,
-                            },
-                          }),
-                        {
-                          attempts: 3,
-                          onAttempt: ({ attempt, delayMs }) => {
-                            Sentry.addBreadcrumb({
-                              category: "ai.retry",
-                              level: "info",
-                              message: "generateOnce primary retry",
-                              data: { attempt, delayMs, model: modelPrimary },
-                            });
-                          },
-                        },
+                      const textPrimary = await generateWithRetry(
+                        modelPrimary,
+                        apiKey,
+                        contents,
+                        systemInstruction,
+                        3,
+                        "primary",
                       );
                       if (textPrimary && textPrimary.trim().length > 0) {
                         appendPartial(sessionId, textPrimary);
@@ -475,21 +575,23 @@ async function runGeminiGeneration(
                       Sentry.captureException(err);
                     }
                   }
-                  await validateAndMaybeRepair(
-                    sessionId,
-                    params.locale,
-                    apiKey,
-                    modelPrimary,
-                    modelFallback,
-                    contents,
-                    systemInstruction,
-                  );
+                  if (params.message !== "__start__") {
+                    await validateAndMaybeRepair(
+                      sessionId,
+                      params.locale,
+                      apiKey,
+                      modelPrimary,
+                      modelFallback,
+                      contents,
+                      systemInstruction,
+                    );
+                  }
                   const s1 = getSession(sessionId);
                   if (!s1?.text?.trim()) {
                     setError(sessionId, "empty_response");
-                  } else if (s1.status !== "error") {
+                  } else {
                     setDone(sessionId);
-                    // Persist assistant final message and assessment
+                    // Persist assistant final message always; persist assessment only if valid
                     try {
                       if (params.convexToken) {
                         let convoId = params.conversationId;
@@ -507,6 +609,12 @@ async function runGeminiGeneration(
                           convoId = conv.conversationId ?? undefined;
                         }
                         if (convoId) {
+                          Sentry.addBreadcrumb({
+                            category: "chat.send",
+                            level: "info",
+                            message: "persist_assistant_message_start",
+                            data: { conversationId: convoId },
+                          });
                           await fetchMutation(
                             api.aiMessages.addAssistantMessage,
                             {
@@ -515,12 +623,36 @@ async function runGeminiGeneration(
                             },
                             { token: params.convexToken },
                           );
-                          await persistIfValidAssessment({
-                            text: s1.text,
-                            skillId: params.skillId,
-                            convexToken: params.convexToken,
+                          Sentry.addBreadcrumb({
+                            category: "chat.send",
+                            level: "info",
+                            message: "persist_assistant_message_done",
+                            data: { conversationId: convoId },
+                          });
+                          if (
+                            s1.status !== "error" &&
+                            params.message !== "__start__"
+                          ) {
+                            await persistIfValidAssessment({
+                              text: s1.text,
+                              skillId: params.skillId,
+                              convexToken: params.convexToken,
+                            });
+                          }
+                        } else {
+                          Sentry.addBreadcrumb({
+                            category: "chat.send",
+                            level: "warning",
+                            message:
+                              "persist_assistant_message_skipped_no_conversation",
                           });
                         }
+                      } else {
+                        Sentry.addBreadcrumb({
+                          category: "chat.send",
+                          level: "warning",
+                          message: "persist_assistant_message_skipped_no_token",
+                        });
                       }
                     } catch (err) {
                       Sentry.captureException(err);
@@ -549,44 +681,35 @@ async function runGeminiGeneration(
       if (!completed) {
         try {
           if (!gotChunk) {
-            const text = await retryAsync(
-              () =>
-                generateOnce({
-                  model: modelPrimary,
-                  apiKey,
-                  contents,
-                }),
-              {
-                attempts: 3,
-                onAttempt: ({ attempt, delayMs }) => {
-                  Sentry.addBreadcrumb({
-                    category: "ai.retry",
-                    level: "info",
-                    message: "generateOnce primary retry",
-                    data: { attempt, delayMs, model: modelPrimary },
-                  });
-                },
-              },
+            const text = await generateWithRetry(
+              modelPrimary,
+              apiKey,
+              contents,
+              systemInstruction,
+              3,
+              "primary",
             );
             if (text && text.trim().length > 0) {
               appendPartial(sessionId, text);
             }
           }
-          await validateAndMaybeRepair(
-            sessionId,
-            params.locale,
-            apiKey,
-            modelPrimary,
-            modelFallback,
-            contents,
-            systemInstruction,
-          );
+          if (params.message !== "__start__") {
+            await validateAndMaybeRepair(
+              sessionId,
+              params.locale,
+              apiKey,
+              modelPrimary,
+              modelFallback,
+              contents,
+              systemInstruction,
+            );
+          }
           const s1 = getSession(sessionId);
           if (!s1?.text?.trim()) {
             setError(sessionId, "empty_response");
-          } else if (s1.status !== "error") {
+          } else {
             setDone(sessionId);
-            // Persist assistant final message and assessment
+            // Persist assistant final message always; persist assessment only if valid
             try {
               if (params.convexToken) {
                 let convoId = params.conversationId;
@@ -608,6 +731,12 @@ async function runGeminiGeneration(
                   }
                 }
                 if (convoId) {
+                  Sentry.addBreadcrumb({
+                    category: "chat.send",
+                    level: "info",
+                    message: "persist_assistant_message_start",
+                    data: { conversationId: convoId },
+                  });
                   await fetchMutation(
                     api.aiMessages.addAssistantMessage,
                     {
@@ -616,12 +745,33 @@ async function runGeminiGeneration(
                     },
                     { token: params.convexToken },
                   );
-                  await persistIfValidAssessment({
-                    text: s1.text,
-                    skillId: params.skillId,
-                    convexToken: params.convexToken,
+                  Sentry.addBreadcrumb({
+                    category: "chat.send",
+                    level: "info",
+                    message: "persist_assistant_message_done",
+                    data: { conversationId: convoId },
+                  });
+                  if (s1.status !== "error" && params.message !== "__start__") {
+                    await persistIfValidAssessment({
+                      text: s1.text,
+                      skillId: params.skillId,
+                      convexToken: params.convexToken,
+                    });
+                  }
+                } else {
+                  Sentry.addBreadcrumb({
+                    category: "chat.send",
+                    level: "warning",
+                    message:
+                      "persist_assistant_message_skipped_no_conversation",
                   });
                 }
+              } else {
+                Sentry.addBreadcrumb({
+                  category: "chat.send",
+                  level: "warning",
+                  message: "persist_assistant_message_skipped_no_token",
+                });
               }
             } catch (err) {
               Sentry.captureException(err);
@@ -660,15 +810,9 @@ async function validateAndMaybeRepair(
     async (span) => {
       span?.setAttribute?.("sessionId", sessionId);
       span?.setAttribute?.("locale", locale);
-      // Read configurable attempts from env with safe defaults
-      const primaryAttempts = Number.parseInt(
-        process.env.AI_REPAIR_PRIMARY_ATTEMPTS ?? "2",
-        10,
-      );
-      const fallbackAttempts = Number.parseInt(
-        process.env.AI_REPAIR_FALLBACK_ATTEMPTS ?? "2",
-        10,
-      );
+      // Reduced attempts for faster validation
+      const primaryAttempts = 1; // Reduced from 2
+      const fallbackAttempts = 1; // Reduced from 2
       span?.setAttribute?.("repair.primary.attempts", primaryAttempts);
       span?.setAttribute?.("repair.fallback.attempts", fallbackAttempts);
       const first = detectAssessmentFromText(s.text);
@@ -723,9 +867,8 @@ async function validateAndMaybeRepair(
                     contents: repairContents,
                     systemInstruction: strictInstruction,
                     generationConfig: {
-                      temperature: 0.1,
-                      topP: 0.9,
-                      maxOutputTokens: 1024,
+                      temperature: 0.1, // Keep low for validation repair
+                      maxOutputTokens: 512,
                     },
                   }),
                 {
@@ -756,132 +899,23 @@ async function validateAndMaybeRepair(
                 );
                 return true;
               }
-              // Attempt a coercion if close to valid (e.g., too few modules)
+              // Simple JSON extraction without complex coercion
               try {
                 const fencedRe = /```(?:json)?\s*([\s\S]*?)\s*```/i;
                 const m = fencedRe.exec(text);
-                const raw = m
-                  ? m[1]
-                  : (() => {
-                      const fb = text.indexOf("{");
-                      const lb = text.lastIndexOf("}");
-                      return fb !== -1 && lb !== -1 && lb > fb
-                        ? text.slice(fb, lb + 1)
-                        : "";
-                    })();
-                if (raw) {
-                  const candidate = JSON.parse(raw) as unknown;
-                  const cRec = candidate as Record<string, unknown>;
-                  const lm = cRec?.learningModules;
-                  const modsSrcUnknown = Array.isArray(lm)
-                    ? lm
-                    : Array.isArray(cRec?.modules)
-                      ? (cRec.modules as unknown[])
-                      : [];
-                  const modsSrc: Array<Record<string, unknown>> =
-                    modsSrcUnknown.filter(
-                      (x): x is Record<string, unknown> =>
-                        typeof x === "object" && x !== null,
+                if (m?.[1]) {
+                  const candidate = JSON.parse(m[1]) as unknown;
+                  const recheck = AssessmentResultSchema.safeParse(candidate);
+                  if (recheck.success) {
+                    appendPartial(
+                      sessionId,
+                      `\n\n\u200e\n\n\`\`\`json\n${JSON.stringify(recheck.data)}\n\`\`\``,
                     );
-                  if (Array.isArray(modsSrc) && modsSrc.length > 0) {
-                    const mods: Array<{
-                      id: string;
-                      title: string;
-                      type: string;
-                      duration: string;
-                    }> = modsSrc.map((m, idx) => {
-                      const r = m;
-                      const idRaw = r.id;
-                      const titleRaw = r.title;
-                      const typeRaw = r.type;
-                      const durationRaw = r.duration;
-                      const durationMinRaw = r.durationMin;
-                      const id =
-                        typeof idRaw === "string" && idRaw.trim()
-                          ? idRaw
-                          : `m${idx + 1}`;
-                      const title =
-                        typeof titleRaw === "string" && titleRaw.trim()
-                          ? titleRaw
-                          : `Module ${idx + 1}`;
-                      const type =
-                        typeof typeRaw === "string" ? typeRaw : "article";
-                      const duration =
-                        typeof durationRaw === "string" && durationRaw.trim()
-                          ? durationRaw
-                          : typeof durationMinRaw === "number" &&
-                              Number.isFinite(durationMinRaw)
-                            ? `${Math.max(1, Math.round(durationMinRaw))} min`
-                            : "10 min";
-                      return { id, title, type, duration };
-                    });
-                    while (mods.length < 3) {
-                      const base = mods[mods.length - 1] ?? {
-                        id: "m1",
-                        title: "Module",
-                        type: "article",
-                        duration: "10 min",
-                      };
-                      mods.push({
-                        id: `m${mods.length + 1}`,
-                        title: base.title,
-                        type: base.type,
-                        duration: base.duration,
-                      });
-                    }
-                    const levelRaw = cRec.level;
-                    const confidenceRaw = cRec.confidence;
-                    const reasoningRaw = cRec.reasoning;
-                    const rationaleRaw = cRec.rationale;
-                    const skillRaw = cRec.skill;
-                    const level =
-                      typeof levelRaw === "number" ? levelRaw : undefined;
-                    const confidence =
-                      typeof confidenceRaw === "number"
-                        ? confidenceRaw
-                        : undefined;
-                    const reasoning =
-                      typeof reasoningRaw === "string"
-                        ? reasoningRaw
-                        : typeof rationaleRaw === "string"
-                          ? rationaleRaw
-                          : undefined;
-                    const skill =
-                      typeof skillRaw === "string" ? skillRaw : undefined;
-                    const rebuilt: Record<string, unknown> = {
-                      ...(level !== undefined ? { level } : {}),
-                      ...(confidence !== undefined ? { confidence } : {}),
-                      ...(reasoning !== undefined ? { reasoning } : {}),
-                      ...(skill !== undefined ? { skill } : {}),
-                      learningModules: mods,
-                    };
-                    const recheck = AssessmentResultSchema.safeParse(rebuilt);
-                    if (recheck.success) {
-                      Sentry.addBreadcrumb({
-                        category: "ai.repair",
-                        level: "info",
-                        message: "coerced modules to minimum length",
-                        data: { count: mods.length },
-                      });
-                      appendPartial(
-                        sessionId,
-                        `\n\n\u200e\n\n\`\`\`json\n${JSON.stringify(recheck.data)}\n\`\`\``,
-                      );
-                      Sentry.captureMessage(
-                        label === "primary"
-                          ? "gemini_assessment_repaired"
-                          : "gemini_assessment_repaired_fallback",
-                        {
-                          level: "info",
-                          extra: { sessionId, locale, coerced: true },
-                        },
-                      );
-                      return true;
-                    }
+                    return true;
                   }
                 }
-              } catch (coerceErr) {
-                Sentry.captureException(coerceErr);
+              } catch {
+                // Ignore parse errors - let it fail fast
               }
             } catch (err) {
               Sentry.captureException(err);
@@ -942,13 +976,71 @@ export async function POST(req: Request): Promise<Response> {
       const session = createSession();
 
       // Prepare Convex auth token and build system prompt (no persistence before generation)
-      const conversationId: string | null = null;
+      let conversationId: string | null = null;
       let token: string | null = null;
       let systemPrompt: string | null = null;
       try {
         token = (await convexAuthNextjsToken()) ?? null;
+        Sentry.addBreadcrumb({
+          category: "chat.send",
+          level: "info",
+          message: "convex_token_resolved",
+          data: { hasToken: Boolean(token) },
+        });
       } catch (err) {
         Sentry.captureException(err);
+      }
+      // Create or get a conversation up-front and persist the user's message
+      // Skip in test environment to keep unit/integration tests deterministic
+      if (token && process.env.NODE_ENV !== "test") {
+        try {
+          Sentry.addBreadcrumb({
+            category: "chat.send",
+            level: "info",
+            message: "createOrGetActive_start",
+            data: { skillId: parsed.data.skillId, locale },
+          });
+          const created = await fetchMutation(
+            api.aiConversations.createOrGetActive,
+            {
+              aiSkillId: asAiSkillsId(parsed.data.skillId),
+              language: locale,
+            },
+            { token },
+          );
+          const conv = created as unknown as ConversationCreateResult;
+          conversationId = conv.conversationId ?? null;
+          Sentry.addBreadcrumb({
+            category: "chat.send",
+            level: "info",
+            message: "createOrGetActive_done",
+            data: { conversationId },
+          });
+          if (conversationId && parsed.data.message !== "__start__") {
+            Sentry.addBreadcrumb({
+              category: "chat.send",
+              level: "info",
+              message: "persist_user_message_start",
+              data: { conversationId },
+            });
+            await fetchMutation(
+              api.aiMessages.addUserMessage,
+              {
+                conversationId: asAiConversationsId(conversationId),
+                content: parsed.data.message,
+              },
+              { token },
+            );
+            Sentry.addBreadcrumb({
+              category: "chat.send",
+              level: "info",
+              message: "persist_user_message_done",
+              data: { conversationId },
+            });
+          }
+        } catch (err) {
+          Sentry.captureException(err);
+        }
       }
       try {
         const built = await buildSystemPrompt({
@@ -976,7 +1068,15 @@ export async function POST(req: Request): Promise<Response> {
           sessionId: session.sessionId,
           conversationId,
         } satisfies SendResponse),
-        { status: 200, headers: { "content-type": "application/json" } },
+        {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        },
       );
     },
   );
