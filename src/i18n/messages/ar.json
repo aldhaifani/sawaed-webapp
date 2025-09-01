@@ -775,12 +775,19 @@
     "pathLoading": "جارٍ تحميل مسار التعلم...",
     "noPathTitle": "لا يوجد مسار تعلم بعد",
     "noPathHint": "أكمل التقييم لإنشاء مسار مخصص.",
+    "createNewPath": "إنشاء مسار تعلم جديد",
     "progressLabel": "تم إكمال {done} من {total} وحدات",
     "progressPercent": "%{percent} مكتمل",
     "statusActive": "نشط",
     "statusCompleted": "مكتمل",
     "toggleCompleteError": "تعذّر تحديد الوحدة كمكتملة.",
-    "toggleIncompleteError": "تعذّر إلغاء تحديد الوحدة كمكتملة."
+    "toggleIncompleteError": "تعذّر إلغاء تحديد الوحدة كمكتملة.",
+    "unenrollTitle": "إلغاء الاشتراك",
+    "unenrollConfirmDesc": "هل أنت متأكد أنك تريد إلغاء الاشتراك من مسار التعلم الحالي؟",
+    "unenrollSuccess": "تم إلغاء الاشتراك",
+    "unenrollError": "تعذر إلغاء الاشتراك",
+    "viewDetails": "عرض التفاصيل",
+    "moduleLabel": "الوحدة رقم {num}"
   },
 
   "chat": {

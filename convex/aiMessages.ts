@@ -47,7 +47,10 @@ export const addUserMessage = mutation({
       .filter((q) => q.eq(q.field("role"), "assistant"))
       .collect();
 
-    const questionCount = assistantMessages.length;
+    // Count only numbered questions (>0), ignore greeting (0 or undefined)
+    const questionCount = assistantMessages.filter(
+      (m) => (m.questionNumber ?? 0) > 0,
+    ).length;
 
     // Enforce strict 5-question limit
     const shouldEndAssessment = questionCount >= 5;
@@ -105,10 +108,15 @@ export const addAssistantMessage = mutation({
       .filter((q) => q.eq(q.field("role"), "assistant"))
       .collect();
 
-    const totalQuestions = existingQuestions.length + 1;
+    // Only count messages that are numbered questions (ignore greeting/questionNumber=0)
+    const counted = existingQuestions.filter(
+      (m) => (m.questionNumber ?? 0) > 0,
+    );
+    const nextQuestionNumber =
+      typeof questionNumber === "number" ? questionNumber : counted.length + 1;
 
-    // Prevent adding more than 5 questions
-    if (totalQuestions > 5) {
+    // Prevent adding more than 5 numbered questions; questionNumber=0 (greeting) is always allowed
+    if (nextQuestionNumber > 5) {
       throw new Error("Maximum 5 questions allowed per assessment");
     }
 
@@ -119,13 +127,14 @@ export const addAssistantMessage = mutation({
       role: "assistant",
       content,
       metadataJson,
-      questionNumber: questionNumber ?? totalQuestions,
+      // Persist explicit questionNumber when provided (e.g., greeting=0); otherwise use computed
+      questionNumber: nextQuestionNumber,
       createdAt: now,
     })) as Id<"aiMessages">;
 
     await ctx.db.patch(conversationId, { lastMessageAt: now, updatedAt: now });
 
-    return { messageId, totalQuestions };
+    return { messageId, totalQuestions: nextQuestionNumber };
   },
 });
 

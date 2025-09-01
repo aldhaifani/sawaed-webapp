@@ -90,6 +90,15 @@ export default function ChatInitPage(): ReactElement {
   const [isProcessingAssessment, setIsProcessingAssessment] =
     useState<boolean>(false);
 
+  // Helper: strip any ```json ... ``` code blocks from AI text
+  const stripAssessmentJson = (text: string): string => {
+    try {
+      return text.replace(/```json[\s\S]*?```/g, "").trim();
+    } catch {
+      return text;
+    }
+  };
+
   const skillParam = params.get("skill") ?? "";
   const skillId = skillParam as unknown as Id<"aiSkills">;
   const { load: loadTranscript, save: saveTranscript } = usePersistedTranscript(
@@ -149,13 +158,52 @@ export default function ChatInitPage(): ReactElement {
 
             const detected = detectAssessmentFromText(text);
             if (detected.valid && detected.data && skillParam) {
+              // Send only allowed fields (omit `skill`, optional `reasoning` is allowed)
+              const { level, confidence, learningModules, reasoning } =
+                detected.data as unknown as {
+                  level: number;
+                  confidence: number;
+                  learningModules: ReadonlyArray<{
+                    id: string;
+                    title: string;
+                    type: "article" | "video" | "quiz" | "project";
+                    duration: string;
+                  }>;
+                  reasoning?: string;
+                };
+              const modules = learningModules.map((m) => ({
+                id: m.id,
+                title: m.title,
+                type: m.type,
+                duration: m.duration,
+              }));
               await storeAssessment({
                 aiSkillId: skillId,
-                result: detected.data,
+                result: {
+                  level,
+                  confidence,
+                  learningModules: modules,
+                  reasoning,
+                },
               });
               hasPersistedRef.current = true;
               setIsAssessmentComplete(true);
               setIsProcessingAssessment(false);
+
+              // Strip JSON block from the last AI message visible in the UI
+              setMessages((prev) => {
+                const next = [...prev];
+                for (let i = next.length - 1; i >= 0; i -= 1) {
+                  if (next[i]?.role === "ai") {
+                    next[i] = {
+                      ...next[i]!,
+                      content: stripAssessmentJson(next[i]!.content),
+                    };
+                    break;
+                  }
+                }
+                return next;
+              });
 
               toast.success(
                 (() => {
@@ -437,6 +485,11 @@ export default function ChatInitPage(): ReactElement {
     el?.focus();
   };
 
+  const isSendDisabled = useMemo<boolean>(
+    () => !input.trim() || isProcessingAssessment || isAssessmentComplete,
+    [input, isProcessingAssessment, isAssessmentComplete],
+  );
+
   return (
     <main className="bg-background min-h-[calc(100vh-56px)] w-full">
       {/* Top bar fixed so it never scrolls away */}
@@ -707,209 +760,221 @@ export default function ChatInitPage(): ReactElement {
                 })()}
               </div>
             )}
-            {/* Define one submit function to reuse for Enter and button click */}
-            <PromptInput
-              value={input}
-              onValueChange={setInput}
-              onSubmit={async () => {
-                const trimmed = input.trim();
-                if (
-                  !trimmed ||
-                  !skillParam ||
-                  isProcessingAssessment ||
-                  isAssessmentComplete
-                )
-                  return;
-                const userMsg: Message = {
-                  id: `u-${Date.now()}`,
-                  role: "user",
-                  content: trimmed,
-                  createdAt: Date.now(),
-                };
-                setMessages((prev) => [...prev, userMsg]);
-                setInput("");
+            {/* After assessment completion, disable chat and show navigation */}
+            {isAssessmentComplete ? (
+              <div className="flex items-center justify-between gap-2 p-2">
+                <p className="text-muted-foreground text-xs">
+                  {locale === "ar"
+                    ? "اكتمل التقييم. انتقل إلى مسار التعلم لبدء الدراسة."
+                    : "Assessment finished. Go to your learning path to start."}
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() => router.replace(`/${locale}/learning`)}
+                >
+                  {locale === "ar"
+                    ? "الانتقال إلى مسار التعلم"
+                    : "Go to Learning Path"}
+                </Button>
+              </div>
+            ) : (
+              // Define one submit function to reuse for Enter and button click
+              <PromptInput
+                value={input}
+                onValueChange={setInput}
+                onSubmit={async () => {
+                  const trimmed = input.trim();
+                  if (
+                    !trimmed ||
+                    !skillParam ||
+                    isProcessingAssessment ||
+                    isAssessmentComplete
+                  )
+                    return;
+                  const userMsg: Message = {
+                    id: `u-${Date.now()}`,
+                    role: "user",
+                    content: trimmed,
+                    createdAt: Date.now(),
+                  };
+                  setMessages((prev) => [...prev, userMsg]);
+                  setInput("");
 
-                // Placeholder AI message that will be progressively updated
-                const aiMsg: Message = {
-                  id: `a-${Date.now()}`,
-                  role: "ai",
-                  content: "",
-                  streaming: true,
-                  createdAt: Date.now(),
-                };
-                setMessages((prev) => [...prev, aiMsg]);
+                  // Placeholder AI message that will be progressively updated
+                  const aiMsg: Message = {
+                    id: `a-${Date.now()}`,
+                    role: "ai",
+                    content: "",
+                    streaming: true,
+                    createdAt: Date.now(),
+                  };
+                  setMessages((prev) => [...prev, aiMsg]);
 
-                const result = await sendMessage({
-                  skillId: skillParam,
-                  message: trimmed,
-                  locale,
-                });
-                if (!result) {
-                  // mark AI message as error
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === aiMsg.id
-                        ? {
-                            ...m,
-                            content: t("errorLoading"),
-                            streaming: false,
-                            error: true,
-                          }
-                        : m,
-                    ),
-                  );
-                  toast(t("errorLoading"));
-                  return;
-                }
-                const { sessionId, conversationId: nextConversationId } =
-                  result;
-                if (nextConversationId) {
-                  setConversationId(
-                    nextConversationId as unknown as Id<"aiConversations">,
-                  );
+                  const result = await sendMessage({
+                    skillId: skillParam,
+                    message: trimmed,
+                    locale,
+                  });
+                  if (!result) {
+                    // mark AI message as error
+                    setMessages((prev) =>
+                      prev.map((m) =>
+                        m.id === aiMsg.id
+                          ? {
+                              ...m,
+                              content: t("errorLoading"),
+                              streaming: false,
+                              error: true,
+                            }
+                          : m,
+                      ),
+                    );
+                    toast(t("errorLoading"));
+                    return;
+                  }
+                  const { sessionId, conversationId: nextConversationId } =
+                    result;
+                  if (nextConversationId) {
+                    setConversationId(
+                      nextConversationId as unknown as Id<"aiConversations">,
+                    );
+                    try {
+                      window.localStorage.setItem(
+                        conversationStorageKey,
+                        nextConversationId,
+                      );
+                    } catch {}
+                  }
                   try {
                     window.localStorage.setItem(
-                      conversationStorageKey,
-                      nextConversationId,
+                      sessionStorageKey,
+                      JSON.stringify({
+                        sessionId,
+                        aiMessageId: aiMsg.id,
+                        conversationId: nextConversationId ?? null,
+                      }),
                     );
                   } catch {}
-                }
-                try {
-                  window.localStorage.setItem(
-                    sessionStorageKey,
-                    JSON.stringify({
-                      sessionId,
-                      aiMessageId: aiMsg.id,
-                      conversationId: nextConversationId ?? null,
-                    }),
-                  );
-                } catch {}
-                hasPersistedRef.current = false;
-                startPolling({ sessionId, aiMessageId: aiMsg.id });
-                focusInput();
-              }}
-              className="bg-transparent p-0 shadow-none"
-            >
-              <div
-                className="flex items-end gap-2"
-                dir={locale === "ar" ? "rtl" : "ltr"}
+                  hasPersistedRef.current = false;
+                  startPolling({ sessionId, aiMessageId: aiMsg.id });
+                  focusInput();
+                }}
+                className="bg-transparent p-0 shadow-none"
               >
-                <div className="flex-1">
-                  <PromptInputTextarea
-                    id="chat-input"
-                    placeholder={
-                      locale === "ar"
-                        ? "اكتب رسالتك..."
-                        : "Type your message..."
-                    }
-                    aria-label={
-                      locale === "ar" ? "اكتب رسالة" : "Type a message"
-                    }
-                    dir={locale === "ar" ? "rtl" : "ltr"}
-                    autoFocus
-                    className="text-[16px] leading-6 md:text-[15px]"
-                  />
-                </div>
-                <PromptInputActions className="p-1">
-                  <PromptInputAction
-                    tooltip={locale === "ar" ? "إرسال" : "Send"}
-                  >
-                    <Button
-                      type="button"
-                      size="icon"
-                      className="rounded-full"
-                      onClick={async () => {
-                        const trimmed = input.trim();
-                        if (
-                          !trimmed ||
-                          !skillParam ||
-                          isProcessingAssessment ||
-                          isAssessmentComplete
-                        )
-                          return;
-                        const userMsg: Message = {
-                          id: `u-${Date.now()}`,
-                          role: "user",
-                          content: trimmed,
-                          createdAt: Date.now(),
-                        };
-                        setMessages((prev) => [...prev, userMsg]);
-                        setInput("");
+                <div
+                  className="flex items-end gap-2"
+                  dir={locale === "ar" ? "rtl" : "ltr"}
+                >
+                  <div className="flex-1">
+                    <PromptInputTextarea
+                      id="chat-input"
+                      placeholder={
+                        locale === "ar"
+                          ? "اكتب رسالتك..."
+                          : "Type your message..."
+                      }
+                      aria-label={
+                        locale === "ar" ? "اكتب رسالة" : "Type a message"
+                      }
+                      dir={locale === "ar" ? "rtl" : "ltr"}
+                      autoFocus
+                      className="text-[16px] leading-6 md:text-[15px]"
+                    />
+                  </div>
+                  <PromptInputActions className="p-1">
+                    <PromptInputAction
+                      tooltip={locale === "ar" ? "إرسال" : "Send"}
+                    >
+                      <Button
+                        type="button"
+                        size="icon"
+                        className="rounded-full"
+                        onClick={async () => {
+                          const trimmed = input.trim();
+                          if (
+                            !trimmed ||
+                            !skillParam ||
+                            isProcessingAssessment ||
+                            isAssessmentComplete
+                          )
+                            return;
+                          const userMsg: Message = {
+                            id: `u-${Date.now()}`,
+                            role: "user",
+                            content: trimmed,
+                            createdAt: Date.now(),
+                          };
+                          setMessages((prev) => [...prev, userMsg]);
+                          setInput("");
 
-                        const aiMsg: Message = {
-                          id: `a-${Date.now()}`,
-                          role: "ai",
-                          content: "",
-                          streaming: true,
-                          createdAt: Date.now(),
-                        };
-                        setMessages((prev) => [...prev, aiMsg]);
+                          const aiMsg: Message = {
+                            id: `a-${Date.now()}`,
+                            role: "ai",
+                            content: "",
+                            streaming: true,
+                            createdAt: Date.now(),
+                          };
+                          setMessages((prev) => [...prev, aiMsg]);
 
-                        const result = await sendMessage({
-                          skillId: skillParam,
-                          message: trimmed,
-                          locale,
-                        });
-                        if (!result) {
-                          setMessages((prev) =>
-                            prev.map((m) =>
-                              m.id === aiMsg.id
-                                ? {
-                                    ...m,
-                                    content: t("errorLoading"),
-                                    streaming: false,
-                                    error: true,
-                                  }
-                                : m,
-                            ),
-                          );
-                          toast(t("errorLoading"));
-                          return;
-                        }
-                        const {
-                          sessionId,
-                          conversationId: nextConversationId,
-                        } = result;
-                        if (nextConversationId) {
-                          setConversationId(
-                            nextConversationId as unknown as Id<"aiConversations">,
-                          );
+                          const result = await sendMessage({
+                            skillId: skillParam,
+                            message: trimmed,
+                            locale,
+                          });
+                          if (!result) {
+                            setMessages((prev) =>
+                              prev.map((m) =>
+                                m.id === aiMsg.id
+                                  ? {
+                                      ...m,
+                                      content: t("errorLoading"),
+                                      streaming: false,
+                                      error: true,
+                                    }
+                                  : m,
+                              ),
+                            );
+                            toast(t("errorLoading"));
+                            return;
+                          }
+                          const {
+                            sessionId,
+                            conversationId: nextConversationId,
+                          } = result;
+                          if (nextConversationId) {
+                            setConversationId(
+                              nextConversationId as unknown as Id<"aiConversations">,
+                            );
+                            try {
+                              window.localStorage.setItem(
+                                conversationStorageKey,
+                                nextConversationId,
+                              );
+                            } catch {}
+                          }
                           try {
                             window.localStorage.setItem(
-                              conversationStorageKey,
-                              nextConversationId,
+                              sessionStorageKey,
+                              JSON.stringify({
+                                sessionId,
+                                aiMessageId: aiMsg.id,
+                                conversationId: nextConversationId ?? null,
+                              }),
                             );
                           } catch {}
-                        }
-                        try {
-                          window.localStorage.setItem(
-                            sessionStorageKey,
-                            JSON.stringify({
-                              sessionId,
-                              aiMessageId: aiMsg.id,
-                              conversationId: nextConversationId ?? null,
-                            }),
-                          );
-                        } catch {}
-                        hasPersistedRef.current = false;
-                        startPolling({ sessionId, aiMessageId: aiMsg.id });
-                        focusInput();
-                      }}
-                      disabled={
-                        !input.trim() ||
-                        isProcessingAssessment ||
-                        isAssessmentComplete
-                      }
-                    >
-                      <Send className="h-4 w-4" />
-                      <span className="sr-only">
-                        {locale === "ar" ? "إرسال" : "Send"}
-                      </span>
-                    </Button>
-                  </PromptInputAction>
-                </PromptInputActions>
-              </div>
-            </PromptInput>
+                          hasPersistedRef.current = false;
+                          startPolling({ sessionId, aiMessageId: aiMsg.id });
+                          focusInput();
+                        }}
+                        disabled={isSendDisabled}
+                      >
+                        <Send className="h-5 w-5" />
+                      </Button>
+                    </PromptInputAction>
+                  </PromptInputActions>
+                </div>
+              </PromptInput>
+            )}
           </div>
           <p className="text-muted-foreground mt-2 text-center text-xs">
             {footerDisclaimerText}

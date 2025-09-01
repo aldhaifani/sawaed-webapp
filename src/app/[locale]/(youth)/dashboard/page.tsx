@@ -80,44 +80,62 @@ export default function YouthDashboardPage(): ReactElement {
   const t = useTranslations();
   const router = useRouter();
   const status = useQuery(api.onboarding.getStatus, {});
+  const chatConfig = useQuery(api.aiChatConfigs.getMyChatConfig, {});
+  const aiSkillId = chatConfig?.aiSkillId;
+  const learningPath = useQuery(
+    api.aiAssessments.getLearningPath,
+    aiSkillId ? { aiSkillId } : "skip",
+  ) as
+    | {
+        _id: Id<"aiLearningPaths">;
+        modules: ReadonlyArray<{
+          id: string;
+          title: string;
+          type: "article" | "video" | "quiz" | "project";
+          duration: string;
+        }>;
+        status: "active" | "completed" | "archived";
+        completedModuleIds: ReadonlyArray<string>;
+        createdAt: number;
+        updatedAt?: number;
+      }
+    | null
+    | undefined;
 
   useEffect(() => {
     if (!status) return; // loading
     if (!status.completed) router.replace(`/${locale}/onboarding`);
   }, [status, router, locale]);
 
-  // Dummy data (Learning Path only)
-  const progress = 55;
-  const modules = useMemo(
-    () => [
-      {
-        id: 1,
-        label: "Module #1",
-        title: "Foundations of Digital Marketing",
-        done: true,
-      },
-      {
-        id: 2,
-        label: "Module #2",
-        title: "Search Engine Optimization Basics",
-        done: true,
-      },
-      {
-        id: 3,
-        label: "Module #3",
-        title: "Social Media Marketing",
-        done: true,
-      },
-      {
-        id: 4,
-        label: "Module #4",
-        title: "Content Creation Essentials",
-        done: false,
-      },
-      { id: 5, label: "Module #5", title: "Final Project", done: false },
-    ],
-    [],
-  );
+  // Learning Path (real data)
+  const computed = useMemo(() => {
+    if (!aiSkillId) return { loading: false, hasSkill: false } as const;
+    if (learningPath === undefined)
+      return { loading: true, hasSkill: true } as const;
+    if (learningPath === null)
+      return { loading: false, hasSkill: true, hasPath: false } as const;
+    const completed = new Set(learningPath.completedModuleIds ?? []);
+    const total = learningPath.modules.length || 1;
+    const done = learningPath.modules.reduce(
+      (acc, m) => acc + (completed.has(m.id) ? 1 : 0),
+      0,
+    );
+    const progress = Math.round((done / total) * 100);
+    const modules = learningPath.modules.map((m, idx) => ({
+      id: idx + 1,
+      label: t("learning.moduleLabel", { num: idx + 1 }),
+      title: m.title,
+      done: completed.has(m.id),
+    }));
+    return {
+      loading: false,
+      hasSkill: true,
+      hasPath: true,
+      progress,
+      modules,
+      status: learningPath.status,
+    } as const;
+  }, [aiSkillId, learningPath, t]);
 
   // Latest published events (Suggested Opportunities)
   const { results: latestEvents } = usePaginatedQuery(
@@ -298,10 +316,14 @@ export default function YouthDashboardPage(): ReactElement {
           <div className="space-y-6">
             {/* Learning Path */}
             <SectionCard
-              title="Learning Path"
+              title={t("learning.learningPathTitle")}
               right={
-                <Button variant="outline" className="gap-1 text-xs sm:text-sm">
-                  View Details{" "}
+                <Button
+                  variant="outline"
+                  className="gap-1 text-xs sm:text-sm"
+                  onClick={() => router.push(`/${locale}/learning`)}
+                >
+                  {t("learning.viewDetails")}{" "}
                   {locale === "ar" ? (
                     <ChevronLeft className="size-4" />
                   ) : (
@@ -310,70 +332,95 @@ export default function YouthDashboardPage(): ReactElement {
                 </Button>
               }
             >
-              <div className="mb-3 flex flex-wrap items-center gap-4 text-xs sm:text-sm">
-                <span>Current Level: lvl 1</span>
-                <span>Goal: reach lvl 2</span>
-                <div className="flex items-center gap-2">
-                  <span>Progress:</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-36 sm:w-56">
-                      <Progress value={progress} className="h-1.5" />
-                    </div>
-                    <span className="text-muted-foreground text-xs">
-                      {progress}%
-                    </span>
+              {computed.loading ? (
+                <div className="text-muted-foreground text-sm">
+                  {t("learning.pathLoading")}
+                </div>
+              ) : !computed.hasSkill ? (
+                <div className="text-muted-foreground text-sm">
+                  {t("learning.selectSkillToViewPath")}
+                </div>
+              ) : computed.hasPath === false ? (
+                <div className="flex flex-col gap-3">
+                  <div className="text-muted-foreground text-sm">
+                    {t("learning.noPathHint")}
+                  </div>
+                  <div>
+                    <Button onClick={() => router.push(`/${locale}/learning`)}>
+                      {t("learning.createNewPath")}
+                    </Button>
                   </div>
                 </div>
-              </div>
-              {/* Milestones timeline */}
-              <div className="rounded-xl border p-4 shadow-xs sm:p-5">
-                <div className="relative">
-                  {/* background connector behind circles */}
-                  <div className="bg-border absolute top-3 right-[5%] left-[5%] z-0 hidden h-1 rounded-full sm:block" />
-                  <ol className="relative z-10 grid grid-cols-5 items-start gap-2">
-                    {modules.map((m, i) => {
-                      const next =
-                        !m.done && modules.slice(0, i).every((x) => x.done);
-                      return (
-                        <li
-                          key={m.id}
-                          className="flex flex-col items-center gap-2"
-                        >
-                          <div
-                            className={`relative z-10 grid size-7 place-items-center rounded-full border transition-shadow ${
-                              m.done
-                                ? "bg-primary text-primary-foreground border-primary"
-                                : next
-                                  ? "bg-secondary text-secondary-foreground ring-primary/30 ring-2"
-                                  : "bg-muted text-muted-foreground"
-                            } ${next ? "animate-pulse" : ""}`}
-                          >
-                            {m.done ? (
-                              <CheckCircle2 className="size-4" />
-                            ) : (
-                              <Circle className="size-3" />
-                            )}
-                          </div>
-                          <div className="text-center">
-                            <div
-                              className="text-foreground text-[10px] font-medium sm:text-xs"
-                              title={m.title}
+              ) : (
+                <>
+                  <div className="mb-3 flex flex-wrap items-center gap-4 text-xs sm:text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-36 sm:w-56">
+                          <Progress
+                            value={computed.progress ?? 0}
+                            className="h-1.5"
+                          />
+                        </div>
+                        <span className="text-muted-foreground text-xs">
+                          {t("learning.progressPercent", {
+                            percent: computed.progress ?? 0,
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Milestones timeline */}
+                  <div className="rounded-xl border p-4 shadow-xs sm:p-5">
+                    <div className="relative">
+                      {/* background connector behind circles */}
+                      <div className="bg-border absolute top-3 right-[5%] left-[5%] z-0 hidden h-1 rounded-full sm:block" />
+                      <ol className="relative z-10 grid grid-cols-5 items-start gap-2">
+                        {computed.modules?.slice(0, 5).map((m, i, arr) => {
+                          const next =
+                            !m.done && arr.slice(0, i).every((x) => x.done);
+                          return (
+                            <li
+                              key={m.id}
+                              className="flex flex-col items-center gap-2"
                             >
-                              {m.label}
-                            </div>
-                            <div
-                              className="text-muted-foreground mt-0.5 line-clamp-2 text-[10px] sm:text-xs"
-                              title={m.title}
-                            >
-                              {m.title}
-                            </div>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ol>
-                </div>
-              </div>
+                              <div
+                                className={`relative z-10 grid size-7 place-items-center rounded-full border transition-shadow ${
+                                  m.done
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : next
+                                      ? "bg-secondary text-secondary-foreground ring-primary/30 ring-2"
+                                      : "bg-muted text-muted-foreground"
+                                } ${next ? "animate-pulse" : ""}`}
+                              >
+                                {m.done ? (
+                                  <CheckCircle2 className="size-4" />
+                                ) : (
+                                  <Circle className="size-3" />
+                                )}
+                              </div>
+                              <div className="text-center">
+                                <div
+                                  className="text-foreground text-[10px] font-medium sm:text-xs"
+                                  title={m.title}
+                                >
+                                  {m.label}
+                                </div>
+                                <div
+                                  className="text-muted-foreground mt-0.5 line-clamp-2 text-[10px] sm:text-xs"
+                                  title={m.title}
+                                >
+                                  {m.title}
+                                </div>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    </div>
+                  </div>
+                </>
+              )}
             </SectionCard>
 
             {/* Two-up: Suggested Opportunities & My activities */}

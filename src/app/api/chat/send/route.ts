@@ -144,6 +144,15 @@ function isAsyncIterable<T>(obj: unknown): obj is AsyncIterable<T> {
   );
 }
 
+// Remove any ```json \n ... \n ``` blocks from a text blob (used to avoid storing raw JSON in chat history)
+function stripAssessmentJson(text: string): string {
+  try {
+    return text.replace(/```json[\s\S]*?```/g, "").trim();
+  } catch {
+    return text;
+  }
+}
+
 // Helpers to cast string to Convex Ids
 const asAiSkillsId = (s: string): Id<"aiSkills"> =>
   s as unknown as Id<"aiSkills">;
@@ -508,7 +517,13 @@ async function runGeminiGeneration(
                               api.aiMessages.addAssistantMessage,
                               {
                                 conversationId: asAiConversationsId(convoId),
-                                content: s1.text,
+                                // Store assistant text without embedded assessment JSON block
+                                content: stripAssessmentJson(s1.text),
+                                // Mark greeting as questionNumber=0 when the input was the auto-start trigger
+                                questionNumber:
+                                  params.message === "__start__"
+                                    ? 0
+                                    : undefined,
                               },
                               { token: params.convexToken },
                             );
@@ -643,7 +658,9 @@ async function runGeminiGeneration(
                             api.aiMessages.addAssistantMessage,
                             {
                               conversationId: asAiConversationsId(convoId),
-                              content: s1.text,
+                              content: stripAssessmentJson(s1.text),
+                              questionNumber:
+                                params.message === "__start__" ? 0 : undefined,
                             },
                             { token: params.convexToken },
                           );
@@ -781,7 +798,9 @@ async function runGeminiGeneration(
                     api.aiMessages.addAssistantMessage,
                     {
                       conversationId: asAiConversationsId(convoId),
-                      content: s1.text,
+                      content: stripAssessmentJson(s1.text),
+                      questionNumber:
+                        params.message === "__start__" ? 0 : undefined,
                     },
                     { token: params.convexToken },
                   );

@@ -97,7 +97,8 @@ const schema = defineSchema({
     updatedAt: v.number(),
   })
     .index("by_name_en", ["nameEn"])
-    .index("by_category", ["category"]),
+    .index("by_category", ["category"])
+    .index("by_created_at", ["createdAt"]),
 
   // Master taxonomy: Interests (bilingual)
   interests: defineTable({
@@ -108,7 +109,8 @@ const schema = defineSchema({
     updatedAt: v.number(),
   })
     .index("by_name_en", ["nameEn"])
-    .index("by_category", ["category"]),
+    .index("by_category", ["category"])
+    .index("by_created_at", ["createdAt"]),
 
   // Master taxonomy: Regions (bilingual)
   regions: defineTable({
@@ -368,7 +370,8 @@ const schema = defineSchema({
     updatedAt: v.number(),
   })
     .index("by_name_en", ["nameEn"])
-    .index("by_category", ["category"]),
+    .index("by_category", ["category"])
+    .index("by_created_at", ["createdAt"]),
 
   // AI Assessments produced at the end of a chat session
   aiAssessments: defineTable({

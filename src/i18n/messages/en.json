@@ -739,24 +739,6 @@
     "startInitFailed": "Could not start assessment",
     "startErrorGeneric": "Something went wrong",
     "learningPathTitle": "Learning Path",
-    "learningPathHint": "Your generated learning path appears here after your assessment.",
-    "selectSkillToViewPath": "Select a skill to view your learning path.",
-    "pathLoading": "Loading your learning path...",
-    "noPathTitle": "No learning path yet",
-    "noPathHint": "Complete the assessment to generate a personalized path.",
-    "progressLabel": "{done} of {total} modules completed",
-    "progressPercent": "{percent}% complete",
-    "statusActive": "Active",
-    "statusCompleted": "Completed",
-    "toggleCompleteError": "Couldn't mark module as completed.",
-    "toggleIncompleteError": "Couldn't mark module as incomplete."
-  },
-
-  "chat": {
-    "title": "Assessment Chat",
-    "initTitle": "Initialization",
-    "missingSkill": "Missing skill parameter",
-    "loading": "Loading...",
     "errorLoading": "An error occurred while loading",
     "skill": "Skill:",
     "lastLevel": "Last level:",
@@ -774,7 +756,38 @@
       "connected": "Connected to chat server",
       "disconnected": "Disconnected from chat server",
       "reconnecting": "Reconnecting to chat server..."
-    }
+    },
+    "unenrollTitle": "Unenroll",
+    "unenrollConfirmDesc": "Are you sure you want to unenroll from the current learning path?",
+    "unenrollSuccess": "Unenrolled",
+    "unenrollError": "Failed to unenroll",
+    "learningPathHint": "Your learning path will appear here after completing the assessment.",
+    "selectSkillToViewPath": "Select a skill to view the learning path.",
+    "pathLoading": "Loading learning path...",
+    "noPathTitle": "No learning path yet",
+    "noPathHint": "Complete the assessment to generate a personalized path.",
+    "createNewPath": "Create new learning path",
+    "progressLabel": "Completed {done} of {total} modules",
+    "progressPercent": "{percent}% complete",
+    "statusActive": "Active",
+    "statusCompleted": "Completed",
+    "toggleCompleteError": "Failed to mark the module as completed.",
+    "toggleIncompleteError": "Failed to unmark the module as completed.",
+    "viewDetails": "View details",
+    "moduleLabel": "Module {num}"
+  },
+
+  "chat": {
+    "title": "Assessment Chat",
+    "initTitle": "Initialization",
+    "missingSkill": "Skill not set",
+    "loading": "Loading...",
+    "errorLoading": "An error occurred while loading",
+    "skill": "Skill:",
+    "lastLevel": "Last level:",
+    "backToSettings": "Back to settings",
+    "emptyHint": "Start the conversation by asking a question. Arabic and English are supported.",
+    "footerDisclaimer": "AI responses may contain mistakes. Always verify important information."
   },
 
   "notFound": {

@@ -24,6 +24,14 @@ import { useAiChatInit } from "@/hooks/use-ai-chat-init";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface ChatConfigState {
   readonly aiSkillId?: Id<"aiSkills">;
@@ -135,8 +143,8 @@ export default function YouthLearningPage(): ReactElement {
   type Module = {
     readonly id: string;
     readonly title: string;
-    readonly type: string;
-    readonly duration?: number | null;
+    readonly type: "article" | "video" | "quiz" | "project";
+    readonly duration: string;
   };
   type LearningPath =
     | {
@@ -147,6 +155,7 @@ export default function YouthLearningPage(): ReactElement {
         readonly createdAt: number;
         readonly updatedAt?: number;
       }
+    | null
     | undefined;
 
   const pathData = learningPath as LearningPath;
@@ -172,6 +181,7 @@ export default function YouthLearningPage(): ReactElement {
 
   const markCompleted = useMutation(api.aiAssessments.markModuleCompleted);
   const markIncomplete = useMutation(api.aiAssessments.markModuleIncomplete);
+  const unenroll = useMutation(api.aiAssessments.unenrollLearningPath);
 
   const onToggleModule = useCallback(
     async (moduleId: string, checked: boolean) => {
@@ -251,163 +261,232 @@ export default function YouthLearningPage(): ReactElement {
     <main className="bg-background min-h-screen w-full">
       <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8">
         <h1 className="text-foreground mb-6 text-2xl font-bold">{title}</h1>
-
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-base">{t("settingsTitle")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="space-y-2">
-              <Label>{t("skillLabel")}</Label>
-              <SkillSelect
-                className="w-full"
-                value={state?.aiSkillId}
-                onChange={({ value }) =>
-                  setState((prev) => ({
-                    ...(prev ?? { preferredLanguage: locale }),
-                    aiSkillId: value,
-                  }))
-                }
-                placeholder={t("skillPlaceholder")}
-              />
-              <p className="text-muted-foreground text-xs">{t("skillHelp")}</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label>{t("chatLanguageLabel")}</Label>
-              <Select
-                value={state?.preferredLanguage}
-                onValueChange={(val) =>
-                  setState((prev) => ({
-                    ...(prev ?? { preferredLanguage: locale }),
-                    preferredLanguage: val as "ar" | "en",
-                  }))
-                }
-                disabled={isLoading}
-                dir={locale === "ar" ? "rtl" : "ltr"}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t("languagePlaceholder")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ar">{tc("arabic")}</SelectItem>
-                  <SelectItem value="en">{tc("english")}</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-muted-foreground text-xs">
-                {t("languageHint")}
-              </p>
-            </div>
-
-            <div className="flex flex-col-reverse items-stretch justify-between gap-3 pt-2 sm:flex-row sm:items-center">
-              <Button
-                variant="secondary"
-                onClick={onSave}
-                disabled={isLoading || saving}
-              >
-                {t("save")}
-              </Button>
-              <Button
-                onClick={onStartAssessment}
-                disabled={isLoading || starting || !state?.aiSkillId}
-              >
-                {starting ? t("startingLabel") : t("startAssessment")}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              {t("learningPathTitle")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!state?.aiSkillId ? (
-              <p className="text-muted-foreground text-sm">
-                {t("selectSkillToViewPath")}
-              </p>
-            ) : learningPath === undefined ? (
-              <p className="text-muted-foreground text-sm">
-                {t("pathLoading")}
-              </p>
-            ) : !pathData ? (
-              <div className="text-muted-foreground">
-                <p className="text-sm font-medium">{t("noPathTitle")}</p>
-                <p className="text-xs">{t("noPathHint")}</p>
+        {/* Settings card: only show when there is no active learning path */}
+        {pathData === undefined || pathData === null ? (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-base">{t("settingsTitle")}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="space-y-2">
+                <Label>{t("skillLabel")}</Label>
+                <SkillSelect
+                  className="w-full"
+                  value={state?.aiSkillId}
+                  onChange={({ value }) =>
+                    setState((prev) => ({
+                      ...(prev ?? { preferredLanguage: locale }),
+                      aiSkillId: value,
+                    }))
+                  }
+                  placeholder={t("skillPlaceholder")}
+                />
+                <p className="text-muted-foreground text-xs">
+                  {t("skillHelp")}
+                </p>
               </div>
-            ) : (
-              <div className="space-y-4" dir={locale === "ar" ? "rtl" : "ltr"}>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium">
-                      {t("progressLabel", {
-                        done: (
-                          optimisticCompleted ?? pathData.completedModuleIds
-                        ).length,
-                        total: pathData.modules.length,
-                      })}
-                    </p>
-                    <Badge
-                      variant={
-                        optimisticStatus === "completed"
-                          ? "default"
-                          : "secondary"
-                      }
-                    >
-                      {optimisticStatus === "completed"
-                        ? t("statusCompleted")
-                        : t("statusActive")}
-                    </Badge>
-                  </div>
-                  {(() => {
-                    const done = (
-                      optimisticCompleted ?? pathData.completedModuleIds
-                    ).length;
-                    const total = pathData.modules.length || 1;
-                    const percent = Math.round((done / total) * 100);
-                    return (
-                      <div className="space-y-1">
-                        <Progress value={percent} />
-                        <p
-                          className="text-muted-foreground text-xs"
-                          aria-live="polite"
-                        >
-                          {t("progressPercent", { percent })}
-                        </p>
-                      </div>
-                    );
-                  })()}
-                  <ul className="space-y-2">
-                    {pathData.modules.map((module) => {
-                      const id = `lp-${pathData._id}-${module.id}`;
-                      const checked = (
-                        optimisticCompleted ?? pathData.completedModuleIds
-                      ).includes(module.id);
-                      return (
-                        <li key={module.id} className="flex items-center gap-2">
-                          <Checkbox
-                            id={id}
-                            checked={checked}
-                            onCheckedChange={(val) =>
-                              onToggleModule(module.id, Boolean(val))
-                            }
-                            aria-label={module.title}
-                          />
-                          <Label htmlFor={id} className="text-sm">
-                            {module.title}
-                          </Label>
-                        </li>
+
+              <div className="space-y-2">
+                <Label>{t("chatLanguageLabel")}</Label>
+                <Select
+                  value={state?.preferredLanguage}
+                  onValueChange={(val) =>
+                    setState((prev) => ({
+                      ...(prev ?? { preferredLanguage: locale }),
+                      preferredLanguage: val as "ar" | "en",
+                    }))
+                  }
+                  disabled={isLoading}
+                  dir={locale === "ar" ? "rtl" : "ltr"}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t("languagePlaceholder")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ar">{tc("arabic")}</SelectItem>
+                    <SelectItem value="en">{tc("english")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-muted-foreground text-xs">
+                  {t("languageHint")}
+                </p>
+              </div>
+
+              <div className="flex flex-col-reverse items-stretch justify-between gap-3 pt-2 sm:flex-row sm:items-center">
+                <Button
+                  variant="secondary"
+                  onClick={onSave}
+                  disabled={isLoading || saving}
+                >
+                  {t("save")}
+                </Button>
+                <Button
+                  onClick={onStartAssessment}
+                  disabled={isLoading || starting || !state?.aiSkillId}
+                >
+                  {starting ? t("startingLabel") : t("startAssessment")}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {/* Active learning path card: only when path exists */}
+        {pathData ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-start justify-between text-base">
+                <div>{t("learningPathTitle")}</div>
+                <UnenrollSection
+                  onConfirm={async () => {
+                    try {
+                      await Sentry.startSpan(
+                        { op: "ai.path", name: "Unenroll Learning Path" },
+                        async () => {
+                          await unenroll({ learningPathId: pathData._id });
+                        },
                       );
-                    })}
-                  </ul>
+                      toast.success(t("unenrollSuccess"));
+                    } catch (err) {
+                      Sentry.captureException(err as Error, {
+                        tags: { area: "ai", action: "unenroll" },
+                      });
+                      toast.error(t("unenrollError"));
+                    }
+                  }}
+                />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {learningPath === undefined ? (
+                <p className="text-muted-foreground text-sm">
+                  {t("pathLoading")}
+                </p>
+              ) : (
+                <div
+                  className="space-y-4"
+                  dir={locale === "ar" ? "rtl" : "ltr"}
+                >
+                  {/* Unenroll Button + Confirm Dialog */}
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-medium">
+                        {t("progressLabel", {
+                          done: (
+                            optimisticCompleted ?? pathData.completedModuleIds
+                          ).length,
+                          total: pathData.modules.length,
+                        })}
+                      </p>
+                      <Badge
+                        variant={
+                          optimisticStatus === "completed"
+                            ? "default"
+                            : "secondary"
+                        }
+                      >
+                        {optimisticStatus === "completed"
+                          ? t("statusCompleted")
+                          : t("statusActive")}
+                      </Badge>
+                    </div>
+                    {(() => {
+                      const done = (
+                        optimisticCompleted ?? pathData.completedModuleIds
+                      ).length;
+                      const total = pathData.modules.length || 1;
+                      const percent = Math.round((done / total) * 100);
+                      return (
+                        <div className="space-y-1">
+                          <Progress value={percent} />
+                          <p
+                            className="text-muted-foreground text-xs"
+                            aria-live="polite"
+                          >
+                            {t("progressPercent", { percent })}
+                          </p>
+                        </div>
+                      );
+                    })()}
+                    <ul className="space-y-2">
+                      {pathData.modules.map((module) => {
+                        const id = `lp-${pathData._id}-${module.id}`;
+                        const checked = (
+                          optimisticCompleted ?? pathData.completedModuleIds
+                        ).includes(module.id);
+                        return (
+                          <li
+                            key={module.id}
+                            className="flex items-center gap-2"
+                          >
+                            <Checkbox
+                              id={id}
+                              checked={checked}
+                              onCheckedChange={(val) =>
+                                onToggleModule(module.id, Boolean(val))
+                              }
+                              aria-label={module.title}
+                            />
+                            <Label htmlFor={id} className="text-sm">
+                              {module.title}
+                            </Label>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
       </div>
     </main>
+  );
+}
+
+// Local component: Unenroll confirmation dialog and trigger
+function UnenrollSection({
+  onConfirm,
+}: {
+  onConfirm: () => Promise<void>;
+}): ReactElement {
+  const [open, setOpen] = useState<boolean>(false);
+  const t = useTranslations("learning");
+  const tc = useTranslations("common");
+
+  return (
+    <div className="flex justify-end">
+      <Dialog open={open} onOpenChange={setOpen}>
+        <Button
+          variant="destructive"
+          onClick={() => setOpen(true)}
+          className="mb-2"
+        >
+          {t("unenrollTitle")}
+        </Button>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("unenrollTitle")}</DialogTitle>
+            <DialogDescription>{t("unenrollConfirmDesc")}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setOpen(false)}>
+              {tc("cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                await onConfirm();
+                setOpen(false);
+              }}
+            >
+              {tc("confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

@@ -32,7 +32,7 @@ export const getSkills = query({
     // Optimized: Use index and limit results for better performance
     const skills = await ctx.db
       .query("aiSkills")
-      .withIndex("by_creation_time")
+      .withIndex("by_created_at")
       .order("desc")
       .take(50); // Limit to 50 most recent skills
 
@@ -98,6 +98,36 @@ export const getSkills = query({
     });
 
     return enriched;
+  },
+});
+
+/**
+ * Unenroll from the specified learning path by archiving it.
+ * - Validates ownership
+ * - Sets status to "archived"
+ */
+export const unenrollLearningPath = mutation({
+  args: { learningPathId: v.id("aiLearningPaths") },
+  handler: async (ctx, { learningPathId }) => {
+    const authUserId = await auth.getUserId(ctx);
+    if (!authUserId) return null;
+    const appUser = await ctx.db
+      .query("appUsers")
+      .withIndex("by_auth_user", (q) => q.eq("authUserId", authUserId))
+      .unique();
+    if (!appUser || appUser.role !== "YOUTH") return null;
+
+    const path = await ctx.db.get(learningPathId);
+    if (!path) throw new Error("Learning path not found");
+    if (path.userId !== (appUser._id as Id<"appUsers">))
+      throw new Error("Forbidden");
+
+    const now = Date.now();
+    await ctx.db.patch(learningPathId, {
+      status: "archived",
+      updatedAt: now,
+    });
+    return { status: "archived" } as const;
   },
 });
 
@@ -273,12 +303,12 @@ export const getLearningPath = query({
   args: { aiSkillId: v.id("aiSkills") },
   handler: async (ctx, { aiSkillId }) => {
     const authUserId = await auth.getUserId(ctx);
-    if (!authUserId) return undefined;
+    if (!authUserId) return null;
     const appUser = await ctx.db
       .query("appUsers")
       .withIndex("by_auth_user", (q) => q.eq("authUserId", authUserId))
       .unique();
-    if (!appUser || appUser.role !== "YOUTH") return undefined;
+    if (!appUser || appUser.role !== "YOUTH") return null;
 
     const paths = await ctx.db
       .query("aiLearningPaths")
@@ -302,7 +332,7 @@ export const getLearningPath = query({
           createdAt: latestActive.createdAt,
           updatedAt: latestActive.updatedAt,
         }
-      : undefined;
+      : null;
   },
 });
 
