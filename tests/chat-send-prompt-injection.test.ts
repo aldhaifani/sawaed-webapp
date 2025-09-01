@@ -38,6 +38,7 @@ describe("chat send route prompt injection", () => {
   it("calls buildSystemPrompt with locale and skillId", async () => {
     const spy = vi.spyOn(PromptBuilder, "buildSystemPrompt").mockResolvedValue({
       systemPrompt: "TEST_PROMPT",
+      allowedUrls: [],
     });
 
     const res = await sendPOST(makeRequest("en"));

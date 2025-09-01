@@ -29,15 +29,44 @@ vi.mock("@sentry/nextjs", () => ({
   captureException: () => {},
 }));
 
+// Mock session store functions
+vi.mock("@/app/api/chat/_store", () => ({
+  setAssessmentPersisted: vi.fn(() => true), // Allow persistence
+}));
+
 describe("persistIfValidAssessment", () => {
   const validJson = {
     level: 3,
     confidence: 0.7,
     reasoning: "Short reasoning",
     learningModules: [
-      { id: "m1", title: "A", type: "article", duration: "10 min" },
-      { id: "m2", title: "B", type: "video", duration: "20 min" },
-      { id: "m3", title: "C", type: "quiz", duration: "30 min" },
+      {
+        id: "m1",
+        title: "A",
+        type: "article",
+        duration: "10 min",
+        description: "Learn about topic A",
+        objectives: ["Understand A", "Apply A concepts"],
+        outline: ["Introduction", "Main content", "Summary"],
+      },
+      {
+        id: "m2",
+        title: "B",
+        type: "video",
+        duration: "20 min",
+        description: "Video tutorial on B",
+        objectives: ["Watch B demo", "Practice B skills"],
+        outline: ["Setup", "Tutorial", "Practice"],
+      },
+      {
+        id: "m3",
+        title: "C",
+        type: "quiz",
+        duration: "30 min",
+        description: "Test knowledge of C",
+        objectives: ["Apply C knowledge", "Check understanding"],
+        outline: ["Questions", "Answers", "Review"],
+      },
     ],
   };
 
@@ -59,7 +88,9 @@ describe("persistIfValidAssessment", () => {
       "```",
       "Thanks",
     ].join("\n");
+
     await persistIfValidAssessment({
+      sessionId: "test-session-1",
       text,
       skillId: "skill_1",
       convexToken: "token",
@@ -75,6 +106,7 @@ describe("persistIfValidAssessment", () => {
     const { fetchMutation } = await import("convex/nextjs");
     const text = "no json here";
     await persistIfValidAssessment({
+      sessionId: "test-session-2",
       text,
       skillId: "skill_1",
       convexToken: "token",
@@ -88,6 +120,7 @@ describe("persistIfValidAssessment", () => {
       "\n",
     );
     await persistIfValidAssessment({
+      sessionId: "test-session-3",
       text,
       skillId: "skill_1",
       convexToken: null,

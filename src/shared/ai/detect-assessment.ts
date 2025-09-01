@@ -87,6 +87,11 @@ export function detectAssessmentFromText(text: string): DetectResult {
               title: string;
               type: string;
               duration: string;
+              description: string;
+              objectives: string[];
+              outline: string[];
+              resourceUrl?: string;
+              searchKeywords?: string[];
             }[] => {
               return arr
                 .filter(
@@ -100,6 +105,15 @@ export function detectAssessmentFromText(text: string): DetectResult {
                   const durationRaw = mm.duration;
                   const durationMinRaw = (mm as { durationMin?: unknown })
                     .durationMin;
+                  const descriptionRaw = (mm as { description?: unknown })
+                    .description;
+                  const objectivesRaw = (mm as { objectives?: unknown })
+                    .objectives;
+                  const outlineRaw = (mm as { outline?: unknown }).outline;
+                  const resourceUrlRaw = (mm as { resourceUrl?: unknown })
+                    .resourceUrl;
+                  const searchKeywordsRaw = (mm as { searchKeywords?: unknown })
+                    .searchKeywords;
                   const id =
                     typeof idRaw === "string" && idRaw.trim().length > 0
                       ? idRaw
@@ -118,7 +132,58 @@ export function detectAssessmentFromText(text: string): DetectResult {
                           Number.isFinite(durationMinRaw)
                         ? `${Math.max(1, Math.round(durationMinRaw))} min`
                         : "10 min";
-                  return { id, title, type, duration: durationLabel };
+                  const description =
+                    typeof descriptionRaw === "string" &&
+                    descriptionRaw.trim().length > 0
+                      ? descriptionRaw.trim()
+                      : `Learn about ${title.toLowerCase()}`;
+                  const objectives = Array.isArray(objectivesRaw)
+                    ? (objectivesRaw as unknown[])
+                        .filter(
+                          (s): s is string =>
+                            typeof s === "string" && s.trim().length > 0,
+                        )
+                        .slice(0, 4)
+                    : [
+                        `Understand ${title.toLowerCase()}`,
+                        `Apply ${title.toLowerCase()} concepts`,
+                      ];
+                  const outline = Array.isArray(outlineRaw)
+                    ? (outlineRaw as unknown[])
+                        .filter(
+                          (s): s is string =>
+                            typeof s === "string" && s.trim().length > 0,
+                        )
+                        .slice(0, 5)
+                    : [
+                        `Introduction to ${title}`,
+                        `Core concepts`,
+                        `Practice exercises`,
+                      ];
+                  const resourceUrl =
+                    typeof resourceUrlRaw === "string" &&
+                    resourceUrlRaw.trim().length > 0
+                      ? resourceUrlRaw
+                      : undefined;
+                  const searchKeywords = Array.isArray(searchKeywordsRaw)
+                    ? (searchKeywordsRaw as unknown[])
+                        .filter(
+                          (s): s is string =>
+                            typeof s === "string" && s.trim().length > 0,
+                        )
+                        .slice(0, 20) // soft cap; sanitizeModules will clamp
+                    : undefined;
+                  return {
+                    id,
+                    title,
+                    type,
+                    duration: durationLabel,
+                    description,
+                    objectives,
+                    outline,
+                    resourceUrl,
+                    searchKeywords,
+                  };
                 });
             };
             const buildResult = (
@@ -128,6 +193,11 @@ export function detectAssessmentFromText(text: string): DetectResult {
                 title: string;
                 type: string;
                 duration: string;
+                description: string;
+                objectives: string[];
+                outline: string[];
+                resourceUrl?: string;
+                searchKeywords?: string[];
               }[],
             ): Record<string, unknown> => {
               const level =

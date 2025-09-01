@@ -26,6 +26,23 @@ export const ModuleItemV = v.object({
     v.literal("project"),
   ),
   duration: v.string(),
+  // Optional richer fields for better UX/rendering
+  description: v.optional(v.string()),
+  objectives: v.optional(v.array(v.string())),
+  outline: v.optional(v.array(v.string())),
+  // Either provide a real resource URL (preferred) or search keywords
+  resourceUrl: v.optional(v.string()),
+  resourceTitle: v.optional(v.string()),
+  searchKeywords: v.optional(v.array(v.string())),
+  // Additional metadata
+  levelRef: v.optional(v.number()),
+  difficulty: v.optional(
+    v.union(
+      v.literal("beginner"),
+      v.literal("intermediate"),
+      v.literal("advanced"),
+    ),
+  ),
 });
 
 export const AssessmentResultV = v.object({
@@ -42,6 +59,14 @@ export type ModuleItem = {
   readonly title: string;
   readonly type: ModuleType;
   readonly duration: string;
+  readonly description?: string;
+  readonly objectives?: ReadonlyArray<string>;
+  readonly outline?: ReadonlyArray<string>;
+  readonly resourceUrl?: string;
+  readonly resourceTitle?: string;
+  readonly searchKeywords?: ReadonlyArray<string>;
+  readonly levelRef?: number;
+  readonly difficulty?: "beginner" | "intermediate" | "advanced";
 };
 export type AssessmentResult = {
   readonly level: number;
@@ -88,6 +113,60 @@ export function assertValidModules(
     if (!ALLOWED_MODULE_TYPES.includes(m.type))
       throw new Error("Invalid module.type");
     assertValidDurationLabel(m.duration);
+    // Optional field validations (non-breaking)
+    if (m.description !== undefined && m.description.trim().length === 0)
+      throw new Error("Invalid module.description");
+    if (m.objectives !== undefined) {
+      if (!Array.isArray(m.objectives) || m.objectives.length === 0)
+        throw new Error(
+          "module.objectives must be a non-empty array when provided",
+        );
+      for (const o of m.objectives) {
+        if (typeof o !== "string" || o.trim().length === 0)
+          throw new Error("Invalid objectives entry");
+      }
+    }
+    if (m.outline !== undefined) {
+      if (!Array.isArray(m.outline) || m.outline.length === 0)
+        throw new Error(
+          "module.outline must be a non-empty array when provided",
+        );
+      for (const o of m.outline) {
+        if (typeof o !== "string" || o.trim().length === 0)
+          throw new Error("Invalid outline entry");
+      }
+    }
+    if (m.searchKeywords !== undefined) {
+      if (!Array.isArray(m.searchKeywords) || m.searchKeywords.length === 0)
+        throw new Error(
+          "module.searchKeywords must be a non-empty array when provided",
+        );
+      if (m.searchKeywords.length > 12)
+        throw new Error("Too many searchKeywords (max 12)");
+      for (const kw of m.searchKeywords) {
+        if (typeof kw !== "string" || kw.trim().length === 0)
+          throw new Error("Invalid searchKeywords entry");
+      }
+    }
+    if (m.resourceUrl !== undefined) {
+      if (
+        typeof m.resourceUrl !== "string" ||
+        m.resourceUrl.trim().length === 0
+      )
+        throw new Error("Invalid module.resourceUrl");
+      if (!/^https?:\/\//i.test(m.resourceUrl))
+        throw new Error("resourceUrl must be http(s)");
+      if (m.resourceUrl.length > 2048) throw new Error("resourceUrl too long");
+    }
+    if (m.resourceTitle !== undefined && m.resourceTitle.trim().length === 0)
+      throw new Error("Invalid module.resourceTitle");
+    if (m.levelRef !== undefined && !Number.isFinite(m.levelRef))
+      throw new Error("Invalid module.levelRef");
+    if (
+      m.difficulty !== undefined &&
+      !["beginner", "intermediate", "advanced"].includes(m.difficulty)
+    )
+      throw new Error("Invalid module.difficulty");
   }
 }
 

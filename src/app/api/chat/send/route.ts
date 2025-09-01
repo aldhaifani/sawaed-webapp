@@ -12,6 +12,7 @@ import {
   setError,
   setRunning,
   getSession,
+  setAssessmentPersisted,
 } from "../_store";
 import { cleanupStaleSessions } from "../_store";
 import { checkRateLimit, getClientIp } from "../_rateLimit";
@@ -57,7 +58,7 @@ async function generateWithRetry(
               systemInstruction,
               generationConfig: {
                 temperature: 0.3,
-                maxOutputTokens: 1000,
+                maxOutputTokens: 8000,
                 topP: 0.8,
               },
             }),
@@ -71,7 +72,6 @@ async function generateWithRetry(
                 category: "ai.retry",
                 level: "info",
                 message: `generateOnce ${label} retry`,
-                data: { attempt, delayMs, model },
               });
             },
           },
@@ -129,6 +129,7 @@ import { api } from "@/../convex/_generated/api";
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { buildSystemPrompt } from "../prompt-builder";
+import { sanitizeModules } from "@/shared/ai/sanitize-modules";
 
 // Narrow utility types
 type TextChunk = { readonly text?: string };
@@ -170,12 +171,25 @@ export type SendResponse = {
 };
 
 export async function persistIfValidAssessment(params: {
+  readonly sessionId: string;
   readonly text: string;
   readonly skillId: string;
   readonly convexToken: string | null | undefined;
+  readonly allowedUrls?: readonly string[];
 }): Promise<void> {
-  const { text, skillId, convexToken } = params;
+  const { sessionId, text, skillId, convexToken, allowedUrls } = params;
   if (!text || !convexToken) return;
+
+  // Use session-based lock to prevent duplicate persistence.
+  if (!setAssessmentPersisted(sessionId)) {
+    Sentry.addBreadcrumb({
+      category: "ai.assessment",
+      level: "info",
+      message: "assessment_already_persisted_in_session",
+    });
+    return; // Lock not acquired, already persisted.
+  }
+
   await Sentry.startSpan(
     { op: "ai.persist", name: "storeAssessment" },
     async (span) => {
@@ -183,32 +197,29 @@ export async function persistIfValidAssessment(params: {
         const detected = detectAssessmentFromText(text);
         span?.setAttribute?.("detected.valid", detected.valid);
         if (!detected.valid || !detected.data) return;
+
         const parsed = AssessmentResultSchema.safeParse(detected.data);
-        if (!parsed.success) {
-          span?.setAttribute?.("detected.parsed", false);
-          Sentry.addBreadcrumb({
-            category: "ai.assessment",
-            level: "warning",
-            message: "assessment_parse_failed",
-            data: { issues: parsed.error.issues },
-          });
-          return;
-        }
+        if (!parsed.success) return;
+
         span?.setAttribute?.("detected.parsed", true);
         Sentry.addBreadcrumb({
           category: "ai.assessment",
           level: "info",
-          message: "valid_assessment_detected",
+          message: "valid_assessment_detected_and_persisting",
           data: {
             level: parsed.data.level,
             modules: parsed.data.learningModules.length,
+            hasReasoning: !!parsed.data.reasoning,
           },
         });
-        // Shape payload to only include server-accepted fields
+
         const payload: AssessmentResultParsed = {
           level: parsed.data.level,
           confidence: parsed.data.confidence,
-          learningModules: parsed.data.learningModules,
+          reasoning: parsed.data.reasoning,
+          learningModules: Array.from(
+            sanitizeModules(parsed.data.learningModules, allowedUrls),
+          ),
         };
 
         await fetchMutation(
@@ -219,9 +230,14 @@ export async function persistIfValidAssessment(params: {
           },
           { token: convexToken },
         );
-        Sentry.captureMessage("assessment_persisted", { level: "info" });
+        Sentry.captureMessage("assessment_persisted_successfully", {
+          level: "info",
+        });
       } catch (err) {
         Sentry.captureException(err);
+        // NOTE: We do not reset the flag here. A failed persistence should still
+        // prevent retries on the same session to avoid duplicates.
+        // A new user action should trigger a new session if a retry is needed.
       }
     },
   );
@@ -270,6 +286,7 @@ async function runGeminiGeneration(
     readonly conversationId?: string | null;
     readonly convexToken?: string | null;
     readonly systemPrompt?: string | null;
+    readonly allowedUrls?: readonly string[] | null;
   },
 ): Promise<void> {
   setRunning(sessionId);
@@ -303,17 +320,28 @@ async function runGeminiGeneration(
                   "اكتب إجابة موجزة وصحيحة.",
                   "سياسة اللغة: أجب دائمًا بالعربية الفصحى الواضحة ولا تغيّر اللغة مهما كتب المستخدم.",
                   "سلوك البداية: عند تلقي رسالة المستخدم '__start__' فقط، عرّف نفسك بإيجاز كمساعد تقييم، وقدّم تحية قصيرة وودودة، واشرح بإيجاز ما سيحدث، ثم اسأل إن كان مستعدًا للبدء. إذا لم تكن الرسالة '__start__' فتجاهل التحية وابدأ مباشرة بالتقييم. لا تعِد التحية لاحقًا.",
-                  "أخرج في النهاية مقطع JSON صالح وفق المخطط التالي فقط داخل كتلة ```json:",
+                  "أخرج في النهاية مقطع JSON صالح بهذا الهيكل المحدد داخل كتلة ```json:",
                   "{",
                   "  skill?: string,",
                   "  level: number (1-5),",
                   "  confidence: number (0-1),",
                   "  reasoning?: string,",
-                  "  learningModules: Array<",
-                  "    { id: string, title: string, type: 'article'|'video'|'quiz'|'project', duration: string }",
-                  "  > بطول من 3 إلى 6",
+                  "  learningModules: [",
+                  "    {",
+                  "      id: string,",
+                  "      title: string,",
+                  "      type: 'article'|'video'|'quiz'|'project',",
+                  "      duration: string,",
+                  "      description: string,  // مطلوب - اشرح ما تعلمه هذه الوحدة",
+                  "      objectives: [string, string, ...],  // مطلوب - 2-4 أهداف تعليمية",
+                  "      outline: [string, string, string, ...],  // مطلوب - 3-5 خطوات تفصيلية",
+                  "      resourceUrl?: string,  // اختياري",
+                  "      searchKeywords?: [string, ...]  // اختياري",
+                  "    }",
+                  "    // ... 3-6 وحدات إجمالي",
+                  "  ]",
                   "}",
-                  "لا تستخدم مفاتيح إضافية. إذا استخدمت 'modules' حوّلها إلى 'learningModules'.",
+                  "التحقق: كل كائن وحدة يجب أن يحتوي على description و objectives array و outline array وإلا سيرفضه النظام.",
                   "مثال:",
                   "```json",
                   "{",
@@ -322,12 +350,20 @@ async function runGeminiGeneration(
                   "  confidence: 0.8,",
                   "  reasoning: 'الطالب يحتاج إلى تعلم أساسيات الجبر.',",
                   "  learningModules: [",
-                  "    { id: 'module-1', title: 'الجبر', type: 'article', duration: '10 دقائق' },",
-                  "    { id: 'module-2', title: 'المعادلات', type: 'video', duration: '20 دقيقة' },",
-                  "    { id: 'module-3', title: 'التفاضل', type: 'quiz', duration: '30 دقيقة' },",
-                  "    { id: 'module-4', title: 'التكامل', type: 'project', duration: '1 ساعة' },",
-                  "    { id: 'module-5', title: 'الاحصاء', type: 'article', duration: '40 دقيقة' },",
-                  "    { id: 'module-6', title: 'الجبر الخطي', type: 'video', duration: '50 دقيقة' }",
+                  "    {",
+                  "      id: 'module-1', title: 'أساسيات الجبر', type: 'article', duration: '15 دقيقة',",
+                  "      description: 'مقدمة في المفاهيم والعمليات الجبرية',",
+                  "      objectives: ['فهم المتغيرات', 'حل المعادلات البسيطة'],",
+                  "      outline: ['المتغيرات والثوابت', 'العمليات الأساسية', 'المعادلات البسيطة'],",
+                  "      searchKeywords: ['جبر', 'متغيرات', 'معادلات', 'رياضيات أساسية']",
+                  "    },",
+                  "    {",
+                  "      id: 'module-2', title: 'المعادلات الخطية', type: 'video', duration: '20 دقيقة',",
+                  "      description: 'حل المعادلات الخطية خطوة بخطوة',",
+                  "      objectives: ['حل المعادلات الخطية', 'رسم الدوال الخطية'],",
+                  "      outline: ['معادلات متغير واحد', 'أنظمة متغيرين', 'الرسم البياني'],",
+                  "      resourceUrl: 'https://khanacademy.org/math/algebra/linear-equations'",
+                  "    }",
                   "  ]",
                   "}",
                   "```",
@@ -338,17 +374,28 @@ async function runGeminiGeneration(
                   "Language policy: Always respond in English; do not change language regardless of the user's input.",
                   "Start behavior: Only when the user input is '__start__', briefly introduce yourself as the assessment assistant, greet once, describe what will happen, and ask if they are ready. If the input is not '__start__', do not greet—proceed directly with assessment. Greet only once per conversation.",
                   "About Sawaed (when asked only): Sawaed helps youth discover and grow their skills through short assessments and tailored learning paths. Answer briefly and immediately return to the assessment.",
-                  "At the end, output a valid JSON block inside ```json matching this schema only:",
+                  "At the end, output a valid JSON block inside ```json with this EXACT structure:",
                   "{",
                   "  skill?: string,",
                   "  level: number (1-5),",
                   "  confidence: number (0-1),",
                   "  reasoning?: string,",
-                  "  learningModules: Array<",
-                  "    { id: string, title: string, type: 'article'|'video'|'quiz'|'project', duration: string }",
-                  "  > with length between 3 and 6",
+                  "  learningModules: [",
+                  "    {",
+                  "      id: string,",
+                  "      title: string,",
+                  "      type: 'article'|'video'|'quiz'|'project',",
+                  "      duration: string,",
+                  "      description: string,  // REQUIRED - explain what this module teaches",
+                  "      objectives: [string, string, ...],  // REQUIRED - 2-4 learning goals",
+                  "      outline: [string, string, string, ...],  // REQUIRED - 3-5 step breakdown",
+                  "      resourceUrl?: string,  // optional",
+                  "      searchKeywords?: [string, ...]  // optional",
+                  "    }",
+                  "    // ... 3-6 modules total",
+                  "  ]",
                   "}",
-                  "Do not include extra keys. If you used 'modules', rename to 'learningModules'.",
+                  "VALIDATION: Every module object MUST contain description, objectives array, and outline array or the system will reject it.",
                   "Example:",
                   "```json",
                   "{",
@@ -357,12 +404,20 @@ async function runGeminiGeneration(
                   "  confidence: 0.8,",
                   "  reasoning: 'The student needs to learn algebra basics.',",
                   "  learningModules: [",
-                  "    { id: 'module-1', title: 'Algebra', type: 'article', duration: '10 minutes' },",
-                  "    { id: 'module-2', title: 'Equations', type: 'video', duration: '20 minutes' },",
-                  "    { id: 'module-3', title: 'Differential', type: 'quiz', duration: '30 minutes' },",
-                  "    { id: 'module-4', title: 'Integral', type: 'project', duration: '1 hour' },",
-                  "    { id: 'module-5', title: 'Statistics', type: 'article', duration: '40 minutes' },",
-                  "    { id: 'module-6', title: 'Linear Algebra', type: 'video', duration: '50 minutes' }",
+                  "    {",
+                  "      id: 'module-1', title: 'Algebra Basics', type: 'article', duration: '15 minutes',",
+                  "      description: 'Introduction to algebraic concepts and operations',",
+                  "      objectives: ['Understand variables', 'Solve simple equations'],",
+                  "      outline: ['Variables and constants', 'Basic operations', 'Simple equations'],",
+                  "      searchKeywords: ['algebra', 'variables', 'equations', 'math basics']",
+                  "    },",
+                  "    {",
+                  "      id: 'module-2', title: 'Linear Equations', type: 'video', duration: '20 minutes',",
+                  "      description: 'Solving linear equations step by step',",
+                  "      objectives: ['Solve linear equations', 'Graph linear functions'],",
+                  "      outline: ['One-variable equations', 'Two-variable systems', 'Graphing'],",
+                  "      resourceUrl: 'https://khanacademy.org/math/algebra/linear-equations'",
+                  "    }",
                   "  ]",
                   "}",
                   "```",
@@ -413,6 +468,8 @@ async function runGeminiGeneration(
       // Track whether we received any streaming chunks
       let gotChunk = false;
       let completed = false;
+      // Eager persistence guard to avoid duplicate writes
+      let persistedMessage = false;
 
       // Try streaming on primary model
       try {
@@ -426,7 +483,7 @@ async function runGeminiGeneration(
                 systemInstruction,
                 generationConfig: {
                   temperature: 0.3,
-                  maxOutputTokens: 800,
+                  maxOutputTokens: 8000,
                   topP: 0.8,
                 },
               },
@@ -434,6 +491,29 @@ async function runGeminiGeneration(
                 onChunkText: (t) => {
                   gotChunk = true;
                   appendPartial(sessionId, t);
+                  // Only detect complete assessments to prevent premature persistence
+                  if (params.convexToken && params.message !== "__start__") {
+                    const sNow = getSession(sessionId);
+                    if (sNow?.text) {
+                      // Check if we have a complete JSON block (ends with ```)
+                      const hasCompleteJsonBlock =
+                        /```json[\s\S]*?```\s*$/.test(sNow.text);
+                      if (hasCompleteJsonBlock) {
+                        const det = detectAssessmentFromText(sNow.text);
+                        if (det.valid) {
+                          // fire and forget
+                          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+                          persistIfValidAssessment({
+                            sessionId,
+                            text: sNow.text,
+                            skillId: params.skillId,
+                            convexToken: params.convexToken,
+                            allowedUrls: params.allowedUrls ?? undefined,
+                          });
+                        }
+                      }
+                    }
+                  }
                 },
                 onDone: () => {
                   void (async () => {
@@ -474,15 +554,22 @@ async function runGeminiGeneration(
                         params.message.trim(),
                       );
                     if (params.message !== "__start__" && !isSimpleResponse) {
-                      await validateAndMaybeRepair(
-                        sessionId,
-                        params.locale,
-                        apiKey,
-                        modelPrimary,
-                        modelFallback,
-                        contents,
-                        systemInstruction,
-                      );
+                      try {
+                        await validateAndMaybeRepair(
+                          sessionId,
+                          params.locale,
+                          apiKey,
+                          modelPrimary,
+                          modelFallback,
+                          contents,
+                          systemInstruction,
+                        );
+                      } catch (e) {
+                        Sentry.captureException(e);
+                        try {
+                          setError(sessionId, "validation_failed");
+                        } catch {}
+                      }
                     }
                     const s1 = getSession(sessionId);
                     if (!s1?.text?.trim()) {
@@ -513,20 +600,31 @@ async function runGeminiGeneration(
                               message: "persist_assistant_message_start",
                               data: { conversationId: convoId },
                             });
-                            const assistantResult = await fetchMutation(
-                              api.aiMessages.addAssistantMessage,
-                              {
-                                conversationId: asAiConversationsId(convoId),
-                                // Store assistant text without embedded assessment JSON block
-                                content: stripAssessmentJson(s1.text),
-                                // Mark greeting as questionNumber=0 when the input was the auto-start trigger
-                                questionNumber:
-                                  params.message === "__start__"
-                                    ? 0
-                                    : undefined,
-                              },
-                              { token: params.convexToken },
-                            );
+                            const s1 = getSession(sessionId);
+                            const assistantText = s1?.text ?? "";
+                            // Only persist message once across all generation paths
+                            let assistantResult: {
+                              messageId: string;
+                              totalQuestions: number;
+                            } | null = null;
+                            if (!persistedMessage) {
+                              assistantResult = await fetchMutation(
+                                api.aiMessages.addAssistantMessage,
+                                {
+                                  conversationId: asAiConversationsId(convoId),
+                                  // Store assistant text without embedded assessment JSON block
+                                  content: stripAssessmentJson(assistantText),
+                                  // Mark greeting as questionNumber=0 when the input was the auto-start trigger
+                                  // For regular questions, let the mutation auto-increment
+                                  questionNumber:
+                                    params.message === "__start__"
+                                      ? 0
+                                      : undefined,
+                                },
+                                { token: params.convexToken },
+                              );
+                              persistedMessage = true;
+                            }
 
                             // Log question tracking for monitoring
                             Sentry.addBreadcrumb({
@@ -545,16 +643,8 @@ async function runGeminiGeneration(
                               message: "persist_assistant_message_done",
                               data: { conversationId: convoId },
                             });
-                            if (
-                              s1.status !== "error" &&
-                              params.message !== "__start__"
-                            ) {
-                              await persistIfValidAssessment({
-                                text: s1.text,
-                                skillId: params.skillId,
-                                convexToken: params.convexToken,
-                              });
-                            }
+                            // Assessment persistence is handled during streaming when complete JSON is detected
+                            // No need to persist again here to avoid duplicates
                           } else {
                             Sentry.addBreadcrumb({
                               category: "chat.send",
@@ -615,15 +705,22 @@ async function runGeminiGeneration(
                       params.message.trim(),
                     );
                   if (params.message !== "__start__" && !isSimpleResponse) {
-                    await validateAndMaybeRepair(
-                      sessionId,
-                      params.locale,
-                      apiKey,
-                      modelPrimary,
-                      modelFallback,
-                      contents,
-                      systemInstruction,
-                    );
+                    try {
+                      await validateAndMaybeRepair(
+                        sessionId,
+                        params.locale,
+                        apiKey,
+                        modelPrimary,
+                        modelFallback,
+                        contents,
+                        systemInstruction,
+                      );
+                    } catch (e) {
+                      Sentry.captureException(e);
+                      try {
+                        setError(sessionId, "validation_failed");
+                      } catch {}
+                    }
                   }
                   const s1 = getSession(sessionId);
                   if (!s1?.text?.trim()) {
@@ -654,16 +751,28 @@ async function runGeminiGeneration(
                             message: "persist_assistant_message_start",
                             data: { conversationId: convoId },
                           });
-                          const assistantResult = await fetchMutation(
-                            api.aiMessages.addAssistantMessage,
-                            {
-                              conversationId: asAiConversationsId(convoId),
-                              content: stripAssessmentJson(s1.text),
-                              questionNumber:
-                                params.message === "__start__" ? 0 : undefined,
-                            },
-                            { token: params.convexToken },
-                          );
+                          // Only persist message once across all generation paths
+                          let assistantResult: {
+                            messageId: string;
+                            totalQuestions: number;
+                          } | null = null;
+                          if (!persistedMessage) {
+                            assistantResult = await fetchMutation(
+                              api.aiMessages.addAssistantMessage,
+                              {
+                                conversationId: asAiConversationsId(convoId),
+                                content: stripAssessmentJson(s1.text),
+                                // Mark greeting as questionNumber=0 when the input was the auto-start trigger
+                                // For regular questions, let the mutation auto-increment
+                                questionNumber:
+                                  params.message === "__start__"
+                                    ? 0
+                                    : undefined,
+                              },
+                              { token: params.convexToken },
+                            );
+                            persistedMessage = true;
+                          }
 
                           // Log question tracking for monitoring
                           Sentry.addBreadcrumb({
@@ -682,16 +791,8 @@ async function runGeminiGeneration(
                             message: "persist_assistant_message_done",
                             data: { conversationId: convoId },
                           });
-                          if (
-                            s1.status !== "error" &&
-                            params.message !== "__start__"
-                          ) {
-                            await persistIfValidAssessment({
-                              text: s1.text,
-                              skillId: params.skillId,
-                              convexToken: params.convexToken,
-                            });
-                          }
+                          // Assessment persistence is handled during streaming when complete JSON is detected
+                          // No need to persist again here to avoid duplicates
                         } else {
                           Sentry.addBreadcrumb({
                             category: "chat.send",
@@ -794,16 +895,26 @@ async function runGeminiGeneration(
                     message: "persist_assistant_message_start",
                     data: { conversationId: convoId },
                   });
-                  const assistantResult = await fetchMutation(
-                    api.aiMessages.addAssistantMessage,
-                    {
-                      conversationId: asAiConversationsId(convoId),
-                      content: stripAssessmentJson(s1.text),
-                      questionNumber:
-                        params.message === "__start__" ? 0 : undefined,
-                    },
-                    { token: params.convexToken },
-                  );
+                  // Only persist message once across all generation paths
+                  let assistantResult: {
+                    messageId: string;
+                    totalQuestions: number;
+                  } | null = null;
+                  if (!persistedMessage) {
+                    assistantResult = await fetchMutation(
+                      api.aiMessages.addAssistantMessage,
+                      {
+                        conversationId: asAiConversationsId(convoId),
+                        content: stripAssessmentJson(s1.text),
+                        // Mark greeting as questionNumber=0 when the input was the auto-start trigger
+                        // For regular questions, let the mutation auto-increment
+                        questionNumber:
+                          params.message === "__start__" ? 0 : undefined,
+                      },
+                      { token: params.convexToken },
+                    );
+                    persistedMessage = true;
+                  }
 
                   // Log question tracking for monitoring
                   Sentry.addBreadcrumb({
@@ -821,13 +932,8 @@ async function runGeminiGeneration(
                     message: "persist_assistant_message_done",
                     data: { conversationId: convoId },
                   });
-                  if (s1.status !== "error" && params.message !== "__start__") {
-                    await persistIfValidAssessment({
-                      text: s1.text,
-                      skillId: params.skillId,
-                      convexToken: params.convexToken,
-                    });
-                  }
+                  // Assessment persistence is handled during streaming when complete JSON is detected
+                  // No need to persist again here to avoid duplicates
                 } else {
                   Sentry.addBreadcrumb({
                     category: "chat.send",
@@ -880,14 +986,26 @@ async function validateAndMaybeRepair(
     async (span) => {
       span?.setAttribute?.("sessionId", sessionId);
       span?.setAttribute?.("locale", locale);
-      // Reduced attempts for faster validation
-      const primaryAttempts = 1; // Reduced from 2
-      const fallbackAttempts = 1; // Reduced from 2
+      // Slightly higher attempts to improve recovery when JSON is truncated
+      const primaryAttempts = 1;
+      const fallbackAttempts = 1;
       span?.setAttribute?.("repair.primary.attempts", primaryAttempts);
       span?.setAttribute?.("repair.fallback.attempts", fallbackAttempts);
       const first = detectAssessmentFromText(s.text);
       span?.setAttribute?.("first.valid", first.valid);
       if (first.valid) return;
+
+      // Detect if the last JSON block looks truncated (unbalanced braces/brackets)
+      const lastJsonBlockMatch = /```json\s*([\s\S]*?)$/i.exec(s.text);
+      const lastBlock = lastJsonBlockMatch?.[1] ?? "";
+      const looksTruncated = (() => {
+        if (!lastBlock) return false;
+        const openCurly = (lastBlock.match(/\{/g) ?? []).length;
+        const closeCurly = (lastBlock.match(/\}/g) ?? []).length;
+        const openSquare = (lastBlock.match(/\[/g) ?? []).length;
+        const closeSquare = (lastBlock.match(/\]/g) ?? []).length;
+        return closeCurly < openCurly || closeSquare < openSquare;
+      })();
 
       // Stricter instruction to convert the prior answer into valid JSON only
       const strictInstruction = {
@@ -902,10 +1020,27 @@ async function validateAndMaybeRepair(
         ],
       };
 
+      // If truncated, ask explicitly to continue and finish the JSON only
+      const continuationInstruction = {
+        role: "system" as const,
+        parts: [
+          {
+            text:
+              locale === "ar"
+                ? "أكمل JSON السابق من حيث توقف بحيث يصبح كاملاً وصالحاً وفق المخطط. أعد فقط JSON داخل كتلة ```json دون أي نص آخر."
+                : "Continue the previous JSON from where it stopped and return a complete, valid JSON per the schema. Return ONLY the JSON inside a ```json block with no extra text.",
+          },
+        ],
+      } as const;
+
       // Ask the model to transform its prior answer into valid JSON
+      const priorForModel = ((): string => {
+        if (lastBlock && lastBlock.length > 0) return lastBlock.slice(-2000);
+        return s.text.slice(-2000);
+      })();
       const repairContents = [
         ...contents,
-        { role: "model" as const, parts: [{ text: s.text.slice(-2000) }] },
+        { role: "model" as const, parts: [{ text: priorForModel }] },
         {
           role: "user" as const,
           parts: [
@@ -935,10 +1070,12 @@ async function validateAndMaybeRepair(
                     model,
                     apiKey,
                     contents: repairContents,
-                    systemInstruction: strictInstruction,
+                    systemInstruction: looksTruncated
+                      ? continuationInstruction
+                      : strictInstruction,
                     generationConfig: {
                       temperature: 0.1, // Keep low for validation repair
-                      maxOutputTokens: 1000, // Increased to prevent truncation
+                      maxOutputTokens: 8000, // Higher to prevent truncation on long arrays
                     },
                   }),
                 {
@@ -1001,6 +1138,43 @@ async function validateAndMaybeRepair(
       const okFallback = await tryRepairWithModel(modelFallback, "fallback");
       if (okFallback) return;
 
+      // Final heuristic: if the last JSON block is truncated, try to auto-close braces/brackets
+      try {
+        if (lastBlock && looksTruncated) {
+          const close = (src: string): string => {
+            const openCurly = (src.match(/\{/g) ?? []).length;
+            const closeCurly = (src.match(/\}/g) ?? []).length;
+            const openSquare = (src.match(/\[/g) ?? []).length;
+            const closeSquare = (src.match(/\]/g) ?? []).length;
+            let out = src;
+            for (let i = 0; i < openSquare - closeSquare; i += 1) out += "]";
+            for (let i = 0; i < openCurly - closeCurly; i += 1) out += "}";
+            return out;
+          };
+          const closed = close(lastBlock);
+          const candidateText =
+            `\n\n\u200e\n\n\`\`\`json\n${closed}\n\`\`\``.replace(/`/g, "`");
+          // Validate quickly before appending
+          try {
+            const parsed = JSON.parse(closed) as unknown;
+            const recheck = AssessmentResultSchema.safeParse(parsed);
+            if (recheck.success) {
+              appendPartial(
+                sessionId,
+                `\n\n\u200e\n\n\`\`\`json\n${JSON.stringify(recheck.data)}\n\`\`\``,
+              );
+              return;
+            }
+          } catch {
+            // ignore
+          }
+          // As a last resort, append the closed block so the client can try again later
+          appendPartial(sessionId, candidateText);
+        }
+      } catch (e) {
+        Sentry.captureException(e);
+      }
+
       Sentry.captureMessage("gemini_assessment_repair_failed", {
         level: "warning",
         extra: { sessionId, locale },
@@ -1049,6 +1223,7 @@ export async function POST(req: Request): Promise<Response> {
       let conversationId: string | null = null;
       let token: string | null = null;
       let systemPrompt: string | null = null;
+      let allowedUrls: readonly string[] | null = null;
       try {
         token = (await convexAuthNextjsToken()) ?? null;
         Sentry.addBreadcrumb({
@@ -1119,6 +1294,7 @@ export async function POST(req: Request): Promise<Response> {
           convexToken: token,
         });
         systemPrompt = built.systemPrompt;
+        allowedUrls = Array.from(built.allowedUrls);
       } catch (err) {
         Sentry.captureException(err);
       }
@@ -1132,6 +1308,7 @@ export async function POST(req: Request): Promise<Response> {
         conversationId,
         convexToken: token,
         systemPrompt,
+        allowedUrls,
       });
       return new Response(
         JSON.stringify({

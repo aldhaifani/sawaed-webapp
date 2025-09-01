@@ -10,6 +10,9 @@ describe("ModuleItemSchema", () => {
       title: "Intro",
       type: "video",
       duration: "10 min",
+      description: "Learn the basics of video editing",
+      objectives: ["Understand video concepts", "Apply editing techniques"],
+      outline: ["Introduction", "Basic tools", "Practice exercises"],
     });
     expect(res.success).toBe(true);
   });
@@ -46,9 +49,33 @@ describe("AssessmentResultSchema", () => {
     level: 1,
     confidence: 0.9,
     learningModules: [
-      { id: "m1", title: "Intro", type: "article", duration: "6 min" },
-      { id: "m2", title: "Watch", type: "video", duration: "1 h" },
-      { id: "m3", title: "Quiz", type: "quiz", duration: "10 min" },
+      {
+        id: "m1",
+        title: "Intro",
+        type: "article",
+        duration: "6 min",
+        description: "Introduction to the topic",
+        objectives: ["Learn basics", "Understand concepts"],
+        outline: ["Overview", "Key points", "Summary"],
+      },
+      {
+        id: "m2",
+        title: "Watch",
+        type: "video",
+        duration: "1 h",
+        description: "Video tutorial on the subject",
+        objectives: ["Watch demonstration", "Follow along"],
+        outline: ["Setup", "Main content", "Conclusion"],
+      },
+      {
+        id: "m3",
+        title: "Quiz",
+        type: "quiz",
+        duration: "10 min",
+        description: "Test your knowledge",
+        objectives: ["Apply knowledge", "Check understanding"],
+        outline: ["Questions", "Answers", "Review"],
+      },
     ],
     reasoning: "ok",
   };
@@ -79,9 +106,33 @@ describe("parseAssessmentResult", () => {
       level: 2,
       confidence: 0.7,
       learningModules: [
-        { id: "m1", title: "Intro", type: "article", duration: "6 min" },
-        { id: "m2", title: "Watch", type: "video", duration: "1 h" },
-        { id: "m3", title: "Quiz", type: "quiz", duration: "10 min" },
+        {
+          id: "m1",
+          title: "Intro",
+          type: "article",
+          duration: "6 min",
+          description: "Introduction to the topic",
+          objectives: ["Learn basics", "Understand concepts"],
+          outline: ["Overview", "Key points", "Summary"],
+        },
+        {
+          id: "m2",
+          title: "Watch",
+          type: "video",
+          duration: "1 h",
+          description: "Video tutorial on the subject",
+          objectives: ["Watch demonstration", "Follow along"],
+          outline: ["Setup", "Main content", "Conclusion"],
+        },
+        {
+          id: "m3",
+          title: "Quiz",
+          type: "quiz",
+          duration: "10 min",
+          description: "Test your knowledge",
+          objectives: ["Apply knowledge", "Check understanding"],
+          outline: ["Questions", "Answers", "Review"],
+        },
       ],
     });
     expect(res.ok).toBe(true);

@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { getSession } from "../_store";
 import { cleanupStaleSessions } from "../_store";
+import { setError } from "../_store";
 import { checkRateLimit, getClientIp } from "../_rateLimit";
 
 export type StatusResponse = {
@@ -65,6 +66,17 @@ export async function GET(req: Request): Promise<Response> {
             { status: 404, headers: { "content-type": "application/json" } },
           );
         }
+        // Auto-timeout long-running sessions to avoid indefinite spinners
+        try {
+          const MAX_RUNNING_AGE_MS = 3 * 60_000; // 3 minutes
+          if (
+            (s.status === "running" || s.status === "partial") &&
+            Date.now() - s.updatedAt > MAX_RUNNING_AGE_MS
+          ) {
+            setError(sessionId, "timeout");
+          }
+        } catch {}
+
         // Calculate ETag for caching
         const responseData = {
           sessionId: s.sessionId,

@@ -13,6 +13,7 @@ export type ChatSession = {
   text: string;
   updatedAt: number;
   error?: string;
+  assessmentPersisted: boolean;
 };
 
 // Persist across Next.js dev HMR by hoisting to globalThis (typed)
@@ -37,6 +38,7 @@ export function createSession(): ChatSession {
     status: "queued",
     text: "",
     updatedAt: now,
+    assessmentPersisted: false,
   };
   sessions.set(sessionId, session);
   return session;
@@ -74,6 +76,17 @@ export function setError(sessionId: string, message: string): void {
   s.status = "error";
   s.error = message;
   s.updatedAt = Date.now();
+}
+
+export function setAssessmentPersisted(sessionId: string): boolean {
+  const s = sessions.get(sessionId);
+  if (!s) return false;
+  if (s.assessmentPersisted) {
+    return false; // Already persisted, lock not acquired
+  }
+  s.assessmentPersisted = true;
+  s.updatedAt = Date.now();
+  return true; // Lock acquired
 }
 
 /**

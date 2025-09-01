@@ -788,12 +788,31 @@
     "initTitle": "Initialization",
     "missingSkill": "Skill not set",
     "loading": "Loading...",
+    "errors": {
+      "tokenLimitExceeded": "Response too long, trying to complete...",
+      "validationTimeout": "Assessment validation taking longer than expected...",
+      "assessmentIncomplete": "Assessment incomplete, attempting to fix...",
+      "generationFailed": "Failed to generate assessment. Please try again.",
+      "connectionError": "Connection error. Please check your internet and try again."
+    },
     "errorLoading": "An error occurred while loading",
     "skill": "Skill:",
     "lastLevel": "Last level:",
     "backToSettings": "Back to settings",
     "emptyHint": "Start the conversation by asking a question. Arabic and English are supported.",
-    "footerDisclaimer": "AI responses may contain mistakes. Always verify important information."
+    "footerDisclaimer": "AI responses may contain mistakes. Always verify important information.",
+    "assessmentComplete": "Assessment complete. Your learning path has been generated.",
+    "assessmentProcessing": "Processing your assessment results...",
+    "assessmentFailed": "Assessment could not be completed. Please try again.",
+    "jsonInvalid": "Could not detect a valid assessment JSON",
+    "jsonDetecting": "Analyzing your responses...",
+    "conversationEnding": "Finalizing assessment...",
+    "connectionState": {
+      "connecting": "Connecting to chat server...",
+      "connected": "Connected to chat server",
+      "disconnected": "Disconnected from chat server",
+      "reconnecting": "Reconnecting to chat server..."
+    }
   },
 
   "notFound": {

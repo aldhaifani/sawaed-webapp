@@ -63,6 +63,11 @@ function LearningModulesTabs({
     readonly title: string;
     readonly type: "article" | "video" | "quiz" | "project";
     readonly duration: string;
+    readonly description?: string;
+    readonly objectives?: readonly string[];
+    readonly outline?: readonly string[];
+    readonly resourceUrl?: string;
+    readonly searchKeywords?: readonly string[];
   }>;
   dir: "rtl" | "ltr";
   completedIds: readonly string[];
@@ -197,6 +202,67 @@ function LearningModulesTabs({
               </div>
             </div>
             {(() => {
+              // Use AI-generated content first, fallback to templates if needed
+              const hasAiContent =
+                m.objectives?.length ?? m.outline?.length ?? m.description;
+
+              if (hasAiContent) {
+                return (
+                  <div className="mt-4 space-y-5">
+                    {m.description && (
+                      <div>
+                        <p className="text-muted-foreground text-sm leading-relaxed">
+                          {m.description}
+                        </p>
+                      </div>
+                    )}
+                    {m.objectives && m.objectives.length > 0 && (
+                      <div>
+                        <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                          <Target className="h-4 w-4" aria-hidden />
+                          {t("objectivesLabel")}
+                        </h4>
+                        <ul className="list-disc space-y-1.5 ps-5 text-sm leading-relaxed">
+                          {m.objectives.map((obj, i) => (
+                            <li key={`${m.id}-obj-${i}`}>{obj}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {m.outline && m.outline.length > 0 && (
+                      <div>
+                        <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                          <ListTree className="h-4 w-4" aria-hidden />
+                          {t("outlineLabel")}
+                        </h4>
+                        <ul className="list-disc space-y-1.5 ps-5 text-sm leading-relaxed">
+                          {m.outline.map((item, i) => (
+                            <li key={`${m.id}-out-${i}`}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {m.resourceUrl && (
+                      <div>
+                        <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                          <BookOpen className="h-4 w-4" aria-hidden />
+                          Resource
+                        </h4>
+                        <a
+                          href={m.resourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 underline hover:text-blue-800"
+                        >
+                          {m.resourceUrl}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              // Fallback to template content if no AI content
               const content = getTemplateContent(
                 assessmentLevel,
                 m.type,
@@ -212,9 +278,10 @@ function LearningModulesTabs({
                   </div>
                 );
               }
+
               return (
                 <div className="mt-4 space-y-5">
-                  {content.objectives && content.objectives.length > 0 ? (
+                  {content.objectives && content.objectives.length > 0 && (
                     <div>
                       <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold">
                         <Target className="h-4 w-4" aria-hidden />
@@ -226,8 +293,8 @@ function LearningModulesTabs({
                         ))}
                       </ul>
                     </div>
-                  ) : null}
-                  {content.outline && content.outline.length > 0 ? (
+                  )}
+                  {content.outline && content.outline.length > 0 && (
                     <div>
                       <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold">
                         <ListTree className="h-4 w-4" aria-hidden />
@@ -239,7 +306,7 @@ function LearningModulesTabs({
                         ))}
                       </ul>
                     </div>
-                  ) : null}
+                  )}
                 </div>
               );
             })()}
@@ -477,8 +544,8 @@ export default function YouthLearningPage(): ReactElement {
     <main className="bg-background min-h-screen w-full">
       <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8">
         <h1 className="text-foreground mb-6 text-2xl font-bold">{title}</h1>
-        {/* Settings card: show only when no active path AND not loading */}
-        {pathData === null ? (
+        {/* Settings card: show whenever there is no active path (null or undefined) */}
+        {!pathData ? (
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="text-base">{t("settingsTitle")}</CardTitle>

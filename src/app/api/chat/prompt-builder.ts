@@ -74,6 +74,7 @@ export type BuildPromptInput = {
 
 export type BuildPromptOutput = {
   readonly systemPrompt: string;
+  readonly allowedUrls: readonly string[];
 };
 
 // Narrow types for Convex result to avoid any usage
@@ -206,9 +207,23 @@ function schemaInstruction(_locale: Locale): string {
     "  confidence: number (0-1),",
     "  reasoning?: string,",
     "  learningModules: Array<",
-    "    { id: string, title: string, type: 'article'|'video'|'quiz'|'project', duration: string }",
+    "    {",
+    "      id: string,",
+    "      title: string,",
+    "      type: 'article'|'video'|'quiz'|'project',",
+    "      duration: string,",
+    "      description?: string,",
+    "      objectives?: string[],",
+    "      outline?: string[],",
+    "      resourceUrl?: string,",
+    "      resourceTitle?: string,",
+    "      searchKeywords?: string[],",
+    "      levelRef?: number,",
+    "      difficulty?: 'beginner'|'intermediate'|'advanced'",
+    "    }",
     "  > with length between 3 and 6",
     "}",
+    "Rules: Use ONLY real URLs listed under Level Guidance resources when adding resourceUrl. If no exact resource fits, omit resourceUrl and provide 3-8 focused searchKeywords instead (e.g., 'YouTube: topic', 'Google: topic').",
     "Do not include extra keys or comments. Ensure the block ends with ``` and no trailing text after the JSON.",
   ]);
 }
@@ -359,6 +374,84 @@ export async function buildSystemPrompt(
           .join("\n\n")}`
       : "";
 
+  // Concise Level Guidance for the assessed level ±1 (if available)
+  function buildLevelGuidance(
+    loc: LocalSkill | undefined,
+    lvls: ReadonlyArray<SummaryLevel>,
+    assessed?: number,
+  ): string {
+    if (!loc || lvls.length === 0) return "";
+    const all = loc.levels;
+    const indices: number[] = [];
+    if (assessed && Number.isFinite(assessed)) {
+      const targetIdx = all.findIndex((x) => x.level === assessed);
+      if (targetIdx >= 0) {
+        indices.push(targetIdx);
+        if (targetIdx - 1 >= 0) indices.push(targetIdx - 1);
+        if (targetIdx + 1 < all.length) indices.push(targetIdx + 1);
+      }
+    }
+    const uniq = Array.from(new Set(indices));
+    if (uniq.length === 0) {
+      // Fallback: first up to 2 levels to keep prompt compact
+      uniq.push(0);
+      if (all.length > 1) uniq.push(1);
+    }
+    const lines: string[] = ["Level Guidance (use these to craft modules):"];
+    for (const i of uniq) {
+      const L = all[i];
+      if (!L) continue;
+      const header = `- L${L.level}: ${L.nameEn}${L.descriptionEn ? ` — ${L.descriptionEn}` : ""}`;
+      const steps = (L.progressionSteps ?? [])
+        .slice(0, 6)
+        .map((s) => `  • ${s}`)
+        .join("\n");
+      const urls = (L.resources ?? [])
+        .slice(0, 6)
+        .map((r) => `  • ${r.url}`)
+        .join("\n");
+      lines.push(header);
+      if (steps) lines.push("  Steps:\n" + steps);
+      if (urls) lines.push("  Resources:\n" + urls);
+    }
+    return lines.join("\n");
+  }
+  const levelGuidance = buildLevelGuidance(local, levels, latestLevel);
+
+  // Compute URL allowlist from Level Guidance levels
+  function collectAllowedUrls(
+    loc: LocalSkill | undefined,
+    lvls: ReadonlyArray<SummaryLevel>,
+    assessed?: number,
+  ): readonly string[] {
+    if (!loc || lvls.length === 0) return [];
+    const all = loc.levels;
+    const indices: number[] = [];
+    if (assessed && Number.isFinite(assessed)) {
+      const targetIdx = all.findIndex((x) => x.level === assessed);
+      if (targetIdx >= 0) {
+        indices.push(targetIdx);
+        if (targetIdx - 1 >= 0) indices.push(targetIdx - 1);
+        if (targetIdx + 1 < all.length) indices.push(targetIdx + 1);
+      }
+    }
+    const uniq = Array.from(new Set(indices));
+    if (uniq.length === 0) {
+      uniq.push(0);
+      if (all.length > 1) uniq.push(1);
+    }
+    const out = new Set<string>();
+    for (const i of uniq) {
+      const L = all[i];
+      if (!L) continue;
+      for (const r of L.resources ?? []) {
+        if (r?.url && typeof r.url === "string") out.add(r.url);
+      }
+    }
+    return Array.from(out);
+  }
+  const allowedUrls = collectAllowedUrls(local, levels, latestLevel);
+
   // Compose prompt - ALL IN ENGLISH
   const header =
     "You are an AI assessment assistant that evaluates the user's skill level and proposes an appropriate learning path.";
@@ -407,13 +500,17 @@ export async function buildSystemPrompt(
 
   const randomGreeting =
     greetings[Math.floor(Math.random() * greetings.length)];
-  const firstTurnRule = `\n\nStart: If input is '__start__', use this greeting: "${randomGreeting} سأطرح عليك 5 أسئلة اختيار من متعدد لتحديد مستواك وإنشاء مسار تعلم مخصص لك. هل أنت مستعد للبدء؟" (Arabic) or "${randomGreeting} I'll ask you 5 multiple choice questions to determine your level and create a personalized learning path. Are you ready to begin?" (English). Otherwise, start assessment directly. CRITICAL: Always show "Question X/5" before each question and STOP after question 5.`;
+  // Locale-specific start rule to avoid mixed-language greetings
+  const firstTurnRule =
+    locale === "ar"
+      ? `\n\nبدء المحادثة: إذا كانت رسالة الإدخال '__start__' فاستخدم التحية التالية مرة واحدة فقط: "${randomGreeting} سأطرح عليك 5 أسئلة اختياري لتحديد مستواك وإنشاء مسار تعلم مخصص لك. هل أنت مستعد للبدء؟". خلاف ذلك لا تستخدم أي تحية - ابدأ مباشرة بالسؤال التالي في التسلسل. IMPORTANT: لا تحيي المستخدم في كل سؤال - التحية فقط عند '__start__'.`
+      : `\n\nStart: If the input is '__start__', use this greeting ONCE: "${randomGreeting} I'll ask you 5 multiple choice questions to determine your level and create a personalized learning path. Are you ready to begin?". Otherwise, do NOT greet - start directly with the next question in sequence. IMPORTANT: Do NOT greet the user on every question - greeting is ONLY for '__start__'.`;
 
   // Enhanced assessment flow rules
   const assessmentFlow =
     locale === "ar"
-      ? '\n\nتدفق التقييم الإجباري:\n• السؤال 1-5: اطرح أسئلة اختيار من متعدد فقط\n• بعد السؤال 5: قدم التقييم النهائي مع JSON فوراً\n• لا تطلب المزيد من الأسئلة أو التوضيحات\n• كل سؤال يجب أن يكون مختلفاً تماماً\n• استخدم تنسيق: "السؤال X من 5" ثم السؤال مع 4 خيارات (أ، ب، ج، د)\n• اقبل الإجابات بالأحرف العربية (أ، ب، ج، د) أو الإنجليزية (A، B، C، D)\n• تفهم الأخطاء الإملائية والنحوية البسيطة وفسر الإجابة بناءً على المعنى المقصود'
-      : '\n\nMandatory Assessment Flow:\n• Questions 1-5: Ask ONLY multiple choice questions\n• After Question 5: Provide final assessment with JSON immediately\n• Do NOT ask for more questions or clarifications\n• Each question must be completely different\n• Use format: "Question X/5" then question with 4 options (A, B, C, D)\n• Accept answers in both Arabic letters (أ، ب، ج، د) and English letters (A، B، C، D)\n• Understand minor spelling and grammar errors and interpret the answer based on intended meaning';
+      ? '\n\nتدفق التقييم (صارم):\n• اطرح فقط أسئلة اختيار من متعدد (4 خيارات)\n• الحد الأقصى 5 أسئلة\n• يُسمح بالإنهاء المبكر إذا كنت واثقًا (بعد 3 أسئلة على الأقل)\n• عند إصدار التقييم النهائي مع JSON: توقف فورًا ولا ترسل أي أسئلة أخرى\n• لا تطلب أسئلة أو توضيحات إضافية بعد الإنهاء\n• كل سؤال مختلف تمامًا\n• استخدم التنسيق: "السؤال X من 5" ثم السؤال مع الخيارات (أ، ب، ج، د)\n• اقبل الإجابات بالأحرف العربية (أ، ب، ج، د) أو الإنجليزية (A, B, C, D)\n• لا تكرر الإجابات - كل حرف يجب أن يُستخدم مرة واحدة فقط\n• إذا أجاب المستخدم بحرف واحد، لا تطلب توضيحًا - تابع للسؤال التالي'
+      : '\n\nAssessment Flow (strict):\n• Ask ONLY multiple-choice questions (4 options)\n• Maximum of 5 questions\n• Early completion is allowed when confident (after at least 3 questions)\n• When you output the final assessment with JSON: STOP immediately and do not ask any further questions\n• Do NOT ask for additional questions or clarifications after completion\n• Each question must be entirely different\n• Use the format: "Question X/5" then the question with options (A, B, C, D)\n• Accept answers in Arabic letters (أ، ب، ج، د) or English letters (A, B, C, D)\n• Do NOT repeat answers - each letter should be used only once\n• If user answers with a single letter, do NOT ask for clarification - proceed to next question';
 
   // Simplified Sawaed context
   const sawaedFocus =
@@ -436,15 +533,15 @@ export async function buildSystemPrompt(
         turns,
         mcq,
         adapt,
-        // templates removed - unused variable
         constraints,
         skillResources,
+        levelGuidance,
         schema,
         languagePolicy,
         sawaedFocus,
         assessmentFlow,
       ]);
-      return { systemPrompt } as const;
+      return { systemPrompt, allowedUrls } as const;
     },
   );
 }

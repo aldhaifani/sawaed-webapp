@@ -18,6 +18,17 @@ export const ModuleItemSchema = z
         if (!/\d/.test(val)) return false;
         return val.length <= 32;
       }, "invalid duration label"),
+    // Required rich content fields
+    description: z.string().min(1).max(2000),
+    objectives: z.array(z.string().min(1)).min(2).max(4),
+    outline: z.array(z.string().min(1)).min(3).max(5),
+    resourceUrl: z.string().url().max(2048).optional(),
+    resourceTitle: z.string().min(1).max(200).optional(),
+    searchKeywords: z.array(z.string().min(1)).min(1).max(10).optional(),
+    levelRef: z.number().int().min(1).max(10).optional(),
+    difficulty: z
+      .enum(["beginner", "intermediate", "advanced"] as const)
+      .optional(),
   })
   .strict();
 

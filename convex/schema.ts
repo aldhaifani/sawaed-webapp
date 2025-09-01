@@ -406,6 +406,21 @@ const schema = defineSchema({
         ),
         // Keep duration as a short human-readable label per PRD (e.g., "6 min")
         duration: v.string(),
+        // Optional richer fields
+        description: v.optional(v.string()),
+        objectives: v.optional(v.array(v.string())),
+        outline: v.optional(v.array(v.string())),
+        resourceUrl: v.optional(v.string()),
+        resourceTitle: v.optional(v.string()),
+        searchKeywords: v.optional(v.array(v.string())),
+        levelRef: v.optional(v.number()),
+        difficulty: v.optional(
+          v.union(
+            v.literal("beginner"),
+            v.literal("intermediate"),
+            v.literal("advanced"),
+          ),
+        ),
       }),
     ),
     status: v.union(

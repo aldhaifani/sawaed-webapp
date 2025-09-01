@@ -12,7 +12,7 @@ import * as Sentry from "@sentry/nextjs";
 import { DotStream } from "ldrs/react";
 import "ldrs/react/DotStream.css";
 import { usePersistedTranscript } from "@/hooks/usePersistedTranscript";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
 import { detectAssessmentFromText } from "@/shared/ai/detect-assessment";
 import { useChatStatusPoll } from "@/hooks/use-chat-status-poll";
@@ -89,6 +89,33 @@ export default function ChatInitPage(): ReactElement {
     useState<boolean>(false);
   const [isProcessingAssessment, setIsProcessingAssessment] =
     useState<boolean>(false);
+  const [buildPhraseIdx, setBuildPhraseIdx] = useState<number>(0);
+
+  // Rotate helpful phrases while we are processing/repairing JSON
+  const buildingPhrases = useMemo<readonly string[]>(() => {
+    if (locale === "ar") {
+      return [
+        "نجمع إجاباتك…",
+        "نرتب القطع…",
+        "نبني مسار التعلم…",
+        "نصوغ التوصيات…",
+      ] as const;
+    }
+    return [
+      "Putting your answers together…",
+      "Putting the pieces together…",
+      "Building the learning path…",
+      "Shaping tailored recommendations…",
+    ] as const;
+  }, [locale]);
+
+  useEffect(() => {
+    if (!isProcessingAssessment) return;
+    const id = window.setInterval(() => {
+      setBuildPhraseIdx((i) => (i + 1) % buildingPhrases.length);
+    }, 2000);
+    return () => window.clearInterval(id);
+  }, [isProcessingAssessment, buildingPhrases.length]);
 
   // Helper: strip any ```json ... ``` code blocks from AI text
   const stripAssessmentJson = (text: string): string => {
@@ -104,7 +131,8 @@ export default function ChatInitPage(): ReactElement {
   const { load: loadTranscript, save: saveTranscript } = usePersistedTranscript(
     skillParam || undefined,
   );
-  const storeAssessment = useMutation(api.aiAssessments.storeAssessment);
+  // Assessment storage is handled by backend API during AI generation
+  // const storeAssessment = useMutation(api.aiAssessments.storeAssessment);
   const sessionStorageKey = useMemo(
     () => `chatSession:${skillParam}`,
     [skillParam],
@@ -118,6 +146,10 @@ export default function ChatInitPage(): ReactElement {
   const { startPolling, stopPolling, sendMessage } = useChatStatusPoll({
     onProgress: ({ aiMessageId, text, status, progressed }) => {
       setConnectionState("connected");
+      // If any JSON block appears (even if invalid/truncated), start processing state
+      if (!isProcessingAssessment && text.includes("```json")) {
+        setIsProcessingAssessment(true);
+      }
       if (progressed) {
         setMessages((prev) =>
           prev.map((m) =>
@@ -150,7 +182,7 @@ export default function ChatInitPage(): ReactElement {
       aiMessageId: string;
       text: string;
     }) => {
-      // Only check for assessment JSON if the message explicitly contains a JSON code block
+      // Only check for assessment JSON to update UI state (storage handled by backend)
       if (!hasPersistedRef.current && text.includes("```json")) {
         void (async () => {
           try {
@@ -158,34 +190,8 @@ export default function ChatInitPage(): ReactElement {
 
             const detected = detectAssessmentFromText(text);
             if (detected.valid && detected.data && skillParam) {
-              // Send only allowed fields (omit `skill`, optional `reasoning` is allowed)
-              const { level, confidence, learningModules, reasoning } =
-                detected.data as unknown as {
-                  level: number;
-                  confidence: number;
-                  learningModules: ReadonlyArray<{
-                    id: string;
-                    title: string;
-                    type: "article" | "video" | "quiz" | "project";
-                    duration: string;
-                  }>;
-                  reasoning?: string;
-                };
-              const modules = learningModules.map((m) => ({
-                id: m.id,
-                title: m.title,
-                type: m.type,
-                duration: m.duration,
-              }));
-              await storeAssessment({
-                aiSkillId: skillId,
-                result: {
-                  level,
-                  confidence,
-                  learningModules: modules,
-                  reasoning,
-                },
-              });
+              // Assessment is already stored by backend API during AI generation
+              // Just update UI state to show completion
               hasPersistedRef.current = true;
               setIsAssessmentComplete(true);
               setIsProcessingAssessment(false);
@@ -217,19 +223,10 @@ export default function ChatInitPage(): ReactElement {
                 })(),
               );
             } else {
-              // Only show error if JSON was explicitly sent but invalid
-              setIsProcessingAssessment(false);
-              console.warn("Invalid assessment JSON structure");
-              toast.error(
-                (() => {
-                  try {
-                    return t("assessmentFailed");
-                  } catch {
-                    return locale === "ar"
-                      ? "تعذّر إكمال التقييم. يرجى المحاولة مرة أخرى."
-                      : "Assessment could not be completed. Please try again.";
-                  }
-                })(),
+              // JSON block exists but invalid: keep the processing state and let backend repair continue
+              // Avoid showing an error toast to reduce user confusion during auto-repair retries
+              console.warn(
+                "Invalid assessment JSON structure; awaiting backend repair...",
               );
             }
           } catch (e) {
@@ -646,6 +643,11 @@ export default function ChatInitPage(): ReactElement {
                               speed="2"
                               color="currentColor"
                             />
+                            {isProcessingAssessment && (
+                              <span className="text-xs opacity-80 md:text-[13px]">
+                                {buildingPhrases[buildPhraseIdx]}
+                              </span>
+                            )}
                           </div>
                         ) : m.error ? (
                           <div className="space-y-2">
