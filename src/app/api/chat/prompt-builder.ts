@@ -221,9 +221,9 @@ function bilingualToneRules(locale: Locale): string {
 
 function turnTakingRules(locale: Locale): string {
   if (locale === "ar") {
-    return '\n\nقواعد المحادثة:\n• اطرح سؤالاً واحداً فقط في كل مرة\n• انتظر إجابة المستخدم قبل السؤال التالي\n• أقصى 5 أسئلة بدقة - لا تتجاوز هذا الحد\n• اعرض رقم السؤال: "السؤال X من 5" قبل كل سؤال\n• بعد السؤال الخامس، قدم التقييم النهائي فوراً\n• استخدم أسئلة محددة وعملية من مستويات المهارة المحددة';
+    return '\n\nقواعد المحادثة:\n• اطرح سؤالاً واحداً فقط في كل مرة\n• انتظر إجابة المستخدم قبل السؤال التالي\n• أقصى 5 أسئلة بدقة - لا تتجاوز هذا الحد أبداً\n• اعرض رقم السؤال: "السؤال X من 5" قبل كل سؤال\n• بعد السؤال الخامس، قدم التقييم النهائي فوراً\n• لا تكرر أي سؤال - كل سؤال يجب أن يكون مختلفاً\n• تتبع الأسئلة المطروحة لتجنب التكرار\n• استخدم أسئلة اختيار من متعدد فقط';
   }
-  return "\n\nRules: One question at a time. MAXIMUM 5 questions STRICTLY. Count questions and end assessment at question 5.\nUse specific, practical questions from the defined skill levels.";
+  return "\n\nRules: One question at a time. MAXIMUM 5 questions STRICTLY - NEVER exceed this limit.\nCount questions and end assessment at question 5.\nNEVER repeat questions - each must be unique.\nTrack asked questions to avoid duplicates.\nUse ONLY multiple choice questions.";
 }
 
 function multipleChoiceRules(locale: Locale, _latestLevel?: number): string {
@@ -235,6 +235,11 @@ function multipleChoiceRules(locale: Locale, _latestLevel?: number): string {
           "• إذا أجاب بشكل صحيح، انتقل لمستوى أعلى",
           "• إذا أجاب بشكل خاطئ أو غير مكتمل، انتقل لمستوى أقل",
           "• اهدف للوصول لمستوى دقيق خلال 5 أسئلة كحد أقصى",
+          "• اطرح أسئلة اختيار من متعدد فقط مع 4 خيارات (أ، ب، ج، د)",
+          "• اقبل الإجابات بالأحرف العربية (أ، ب، ج، د) أو الإنجليزية (A، B، C، D)",
+          "• كن مرناً مع الأخطاء الإملائية والنحوية البسيطة في الإجابات",
+          "• لا تطرح أسئلة مفتوحة أو أسئلة تتطلب إجابات طويلة",
+          "• تأكد من أن كل سؤال له إجابة واحدة صحيحة واضحة",
         ]
       : [
           "• Use full 10-level system (1-10) to assess the skill",
@@ -242,6 +247,11 @@ function multipleChoiceRules(locale: Locale, _latestLevel?: number): string {
           "• If answered correctly, move to higher level",
           "• If answered incorrectly or incompletely, move to lower level",
           "• Aim to reach accurate level within maximum 5 questions",
+          "• Ask ONLY multiple choice questions with 4 options (A, B, C, D)",
+          "• Accept answers in both Arabic letters (أ، ب، ج، د) and English letters (A، B، C، D)",
+          "• Be flexible with minor spelling and grammar errors in responses",
+          "• Do NOT ask open-ended questions or questions requiring long answers",
+          "• Ensure each question has one clear correct answer",
         ];
 
   return rules.map((rule) => `${rule}\n`).join("");
@@ -379,8 +389,31 @@ export async function buildSystemPrompt(
   // Simplified language policy
   const languagePolicy = `\n\nLanguage: Always respond in ${locale === "ar" ? "Arabic" : "English"}. Do not switch languages.`;
 
-  // Simplified first-turn rule with question tracking
-  const firstTurnRule = `\n\nStart: If input is '__start__', greet${youthFirstName ? ` ${youthFirstName}` : ""} briefly, explain assessment (exactly 5 questions → learning path), ask if ready. Otherwise, start assessment directly. Track question count: "Question X/5" before each question.`;
+  // Dynamic greeting messages for variety
+  const greetings =
+    locale === "ar"
+      ? [
+          `مرحباً${youthFirstName ? ` ${youthFirstName}` : ""}! أنا مساعدك الذكي لتقييم المهارات.`,
+          `أهلاً وسهلاً${youthFirstName ? ` ${youthFirstName}` : ""}! سأساعدك في اكتشاف مستوى مهاراتك.`,
+          `مرحباً بك${youthFirstName ? ` ${youthFirstName}` : ""}! دعني أقيم مهاراتك لأقترح عليك أفضل مسار تعلم.`,
+          `السلام عليكم${youthFirstName ? ` ${youthFirstName}` : ""}! سأطرح عليك 5 أسئلة سريعة لتحديد مستواك.`,
+        ]
+      : [
+          `Hello${youthFirstName ? ` ${youthFirstName}` : ""}! I'm your AI skills assessment assistant.`,
+          `Welcome${youthFirstName ? ` ${youthFirstName}` : ""}! I'll help you discover your skill level.`,
+          `Hi there${youthFirstName ? ` ${youthFirstName}` : ""}! Let me assess your skills to suggest the best learning path.`,
+          `Greetings${youthFirstName ? ` ${youthFirstName}` : ""}! I'll ask you 5 quick questions to determine your level.`,
+        ];
+
+  const randomGreeting =
+    greetings[Math.floor(Math.random() * greetings.length)];
+  const firstTurnRule = `\n\nStart: If input is '__start__', use this greeting: "${randomGreeting} سأطرح عليك 5 أسئلة اختيار من متعدد لتحديد مستواك وإنشاء مسار تعلم مخصص لك. هل أنت مستعد للبدء؟" (Arabic) or "${randomGreeting} I'll ask you 5 multiple choice questions to determine your level and create a personalized learning path. Are you ready to begin?" (English). Otherwise, start assessment directly. CRITICAL: Always show "Question X/5" before each question and STOP after question 5.`;
+
+  // Enhanced assessment flow rules
+  const assessmentFlow =
+    locale === "ar"
+      ? '\n\nتدفق التقييم الإجباري:\n• السؤال 1-5: اطرح أسئلة اختيار من متعدد فقط\n• بعد السؤال 5: قدم التقييم النهائي مع JSON فوراً\n• لا تطلب المزيد من الأسئلة أو التوضيحات\n• كل سؤال يجب أن يكون مختلفاً تماماً\n• استخدم تنسيق: "السؤال X من 5" ثم السؤال مع 4 خيارات (أ، ب، ج، د)\n• اقبل الإجابات بالأحرف العربية (أ، ب، ج، د) أو الإنجليزية (A، B، C، D)\n• تفهم الأخطاء الإملائية والنحوية البسيطة وفسر الإجابة بناءً على المعنى المقصود'
+      : '\n\nMandatory Assessment Flow:\n• Questions 1-5: Ask ONLY multiple choice questions\n• After Question 5: Provide final assessment with JSON immediately\n• Do NOT ask for more questions or clarifications\n• Each question must be completely different\n• Use format: "Question X/5" then question with 4 options (A, B, C, D)\n• Accept answers in both Arabic letters (أ، ب، ج، د) and English letters (A، B، C، D)\n• Understand minor spelling and grammar errors and interpret the answer based on intended meaning';
 
   // Simplified Sawaed context
   const sawaedFocus =
@@ -409,6 +442,7 @@ export async function buildSystemPrompt(
         schema,
         languagePolicy,
         sawaedFocus,
+        assessmentFlow,
       ]);
       return { systemPrompt } as const;
     },

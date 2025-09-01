@@ -39,8 +39,8 @@ async function generateWithRetry(
       name: `Generate AI Response - ${label}`,
       attributes: {
         "ai.model": model,
-        "ai.temperature": 0.4,
-        "ai.max_tokens": 512,
+        "ai.temperature": 0.3,
+        "ai.max_tokens": 1000,
         "ai.attempts": attempts,
       },
     },
@@ -56,8 +56,9 @@ async function generateWithRetry(
               contents,
               systemInstruction,
               generationConfig: {
-                temperature: 0.4,
-                maxOutputTokens: 512,
+                temperature: 0.3,
+                maxOutputTokens: 1000,
+                topP: 0.8,
               },
             }),
           {
@@ -303,7 +304,7 @@ async function runGeminiGeneration(
                   "    { id: string, title: string, type: 'article'|'video'|'quiz'|'project', duration: string }",
                   "  > بطول من 3 إلى 6",
                   "}",
-                  "لا تستخدم مفاتيح إضافية. إذا استخدمت 'modules' حوِّلها إلى 'learningModules'.",
+                  "لا تستخدم مفاتيح إضافية. إذا استخدمت 'modules' حوّلها إلى 'learningModules'.",
                   "مثال:",
                   "```json",
                   "{",
@@ -415,8 +416,9 @@ async function runGeminiGeneration(
                 contents,
                 systemInstruction,
                 generationConfig: {
-                  temperature: 0.4, // Reduced from 0.7 for more focused responses
-                  maxOutputTokens: 512, // Reduced from 1024 for faster generation
+                  temperature: 0.3,
+                  maxOutputTokens: 800,
+                  topP: 0.8,
                 },
               },
               {
@@ -457,7 +459,12 @@ async function runGeminiGeneration(
                         Sentry.captureException(err);
                       }
                     }
-                    if (params.message !== "__start__") {
+                    // Skip validation for simple user responses (single letters, short answers)
+                    const isSimpleResponse =
+                      /^[a-dA-D]$|^\d+$|^(نعم|لا|yes|no)$/i.test(
+                        params.message.trim(),
+                      );
+                    if (params.message !== "__start__" && !isSimpleResponse) {
                       await validateAndMaybeRepair(
                         sessionId,
                         params.locale,
@@ -497,7 +504,7 @@ async function runGeminiGeneration(
                               message: "persist_assistant_message_start",
                               data: { conversationId: convoId },
                             });
-                            await fetchMutation(
+                            const assistantResult = await fetchMutation(
                               api.aiMessages.addAssistantMessage,
                               {
                                 conversationId: asAiConversationsId(convoId),
@@ -505,6 +512,18 @@ async function runGeminiGeneration(
                               },
                               { token: params.convexToken },
                             );
+
+                            // Log question tracking for monitoring
+                            Sentry.addBreadcrumb({
+                              category: "chat.assessment",
+                              level: "info",
+                              message: "question_tracked",
+                              data: {
+                                conversationId: convoId,
+                                totalQuestions:
+                                  assistantResult?.totalQuestions ?? 0,
+                              },
+                            });
                             Sentry.addBreadcrumb({
                               category: "chat.send",
                               level: "info",
@@ -575,7 +594,12 @@ async function runGeminiGeneration(
                       Sentry.captureException(err);
                     }
                   }
-                  if (params.message !== "__start__") {
+                  // Skip validation for simple user responses
+                  const isSimpleResponse =
+                    /^[a-dA-D]$|^\d+$|^(نعم|لا|yes|no)$/i.test(
+                      params.message.trim(),
+                    );
+                  if (params.message !== "__start__" && !isSimpleResponse) {
                     await validateAndMaybeRepair(
                       sessionId,
                       params.locale,
@@ -615,7 +639,7 @@ async function runGeminiGeneration(
                             message: "persist_assistant_message_start",
                             data: { conversationId: convoId },
                           });
-                          await fetchMutation(
+                          const assistantResult = await fetchMutation(
                             api.aiMessages.addAssistantMessage,
                             {
                               conversationId: asAiConversationsId(convoId),
@@ -623,6 +647,18 @@ async function runGeminiGeneration(
                             },
                             { token: params.convexToken },
                           );
+
+                          // Log question tracking for monitoring
+                          Sentry.addBreadcrumb({
+                            category: "chat.assessment",
+                            level: "info",
+                            message: "question_tracked",
+                            data: {
+                              conversationId: convoId,
+                              totalQuestions:
+                                assistantResult?.totalQuestions ?? 0,
+                            },
+                          });
                           Sentry.addBreadcrumb({
                             category: "chat.send",
                             level: "info",
@@ -693,7 +729,11 @@ async function runGeminiGeneration(
               appendPartial(sessionId, text);
             }
           }
-          if (params.message !== "__start__") {
+          // Skip validation for simple user responses
+          const isSimpleResponse = /^[a-dA-D]$|^\d+$|^(نعم|لا|yes|no)$/i.test(
+            params.message.trim(),
+          );
+          if (params.message !== "__start__" && !isSimpleResponse) {
             await validateAndMaybeRepair(
               sessionId,
               params.locale,
@@ -737,7 +777,7 @@ async function runGeminiGeneration(
                     message: "persist_assistant_message_start",
                     data: { conversationId: convoId },
                   });
-                  await fetchMutation(
+                  const assistantResult = await fetchMutation(
                     api.aiMessages.addAssistantMessage,
                     {
                       conversationId: asAiConversationsId(convoId),
@@ -745,6 +785,17 @@ async function runGeminiGeneration(
                     },
                     { token: params.convexToken },
                   );
+
+                  // Log question tracking for monitoring
+                  Sentry.addBreadcrumb({
+                    category: "chat.assessment",
+                    level: "info",
+                    message: "question_tracked",
+                    data: {
+                      conversationId: convoId,
+                      totalQuestions: assistantResult?.totalQuestions ?? 0,
+                    },
+                  });
                   Sentry.addBreadcrumb({
                     category: "chat.send",
                     level: "info",
@@ -868,7 +919,7 @@ async function validateAndMaybeRepair(
                     systemInstruction: strictInstruction,
                     generationConfig: {
                       temperature: 0.1, // Keep low for validation repair
-                      maxOutputTokens: 512,
+                      maxOutputTokens: 1000, // Increased to prevent truncation
                     },
                   }),
                 {

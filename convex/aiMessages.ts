@@ -7,6 +7,8 @@ import { auth } from "./auth";
  * Messages API (MVP)
  * - Persist final user and assistant messages.
  * - Update parent conversation's lastMessageAt for ordering.
+ * - Enforce strict 5-question limit per assessment.
+ * - Track question numbers to prevent duplicates.
  */
 export const addUserMessage = mutation({
   args: {
@@ -17,7 +19,11 @@ export const addUserMessage = mutation({
   handler: async (
     ctx,
     { conversationId, content, metadataJson },
-  ): Promise<{ messageId: Id<"aiMessages">; questionCount: number } | null> => {
+  ): Promise<{
+    messageId: Id<"aiMessages">;
+    questionCount: number;
+    shouldEndAssessment: boolean;
+  } | null> => {
     const authUserId = await auth.getUserId(ctx);
     if (!authUserId) return null;
 
@@ -43,6 +49,9 @@ export const addUserMessage = mutation({
 
     const questionCount = assistantMessages.length;
 
+    // Enforce strict 5-question limit
+    const shouldEndAssessment = questionCount >= 5;
+
     const now = Date.now();
 
     const messageId = (await ctx.db.insert("aiMessages", {
@@ -55,7 +64,7 @@ export const addUserMessage = mutation({
 
     await ctx.db.patch(conversationId, { lastMessageAt: now, updatedAt: now });
 
-    return { messageId, questionCount };
+    return { messageId, questionCount, shouldEndAssessment };
   },
 });
 
@@ -69,7 +78,10 @@ export const addAssistantMessage = mutation({
   handler: async (
     ctx,
     { conversationId, content, metadataJson, questionNumber },
-  ): Promise<{ messageId: Id<"aiMessages"> } | null> => {
+  ): Promise<{
+    messageId: Id<"aiMessages">;
+    totalQuestions: number;
+  } | null> => {
     const authUserId = await auth.getUserId(ctx);
     if (!authUserId) return null;
 
@@ -84,6 +96,22 @@ export const addAssistantMessage = mutation({
       return null;
     }
 
+    // Count existing assistant messages to enforce limit
+    const existingQuestions = await ctx.db
+      .query("aiMessages")
+      .withIndex("by_conversation", (q) =>
+        q.eq("conversationId", conversationId),
+      )
+      .filter((q) => q.eq(q.field("role"), "assistant"))
+      .collect();
+
+    const totalQuestions = existingQuestions.length + 1;
+
+    // Prevent adding more than 5 questions
+    if (totalQuestions > 5) {
+      throw new Error("Maximum 5 questions allowed per assessment");
+    }
+
     const now = Date.now();
 
     const messageId = (await ctx.db.insert("aiMessages", {
@@ -91,13 +119,13 @@ export const addAssistantMessage = mutation({
       role: "assistant",
       content,
       metadataJson,
-      questionNumber,
+      questionNumber: questionNumber ?? totalQuestions,
       createdAt: now,
     })) as Id<"aiMessages">;
 
     await ctx.db.patch(conversationId, { lastMessageAt: now, updatedAt: now });
 
-    return { messageId };
+    return { messageId, totalQuestions };
   },
 });
 
@@ -113,6 +141,7 @@ export const listByConversation = query({
       readonly role: "user" | "assistant" | "system";
       readonly content: string;
       readonly metadataJson?: string;
+      readonly questionNumber?: number;
       readonly createdAt: number;
     }>
   > => {
@@ -144,6 +173,7 @@ export const listByConversation = query({
       role: m.role,
       content: m.content,
       metadataJson: m.metadataJson ?? undefined,
+      questionNumber: m.questionNumber ?? undefined,
       createdAt: m.createdAt,
     }));
   },

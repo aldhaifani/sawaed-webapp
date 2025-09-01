@@ -45,6 +45,30 @@ type Message = {
   error?: boolean;
 };
 
+// Auto-detect text direction based on content
+function detectTextDirection(text: string): "ltr" | "rtl" {
+  // Arabic Unicode ranges: \u0600-\u06FF (Arabic), \u0750-\u077F (Arabic Supplement)
+  const arabicRegex = /[\u0600-\u06FF\u0750-\u077F]/;
+  const hasArabic = arabicRegex.test(text);
+
+  // Count Arabic vs Latin characters
+  const arabicChars = (text.match(/[\u0600-\u06FF\u0750-\u077F]/g) ?? [])
+    .length;
+  const latinChars = (text.match(/[a-zA-Z]/g) ?? []).length;
+
+  // If more than 30% Arabic characters or any Arabic detected in short text, use RTL
+  if (hasArabic && (arabicChars > latinChars * 0.3 || text.length < 50)) {
+    return "rtl";
+  }
+
+  return "ltr";
+}
+
+// Get text alignment class based on direction
+function getTextAlignment(direction: "ltr" | "rtl"): string {
+  return direction === "rtl" ? "text-right" : "text-left";
+}
+
 export default function ChatInitPage(): ReactElement {
   const rawLocale = useLocale();
   const locale: "ar" | "en" = rawLocale === "ar" ? "ar" : "en";
@@ -554,29 +578,21 @@ export default function ChatInitPage(): ReactElement {
                             ? "bg-destructive/10 text-destructive"
                             : "bg-muted text-foreground") +
                         " w-fit max-w-[75%] rounded-2xl px-4 py-2 md:py-2.5" +
-                        (isStartOfGroup ? " mt-1" : " mt-0")
+                        (isStartOfGroup ? " mt-1" : " mt-0") +
+                        " " +
+                        getTextAlignment(detectTextDirection(m.content))
                       }
-                      dir={locale === "ar" ? "rtl" : "ltr"}
+                      dir={detectTextDirection(m.content)}
                     >
                       <span className="sr-only">{senderLabels[m.role]}: </span>
                       {m.role === "ai" ? (
                         m.streaming ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2" dir="rtl">
                             <DotStream
                               size="50"
                               speed="2"
                               color="currentColor"
                             />
-                            <span className="text-sm opacity-75">
-                              {locale === "ar"
-                                ? "المساعد يفكر ويكتب..."
-                                : "AI is thinking and writing..."}
-                            </span>
-                            <span className="sr-only">
-                              {locale === "ar"
-                                ? "المساعد يكتب"
-                                : "Assistant is typing"}
-                            </span>
                           </div>
                         ) : m.error ? (
                           <div className="space-y-2">
@@ -634,14 +650,12 @@ export default function ChatInitPage(): ReactElement {
                             </div>
                           </div>
                         ) : (
-                          <div dir={locale === "ar" ? "rtl" : "ltr"}>
+                          <div dir={detectTextDirection(m.content)}>
                             <Markdown
                               className={
-                                `${
-                                  locale === "ar" ? "text-right" : ""
-                                } prose prose-base md:prose-sm lg:prose-base dark:prose-invert text-foreground max-w-none leading-6 break-words whitespace-pre-wrap ` +
+                                `${getTextAlignment(detectTextDirection(m.content))} prose prose-base md:prose-sm lg:prose-base dark:prose-invert text-foreground max-w-none leading-6 break-words whitespace-pre-wrap ` +
                                 "prose-headings:my-1 prose-p:my-1 prose-li:my-0 prose-ul:my-1 prose-ol:my-1 prose-blockquote:my-2 prose-pre:my-2" +
-                                (locale === "ar"
+                                (detectTextDirection(m.content) === "rtl"
                                   ? "[&_ol]:pe-5 [&_ul]:pe-5"
                                   : "[&_ol]:ps-5 [&_ul]:ps-5")
                               }
@@ -651,7 +665,10 @@ export default function ChatInitPage(): ReactElement {
                           </div>
                         )
                       ) : (
-                        <span className="text-[16px] leading-6 break-words whitespace-pre-wrap md:text-[15px]">
+                        <span
+                          className={`text-[16px] leading-6 break-words whitespace-pre-wrap md:text-[15px] ${getTextAlignment(detectTextDirection(m.content))}`}
+                          dir={detectTextDirection(m.content)}
+                        >
                           {m.content}
                         </span>
                       )}
