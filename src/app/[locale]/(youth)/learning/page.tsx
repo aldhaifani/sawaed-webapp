@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import * as Sentry from "@sentry/nextjs";
 import { useAiChatInit } from "@/hooks/use-ai-chat-init";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -32,10 +31,223 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  BookOpen,
+  Film,
+  HelpCircle,
+  Hammer,
+  Clock,
+  Target,
+  ListTree,
+  CheckCircle2,
+} from "lucide-react";
+import moduleTemplates from "@/../data/learning_path/module_templates.json";
 
 interface ChatConfigState {
   readonly aiSkillId?: Id<"aiSkills">;
   readonly preferredLanguage: "ar" | "en";
+}
+
+// Local component: Tabs-based module navigation (Phase 1 skeleton)
+function LearningModulesTabs({
+  modules,
+  dir,
+  completedIds,
+  onToggle,
+  assessmentLevel,
+  locale,
+}: {
+  modules: ReadonlyArray<{
+    readonly id: string;
+    readonly title: string;
+    readonly type: "article" | "video" | "quiz" | "project";
+    readonly duration: string;
+  }>;
+  dir: "rtl" | "ltr";
+  completedIds: readonly string[];
+  onToggle: (moduleId: string, nextChecked: boolean) => void | Promise<void>;
+  assessmentLevel?: number;
+  locale: "ar" | "en";
+}): ReactElement {
+  const [active, setActive] = useState<string>(modules[0]?.id ?? "");
+  const t = useTranslations("learning");
+
+  type TemplateEntry = {
+    readonly objectives?: readonly string[];
+    readonly outline?: readonly string[];
+  };
+
+  type ModuleTemplates = {
+    readonly levels: ReadonlyArray<{
+      readonly level: number;
+      readonly templates: Record<
+        "article" | "video" | "quiz" | "project",
+        Record<
+          "en" | "ar",
+          { readonly objectives?: string[]; readonly outline?: string[] }
+        >
+      >;
+    }>;
+  };
+
+  const isModuleTemplates = (x: unknown): x is ModuleTemplates => {
+    if (typeof x !== "object" || x === null) return false;
+    const maybe = x as { readonly levels?: unknown };
+    return Array.isArray(maybe.levels);
+  };
+
+  const getTemplateContent = (
+    level: number | undefined,
+    type: "article" | "video" | "quiz" | "project",
+    loc: "ar" | "en",
+  ): TemplateEntry | null => {
+    try {
+      if (!isModuleTemplates(moduleTemplates)) return null;
+      const levels = moduleTemplates.levels;
+      if (!Array.isArray(levels) || levels.length === 0) return null;
+      const first = levels[0];
+      if (!first) return null;
+      const lv = level ?? first.level;
+      const exact = levels.find((l) => l.level === lv);
+      const chosen = exact ?? first;
+      const typed = chosen.templates[type]?.[loc];
+      if (!typed) return null;
+      return {
+        objectives: typed.objectives ?? [],
+        outline: typed.outline ?? [],
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const iconFor = (type: "article" | "video" | "quiz" | "project") => {
+    switch (type) {
+      case "article":
+        return <BookOpen className="shrink-0" aria-hidden />;
+      case "video":
+        return <Film className="shrink-0" aria-hidden />;
+      case "quiz":
+        return <HelpCircle className="shrink-0" aria-hidden />;
+      case "project":
+        return <Hammer className="shrink-0" aria-hidden />;
+      default:
+        return <BookOpen className="shrink-0" aria-hidden />;
+    }
+  };
+
+  if (modules.length === 0) return <></>;
+
+  return (
+    <Tabs value={active} onValueChange={setActive} dir={dir} className="w-full">
+      <TabsList className="bg-background/80 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 w-full overflow-x-auto rounded-md p-1 backdrop-blur">
+        {modules.map((m, idx) => (
+          <TabsTrigger
+            key={m.id}
+            value={m.id}
+            className="data-[state=active]:bg-primary/10 gap-2 whitespace-nowrap"
+            aria-label={t("moduleLabel", { num: idx + 1 })}
+          >
+            {iconFor(m.type)}
+            <span className="text-xs font-medium sm:text-sm">
+              {t("moduleLabel", { num: idx + 1 })}
+            </span>
+          </TabsTrigger>
+        ))}
+      </TabsList>
+
+      {modules.map((m) => (
+        <TabsContent key={m.id} value={m.id} className="mt-3">
+          <div className="bg-card rounded-lg border p-4 sm:p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-1">
+                <h3 className="text-foreground text-base leading-snug font-semibold sm:text-lg">
+                  {m.title}
+                </h3>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary" className="px-2 py-0.5">
+                    <Clock className="me-1 h-3.5 w-3.5" aria-hidden />
+                    <span className="text-[11px] sm:text-xs">{m.duration}</span>
+                  </Badge>
+                  <Badge variant="outline" className="px-2 py-0.5">
+                    <span className="me-1" aria-hidden>
+                      {iconFor(m.type)}
+                    </span>
+                    <span className="text-[11px] sm:text-xs">{m.type}</span>
+                  </Badge>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 self-start sm:gap-3">
+                {(() => {
+                  const isCompleted = completedIds.includes(m.id);
+                  return (
+                    <Button
+                      size="sm"
+                      variant={isCompleted ? "secondary" : "default"}
+                      onClick={() => onToggle(m.id, !isCompleted)}
+                      aria-pressed={isCompleted}
+                      className="gap-1.5"
+                    >
+                      <CheckCircle2 className="h-4 w-4" aria-hidden />
+                      {isCompleted ? t("markIncomplete") : t("markComplete")}
+                    </Button>
+                  );
+                })()}
+              </div>
+            </div>
+            {(() => {
+              const content = getTemplateContent(
+                assessmentLevel,
+                m.type,
+                locale,
+              );
+              if (
+                !content ||
+                (!content.objectives?.length && !content.outline?.length)
+              ) {
+                return (
+                  <div className="text-muted-foreground mt-3 text-sm">
+                    {t("moduleContentPlaceholder")}
+                  </div>
+                );
+              }
+              return (
+                <div className="mt-4 space-y-5">
+                  {content.objectives && content.objectives.length > 0 ? (
+                    <div>
+                      <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                        <Target className="h-4 w-4" aria-hidden />
+                        {t("objectivesLabel")}
+                      </h4>
+                      <ul className="list-disc space-y-1.5 ps-5 text-sm leading-relaxed">
+                        {content.objectives.map((obj, i) => (
+                          <li key={`${m.id}-obj-${i}`}>{obj}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                  {content.outline && content.outline.length > 0 ? (
+                    <div>
+                      <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                        <ListTree className="h-4 w-4" aria-hidden />
+                        {t("outlineLabel")}
+                      </h4>
+                      <ul className="list-disc space-y-1.5 ps-5 text-sm leading-relaxed">
+                        {content.outline.map((item, i) => (
+                          <li key={`${m.id}-out-${i}`}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })()}
+          </div>
+        </TabsContent>
+      ))}
+    </Tabs>
+  );
 }
 
 export default function YouthLearningPage(): ReactElement {
@@ -134,7 +346,8 @@ export default function YouthLearningPage(): ReactElement {
 
   const title = useMemo(() => t("title"), [t]);
 
-  // Learning Path query
+  // Learning Path queries
+  const myActivePath = useQuery(api.aiAssessments.getMyActiveLearningPath, {});
   const learningPath = useQuery(
     api.aiAssessments.getLearningPath,
     state?.aiSkillId ? { aiSkillId: state.aiSkillId } : "skip",
@@ -154,11 +367,14 @@ export default function YouthLearningPage(): ReactElement {
         readonly completedModuleIds: readonly string[];
         readonly createdAt: number;
         readonly updatedAt?: number;
+        readonly assessmentId?: Id<"aiAssessments">;
+        readonly assessmentLevel?: number;
       }
     | null
     | undefined;
 
-  const pathData = learningPath as LearningPath;
+  // Prefer globally active path if present; otherwise fallback to skill-specific path
+  const pathData = (myActivePath ?? learningPath) as LearningPath;
   const [optimisticCompleted, setOptimisticCompleted] = useState<
     readonly string[] | null
   >(null);
@@ -261,8 +477,8 @@ export default function YouthLearningPage(): ReactElement {
     <main className="bg-background min-h-screen w-full">
       <div className="mx-auto max-w-3xl px-4 py-6 sm:py-8">
         <h1 className="text-foreground mb-6 text-2xl font-bold">{title}</h1>
-        {/* Settings card: only show when there is no active learning path */}
-        {pathData === undefined || pathData === null ? (
+        {/* Settings card: show only when no active path AND not loading */}
+        {pathData === null ? (
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="text-base">{t("settingsTitle")}</CardTitle>
@@ -358,7 +574,7 @@ export default function YouthLearningPage(): ReactElement {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {learningPath === undefined ? (
+              {myActivePath === undefined && learningPath === undefined ? (
                 <p className="text-muted-foreground text-sm">
                   {t("pathLoading")}
                 </p>
@@ -367,8 +583,7 @@ export default function YouthLearningPage(): ReactElement {
                   className="space-y-4"
                   dir={locale === "ar" ? "rtl" : "ltr"}
                 >
-                  {/* Unenroll Button + Confirm Dialog */}
-
+                  {/* Progress summary */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-medium">
@@ -409,32 +624,28 @@ export default function YouthLearningPage(): ReactElement {
                         </div>
                       );
                     })()}
-                    <ul className="space-y-2">
-                      {pathData.modules.map((module) => {
-                        const id = `lp-${pathData._id}-${module.id}`;
-                        const checked = (
+                  </div>
+
+                  {/* Modules as tabs */}
+                  <div className="space-y-3">
+                    {pathData.modules.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">
+                        {t("noModules")}
+                      </p>
+                    ) : (
+                      <LearningModulesTabs
+                        modules={pathData.modules}
+                        dir={locale === "ar" ? "rtl" : "ltr"}
+                        completedIds={
                           optimisticCompleted ?? pathData.completedModuleIds
-                        ).includes(module.id);
-                        return (
-                          <li
-                            key={module.id}
-                            className="flex items-center gap-2"
-                          >
-                            <Checkbox
-                              id={id}
-                              checked={checked}
-                              onCheckedChange={(val) =>
-                                onToggleModule(module.id, Boolean(val))
-                              }
-                              aria-label={module.title}
-                            />
-                            <Label htmlFor={id} className="text-sm">
-                              {module.title}
-                            </Label>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                        }
+                        onToggle={(moduleId, next) =>
+                          onToggleModule(moduleId, next)
+                        }
+                        assessmentLevel={pathData.assessmentLevel}
+                        locale={locale}
+                      />
+                    )}
                   </div>
                 </div>
               )}

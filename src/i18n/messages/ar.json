@@ -787,7 +787,13 @@
     "unenrollSuccess": "تم إلغاء الاشتراك",
     "unenrollError": "تعذر إلغاء الاشتراك",
     "viewDetails": "عرض التفاصيل",
-    "moduleLabel": "الوحدة رقم {num}"
+    "moduleLabel": "الوحدة رقم {num}",
+    "markComplete": "تحديد كمكتملة",
+    "markIncomplete": "إلغاء التحديد",
+    "moduleContentPlaceholder": "سيظهر محتوى الوحدة هنا.",
+    "noModules": "لا توجد وحدات في مسار التعلم بعد.",
+    "objectivesLabel": "الأهداف",
+    "outlineLabel": "المخطط"
   },
 
   "chat": {

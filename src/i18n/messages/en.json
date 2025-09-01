@@ -774,7 +774,13 @@
     "toggleCompleteError": "Failed to mark the module as completed.",
     "toggleIncompleteError": "Failed to unmark the module as completed.",
     "viewDetails": "View details",
-    "moduleLabel": "Module {num}"
+    "moduleLabel": "Module {num}",
+    "markComplete": "Mark complete",
+    "markIncomplete": "Mark incomplete",
+    "moduleContentPlaceholder": "Module content will appear here.",
+    "noModules": "No modules in this learning path yet.",
+    "objectivesLabel": "Objectives",
+    "outlineLabel": "Outline"
   },
 
   "chat": {

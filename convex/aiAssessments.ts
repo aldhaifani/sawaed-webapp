@@ -323,16 +323,73 @@ export const getLearningPath = query({
       .filter((p) => p.status === "active")
       .sort((a, b) => b.createdAt - a.createdAt)[0];
 
-    return latestActive
-      ? {
-          _id: latestActive._id as Id<"aiLearningPaths">,
-          modules: latestActive.modules,
-          status: latestActive.status,
-          completedModuleIds: latestActive.completedModuleIds ?? [],
-          createdAt: latestActive.createdAt,
-          updatedAt: latestActive.updatedAt,
-        }
-      : null;
+    if (!latestActive) return null;
+
+    // Fetch the linked assessment to expose level for UI rendering of templates
+    const assessment = latestActive.assessmentId
+      ? await ctx.db.get(latestActive.assessmentId as Id<"aiAssessments">)
+      : undefined;
+
+    return {
+      _id: latestActive._id as Id<"aiLearningPaths">,
+      modules: latestActive.modules,
+      status: latestActive.status,
+      completedModuleIds: latestActive.completedModuleIds ?? [],
+      createdAt: latestActive.createdAt,
+      updatedAt: latestActive.updatedAt,
+      assessmentId: latestActive.assessmentId as
+        | Id<"aiAssessments">
+        | undefined,
+      assessmentLevel: assessment?.level as number | undefined,
+    } as const;
+  },
+});
+
+/**
+ * Fetch the latest active learning path for the authenticated user (any skill).
+ * Used by the Learning page to determine whether to show the active path UI
+ * regardless of the user's current aiChatConfigs selection.
+ */
+export const getMyActiveLearningPath = query({
+  args: {},
+  handler: async (ctx) => {
+    const authUserId = await auth.getUserId(ctx);
+    if (!authUserId) return null;
+    const appUser = await ctx.db
+      .query("appUsers")
+      .withIndex("by_auth_user", (q) => q.eq("authUserId", authUserId))
+      .unique();
+    if (!appUser || appUser.role !== "YOUTH") return null;
+
+    const paths = await ctx.db
+      .query("aiLearningPaths")
+      .withIndex("by_user", (q) =>
+        q.eq("userId", appUser._id as Id<"appUsers">),
+      )
+      .collect();
+
+    const latestActive = paths
+      .filter((p) => p.status === "active")
+      .sort((a, b) => b.createdAt - a.createdAt)[0];
+
+    if (!latestActive) return null;
+
+    const assessment = latestActive.assessmentId
+      ? await ctx.db.get(latestActive.assessmentId as Id<"aiAssessments">)
+      : undefined;
+
+    return {
+      _id: latestActive._id as Id<"aiLearningPaths">,
+      modules: latestActive.modules,
+      status: latestActive.status,
+      completedModuleIds: latestActive.completedModuleIds ?? [],
+      createdAt: latestActive.createdAt,
+      updatedAt: latestActive.updatedAt,
+      assessmentId: latestActive.assessmentId as
+        | Id<"aiAssessments">
+        | undefined,
+      assessmentLevel: assessment?.level as number | undefined,
+    } as const;
   },
 });
 
