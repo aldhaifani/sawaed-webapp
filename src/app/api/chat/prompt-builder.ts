@@ -186,16 +186,20 @@ function moduleConstraints(locale: Locale): string {
       ? [
           "- عبارات البحث: يجب أن تكون عبارات مفيدة باللغة العربية فقط (3-6 كلمات لكل عبارة)",
           "- مثال صحيح: ['تعلم أساسيات البرمجة', 'دورة تطوير المواقع', 'شرح قواعد البيانات']",
-          "- مثال خاطئ: ['programming', 'beginner', 'video', 'tutorial']",
-          "- لا تستخدم كلمات مفردة مثل 'مشروع' أو 'مبتدئ' أو 'فيديو'",
-          "- كل عبارة يجب أن تكون وصفية ومحددة للموضوع",
+          "- مثال خاطئ: ['programming', 'beginner', 'video', 'tutorial', 'learning', 'article']",
+          "- ممنوع تماماً: أي كلمات إنجليزية أو كلمات مفردة عامة",
+          "- ممنوع استخدام: 'مشروع', 'مبتدئ', 'فيديو', 'مقال', 'تعلم', 'درس', 'دورة'",
+          "- كل عبارة يجب أن تكون وصفية ومحددة للموضوع بدقة",
+          "- استخدم مصطلحات تقنية محددة فقط",
         ]
       : [
           "- Search phrases: Must be meaningful English phrases only (3-6 words per phrase)",
           "- Correct example: ['learn programming basics', 'web development course', 'database fundamentals tutorial']",
-          "- Wrong example: ['programming', 'beginner', 'video', 'tutorial']",
-          "- Do NOT use single words like 'project', 'beginner', 'video'",
-          "- Each phrase must be descriptive and topic-specific",
+          "- Wrong example: ['programming', 'beginner', 'video', 'tutorial', 'learning', 'article']",
+          "- STRICTLY FORBIDDEN: Any single generic words or Arabic words",
+          "- NEVER use: 'project', 'beginner', 'video', 'article', 'learning', 'lesson', 'course'",
+          "- Each phrase must be descriptive and topic-specific with technical precision",
+          "- Use specific technical terminology only",
         ];
 
   return safeJoin([

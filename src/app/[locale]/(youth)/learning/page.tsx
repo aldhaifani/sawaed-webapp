@@ -57,6 +57,7 @@ import {
   Calculator,
   PenTool,
   MessageSquare,
+  Monitor,
   Zap,
 } from "lucide-react";
 import moduleTemplates from "@/../data/learning_path/module_templates.json";
@@ -145,7 +146,7 @@ function LearningModulesTabs({
   };
 
   // Content-aware icon selection based on module content and type
-  const getContentAwareIcon = (module: {
+  const getModuleIcon = (module: {
     title?: string;
     description?: string;
     objectives?: readonly string[];
@@ -153,13 +154,50 @@ function LearningModulesTabs({
     searchKeywords?: readonly string[];
     type: "article" | "video" | "quiz" | "project";
   }) => {
+    // Combine all text content for analysis
     const content = [
       module.title?.toLowerCase() ?? "",
       module.description?.toLowerCase() ?? "",
-      ...(module.objectives ?? []).map((obj: string) => obj.toLowerCase()),
-      ...(module.outline ?? []).map((item: string) => item.toLowerCase()),
-      ...(module.searchKeywords ?? []).map((kw: string) => kw.toLowerCase()),
+      ...(module.searchKeywords?.map((k) => k.toLowerCase()) ?? []),
+      ...(module.objectives?.map((o) => o.toLowerCase()) ?? []),
+      ...(module.outline?.map((o) => o.toLowerCase()) ?? []),
     ].join(" ");
+
+    // Collaboration & Communication (Google Docs, teamwork, sharing)
+    if (
+      /\b(collaboration|collaborative|google docs|مستندات جوجل|تعاون|مشاركة|teamwork|sharing|document sharing|real-time editing|التحرير المشترك|العمل الجماعي)\b/.test(
+        content,
+      )
+    ) {
+      return <MessageSquare className="shrink-0" aria-hidden />;
+    }
+
+    // Research & Information (search, credibility, fact-checking)
+    if (
+      /\b(research|information|search|credibility|fact.check|البحث|معلومات|مصداقية|التحقق|موثوقية|مصادر|تقييم المعلومات)\b/.test(
+        content,
+      )
+    ) {
+      return <Search className="shrink-0" aria-hidden />;
+    }
+
+    // Digital Security & Privacy
+    if (
+      /\b(security|privacy|cybersecurity|encryption|safety|protection|passwords|two.factor|أمان|خصوصية|أمن سيبراني|حماية|تشفير|كلمات مرور|المصادقة الثنائية)\b/.test(
+        content,
+      )
+    ) {
+      return <Shield className="shrink-0" aria-hidden />;
+    }
+
+    // Presentations & Interactive Content
+    if (
+      /\b(presentation|interactive|slideshow|عرض تقديمي|تفاعلي|عروض|تقديم|slides)\b/.test(
+        content,
+      )
+    ) {
+      return <Monitor className="shrink-0" aria-hidden />;
+    }
 
     // Programming & Development
     if (
@@ -183,7 +221,16 @@ function LearningModulesTabs({
       return <Database className="shrink-0" aria-hidden />;
     }
 
-    // Web & Internet
+    // Responsive Web Design
+    if (
+      /\b(responsive|responsive design|responsive web|متجاوب|تصميم متجاوب|تصميم المواقع المتكيفة|التصميم المتجاوب)\b/.test(
+        content,
+      )
+    ) {
+      return <Globe className="shrink-0" aria-hidden />;
+    }
+
+    // Web & Internet (general)
     if (
       /\b(web|internet|website|online|digital|cyber|الويب|الإنترنت|موقع|رقمي|إلكتروني)\b/.test(
         content,
@@ -344,7 +391,7 @@ function LearningModulesTabs({
             className="data-[state=active]:bg-primary/10 gap-2 whitespace-nowrap"
             aria-label={t("moduleLabel", { num: idx + 1 })}
           >
-            {getContentAwareIcon(m)}
+            {getModuleIcon(m)}
             <span className="text-xs font-medium sm:text-sm">
               {t("moduleLabel", { num: idx + 1 })}
             </span>
@@ -367,7 +414,7 @@ function LearningModulesTabs({
                   </Badge>
                   <Badge variant="outline" className="px-2 py-0.5">
                     <span className="me-1" aria-hidden>
-                      {getContentAwareIcon(m)}
+                      {getModuleIcon(m)}
                     </span>
                     <span className="text-[11px] sm:text-xs">{m.type}</span>
                   </Badge>

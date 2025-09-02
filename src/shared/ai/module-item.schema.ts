@@ -40,7 +40,7 @@ export const ModuleItemSchema = z
             return words.length >= 2;
           }, "Search phrases should be meaningful phrases, not single words")
           .refine((phrase) => {
-            // Prevent generic terms
+            // Prevent generic terms - expanded list with stricter matching
             const genericTerms = [
               "project",
               "tutorial",
@@ -54,6 +54,19 @@ export const ModuleItemSchema = z
               "advanced",
               "basic",
               "introduction",
+              "learning",
+              "education",
+              "training",
+              "study",
+              "practice",
+              "exercise",
+              "content",
+              "material",
+              "resource",
+              "module",
+              "unit",
+              "chapter",
+              "section",
               "مشروع",
               "درس",
               "دورة",
@@ -64,13 +77,36 @@ export const ModuleItemSchema = z
               "متقدم",
               "أساسي",
               "مقدمة",
+              "تعلم",
+              "تعليم",
+              "تدريب",
+              "دراسة",
+              "ممارسة",
+              "تمرين",
+              "محتوى",
+              "مادة",
+              "مورد",
+              "وحدة",
+              "فصل",
+              "قسم",
             ];
-            const lowerPhrase = phrase.toLowerCase();
-            return !genericTerms.some(
-              (term) =>
-                lowerPhrase === term || lowerPhrase === term.toLowerCase(),
-            );
-          }, "Avoid generic terms like 'tutorial', 'beginner', 'project', etc."),
+            const lowerPhrase = phrase.toLowerCase().trim();
+
+            // Check if phrase is exactly a generic term or contains only generic terms
+            const isGeneric = genericTerms.some((term) => {
+              const lowerTerm = term.toLowerCase();
+              return (
+                lowerPhrase === lowerTerm ||
+                lowerPhrase
+                  .split(/\s+/)
+                  .every((word) =>
+                    genericTerms.some((gt) => gt.toLowerCase() === word),
+                  )
+              );
+            });
+
+            return !isGeneric;
+          }, "Search phrases must be specific and meaningful, avoid generic terms like 'tutorial', 'beginner', 'learning', etc."),
       )
       .min(1)
       .max(8)
