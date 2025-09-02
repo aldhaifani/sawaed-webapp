@@ -64,39 +64,37 @@ vi.mock("@/lib/gemini", () => ({
     const json = JSON.stringify({
       level: 3,
       confidence: 0.9,
+      reasoning: "Test reasoning for assessment",
       learningModules: [
         {
           id: "m1",
-          title: "T1",
+          title: "Web Development Fundamentals",
+          description: "Learn the basics of web development",
           type: "article",
           duration: "5 min",
           resourceUrl: "https://not-allowed.com/x",
-          searchKeywords: ["kw"],
+          searchKeywords: ["web development basics", "frontend programming"],
         },
         {
           id: "m2",
-          title: "T2",
+          title: "Programming Tutorial Video",
+          description: "Comprehensive programming guide",
           type: "video",
           duration: "7 min",
           resourceUrl: "https://allowed.com/a",
           searchKeywords: [
-            "k1",
-            "k2",
-            "k3",
-            "k4",
-            "k5",
-            "k6",
-            "k7",
-            "k8",
-            "k9",
-            "k10",
+            "video tutorial basics",
+            "programming fundamentals course",
+            "software development guide",
           ],
         },
         {
           id: "m3",
-          title: "T3",
+          title: "Knowledge Assessment Quiz",
+          description: "Test your understanding",
           type: "quiz",
           duration: "3 min",
+          searchKeywords: ["programming quiz assessment", "knowledge testing"],
         },
       ],
     });
@@ -153,8 +151,8 @@ describe("persistIfValidAssessment allowlist enforcement (integration)", () => {
     expect(m1.resourceUrl).toBeUndefined();
     expect((m1.searchKeywords ?? []).length).toBeGreaterThanOrEqual(3);
 
-    // Allowed URL should be kept; keywords clamped to 10
+    // Allowed URL should be kept; keywords should be present
     expect(m2.resourceUrl).toBe("https://allowed.com/a");
-    expect((m2.searchKeywords ?? []).length).toBe(10);
+    expect((m2.searchKeywords ?? []).length).toBe(3);
   });
 });

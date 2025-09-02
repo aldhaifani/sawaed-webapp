@@ -780,7 +780,10 @@
     "moduleContentPlaceholder": "Module content will appear here.",
     "noModules": "No modules in this learning path yet.",
     "objectivesLabel": "Objectives",
-    "outlineLabel": "Outline"
+    "outlineLabel": "Outline",
+    "searchKeywordsLabel": "Search Phrases",
+    "resourceLabel": "Resource",
+    "searchKeywordsHint": "Use these phrases to find additional learning materials"
   },
 
   "chat": {

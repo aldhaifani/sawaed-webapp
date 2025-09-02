@@ -1,4 +1,4 @@
-import { AssessmentResultSchema } from "./assessment-result.schema";
+import { validateAssessmentResult } from "./assessment-result.schema";
 import type { AssessmentResultParsed } from "./assessment-result.schema";
 import * as Sentry from "@sentry/nextjs";
 
@@ -254,9 +254,9 @@ export function detectAssessmentFromText(text: string): DetectResult {
             }
             return p;
           })();
-          const safe = AssessmentResultSchema.safeParse(normalized);
-          if (safe.success) {
-            return { valid: true, data: safe.data };
+          const validationResult = validateAssessmentResult(normalized);
+          if (validationResult.success) {
+            return { valid: true, data: validationResult.data };
           }
           Sentry.addBreadcrumb({
             category: "ai.detect",

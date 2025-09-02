@@ -179,17 +179,35 @@ function levelsSummary(
   return lines.join("\n");
 }
 
-function moduleConstraints(_locale: Locale): string {
+function moduleConstraints(locale: Locale): string {
   const types = Array.from(ALLOWED_MODULE_TYPES).join(" | ");
+  const searchPhraseRules =
+    locale === "ar"
+      ? [
+          "- عبارات البحث: يجب أن تكون عبارات مفيدة باللغة العربية فقط (3-6 كلمات لكل عبارة)",
+          "- مثال صحيح: ['تعلم أساسيات البرمجة', 'دورة تطوير المواقع', 'شرح قواعد البيانات']",
+          "- مثال خاطئ: ['programming', 'beginner', 'video', 'tutorial']",
+          "- لا تستخدم كلمات مفردة مثل 'مشروع' أو 'مبتدئ' أو 'فيديو'",
+          "- كل عبارة يجب أن تكون وصفية ومحددة للموضوع",
+        ]
+      : [
+          "- Search phrases: Must be meaningful English phrases only (3-6 words per phrase)",
+          "- Correct example: ['learn programming basics', 'web development course', 'database fundamentals tutorial']",
+          "- Wrong example: ['programming', 'beginner', 'video', 'tutorial']",
+          "- Do NOT use single words like 'project', 'beginner', 'video'",
+          "- Each phrase must be descriptive and topic-specific",
+        ];
+
   return safeJoin([
     "Learning Path constraints:",
     `- Use between ${MIN_MODULES} and ${MAX_MODULES} learning modules.`,
     `- Allowed types: ${types}.`,
     "- Duration must be human-readable (e.g., 10 minutes, 1 hour).",
-    "- For video modules: Use ONLY real YouTube URLs from the skill level resources or provide search keywords like 'YouTube: Python basics tutorial'",
-    "- For article modules: Use ONLY real URLs from the skill level resources or provide search keywords like 'Google: JavaScript fundamentals guide'",
+    "- For video modules: Use ONLY real YouTube URLs from the skill level resources or provide search phrases",
+    "- For article modules: Use ONLY real URLs from the skill level resources or provide search phrases",
     "- NEVER generate fake or placeholder URLs. Always use real resources from the skill data or search instructions.",
     "- Check the skill level resources for existing URLs that match the user's assessed level.",
+    ...searchPhraseRules,
   ]);
 }
 
@@ -197,7 +215,17 @@ function moduleConstraints(_locale: Locale): string {
 
 // Removed verbose JSON example to reduce prompt size
 
-function schemaInstruction(_locale: Locale): string {
+function schemaInstruction(locale: Locale): string {
+  const searchPhraseExample =
+    locale === "ar"
+      ? "['تعلم أساسيات البرمجة', 'دورة تطوير المواقع المتقدمة', 'شرح قواعد البيانات للمبتدئين']"
+      : "['learn programming fundamentals', 'advanced web development course', 'database design for beginners']";
+
+  const searchPhraseRules =
+    locale === "ar"
+      ? "قواعد عبارات البحث: استخدم فقط الروابط الحقيقية المدرجة في موارد إرشادات المستوى عند إضافة resourceUrl. إذا لم يتطابق أي مورد بدقة، احذف resourceUrl وقدم 3-5 عبارات بحث مركزة باللغة العربية فقط."
+      : "Search phrase rules: Use ONLY real URLs listed under Level Guidance resources when adding resourceUrl. If no exact resource fits, omit resourceUrl and provide 3-5 focused search phrases in the chat language only.";
+
   return safeJoin([
     "\n\nOutput Instructions:",
     "At the end, output exactly one valid JSON block inside a ```json fenced code block with no prose before or after, matching this schema:",
@@ -223,7 +251,7 @@ function schemaInstruction(_locale: Locale): string {
     "    }",
     "  > with length between 3 and 6",
     "}",
-    "Rules: Use ONLY real URLs listed under Level Guidance resources when adding resourceUrl. If no exact resource fits, omit resourceUrl and provide 3-8 focused searchKeywords instead (e.g., 'YouTube: topic', 'Google: topic').",
+    `${searchPhraseRules} Example: ${searchPhraseExample}`,
     "Do not include extra keys or comments. Ensure the block ends with ``` and no trailing text after the JSON.",
   ]);
 }
@@ -479,10 +507,13 @@ export async function buildSystemPrompt(
   const mcq = multipleChoiceRules(locale, latestLevel);
   const adapt = dynamicDifficultyRules(locale, latestLevel);
 
-  // Simplified language policy
-  const languagePolicy = `\n\nLanguage: Always respond in ${locale === "ar" ? "Arabic" : "English"}. Do not switch languages.`;
+  // Enhanced language policy with content consistency enforcement
+  const languagePolicy =
+    locale === "ar"
+      ? `\n\nسياسة اللغة الصارمة:\n• يجب أن تكون جميع المحتويات باللغة العربية حصرياً\n• العناوين والأوصاف والأهداف والمخططات: عربية فقط\n• عبارات البحث: عربية فقط (لا تخلط مع الإنجليزية)\n• لا تستخدم كلمات إنجليزية مثل 'Core concepts' أو 'Practice exercises'\n• استخدم مصطلحات عربية مناسبة للمحتوى التقني\n• مثال صحيح للمخطط: ['مقدمة في الموضوع', 'المفاهيم الأساسية', 'تمارين تطبيقية']`
+      : `\n\nStrict Language Policy:\n• ALL content must be in English exclusively\n• Titles, descriptions, objectives, outlines: English only\n• Search phrases: English only (no mixing with Arabic)\n• Do NOT use Arabic words or mixed language content\n• Use appropriate English technical terminology\n• Correct outline example: ['Introduction to topic', 'Core concepts', 'Practice exercises']`;
 
-  // Dynamic greeting messages for variety
+  // Dynamic greeting messages with language consistency
   const greetings =
     locale === "ar"
       ? [
@@ -500,17 +531,17 @@ export async function buildSystemPrompt(
 
   const randomGreeting =
     greetings[Math.floor(Math.random() * greetings.length)];
-  // Locale-specific start rule to avoid mixed-language greetings
+  // Locale-specific start rule with language consistency enforcement
   const firstTurnRule =
     locale === "ar"
-      ? `\n\nبدء المحادثة: إذا كانت رسالة الإدخال '__start__' فاستخدم التحية التالية مرة واحدة فقط: "${randomGreeting} سأطرح عليك 5 أسئلة اختياري لتحديد مستواك وإنشاء مسار تعلم مخصص لك. هل أنت مستعد للبدء؟". خلاف ذلك لا تستخدم أي تحية - ابدأ مباشرة بالسؤال التالي في التسلسل. IMPORTANT: لا تحيي المستخدم في كل سؤال - التحية فقط عند '__start__'.`
-      : `\n\nStart: If the input is '__start__', use this greeting ONCE: "${randomGreeting} I'll ask you 5 multiple choice questions to determine your level and create a personalized learning path. Are you ready to begin?". Otherwise, do NOT greet - start directly with the next question in sequence. IMPORTANT: Do NOT greet the user on every question - greeting is ONLY for '__start__'.`;
+      ? `\n\nبدء المحادثة: إذا كانت رسالة الإدخال '__start__' فاستخدم التحية التالية مرة واحدة فقط باللغة العربية: "${randomGreeting} سأطرح عليك 5 أسئلة اختيارية لتحديد مستواك وإنشاء مسار تعلم مخصص لك باللغة العربية. هل أنت مستعد للبدء؟". خلاف ذلك لا تستخدم أي تحية - ابدأ مباشرة بالسؤال التالي باللغة العربية فقط. مهم: لا تحيي المستخدم في كل سؤال - التحية فقط عند '__start__'.`
+      : `\n\nStart: If the input is '__start__', use this greeting ONCE in English: "${randomGreeting} I'll ask you 5 multiple choice questions to determine your level and create a personalized learning path in English. Are you ready to begin?". Otherwise, do NOT greet - start directly with the next question in English only. IMPORTANT: Do NOT greet the user on every question - greeting is ONLY for '__start__'.`;
 
-  // Enhanced assessment flow rules
+  // Enhanced assessment flow rules with language consistency
   const assessmentFlow =
     locale === "ar"
-      ? '\n\nتدفق التقييم (صارم):\n• اطرح فقط أسئلة اختيار من متعدد (4 خيارات)\n• الحد الأقصى 5 أسئلة\n• يُسمح بالإنهاء المبكر إذا كنت واثقًا (بعد 3 أسئلة على الأقل)\n• عند إصدار التقييم النهائي مع JSON: توقف فورًا ولا ترسل أي أسئلة أخرى\n• لا تطلب أسئلة أو توضيحات إضافية بعد الإنهاء\n• كل سؤال مختلف تمامًا\n• استخدم التنسيق: "السؤال X من 5" ثم السؤال مع الخيارات (أ، ب، ج، د)\n• اقبل الإجابات بالأحرف العربية (أ، ب، ج، د) أو الإنجليزية (A, B, C, D)\n• لا تكرر الإجابات - كل حرف يجب أن يُستخدم مرة واحدة فقط\n• إذا أجاب المستخدم بحرف واحد، لا تطلب توضيحًا - تابع للسؤال التالي'
-      : '\n\nAssessment Flow (strict):\n• Ask ONLY multiple-choice questions (4 options)\n• Maximum of 5 questions\n• Early completion is allowed when confident (after at least 3 questions)\n• When you output the final assessment with JSON: STOP immediately and do not ask any further questions\n• Do NOT ask for additional questions or clarifications after completion\n• Each question must be entirely different\n• Use the format: "Question X/5" then the question with options (A, B, C, D)\n• Accept answers in Arabic letters (أ، ب، ج، د) or English letters (A, B, C, D)\n• Do NOT repeat answers - each letter should be used only once\n• If user answers with a single letter, do NOT ask for clarification - proceed to next question';
+      ? '\n\nتدفق التقييم (صارم):\n• اطرح فقط أسئلة اختيار من متعدد (4 خيارات) باللغة العربية\n• الحد الأقصى 5 أسئلة\n• يُسمح بالإنهاء المبكر إذا كنت واثقًا (بعد 3 أسئلة على الأقل)\n• عند إصدار التقييم النهائي مع JSON: توقف فورًا ولا ترسل أي أسئلة أخرى\n• لا تطلب أسئلة أو توضيحات إضافية بعد الإنهاء\n• كل سؤال مختلف تمامًا وباللغة العربية فقط\n• استخدم التنسيق: "السؤال X من 5" ثم السؤال مع الخيارات (أ، ب، ج، د)\n• اقبل الإجابات بالأحرف العربية (أ، ب، ج، د) أو الإنجليزية (A, B, C, D)\n• لا تكرر الإجابات - كل حرف يجب أن يُستخدم مرة واحدة فقط\n• إذا أجاب المستخدم بحرف واحد، لا تطلب توضيحًا - تابع للسؤال التالي باللغة العربية\n• مهم: جميع محتويات مسار التعلم يجب أن تكون باللغة العربية (العناوين، الأوصاف، الأهداف، المخططات، عبارات البحث)'
+      : '\n\nAssessment Flow (strict):\n• Ask ONLY multiple-choice questions (4 options) in English\n• Maximum of 5 questions\n• Early completion is allowed when confident (after at least 3 questions)\n• When you output the final assessment with JSON: STOP immediately and do not ask any further questions\n• Do NOT ask for additional questions or clarifications after completion\n• Each question must be entirely different and in English only\n• Use the format: "Question X/5" then the question with options (A, B, C, D)\n• Accept answers in Arabic letters (أ، ب، ج، د) or English letters (A, B, C, D)\n• Do NOT repeat answers - each letter should be used only once\n• If user answers with a single letter, do NOT ask for clarification - proceed to next question in English\n• IMPORTANT: All learning path content must be in English (titles, descriptions, objectives, outlines, search phrases)';
 
   // Simplified Sawaed context
   const sawaedFocus =
@@ -528,6 +559,7 @@ export async function buildSystemPrompt(
         defLine,
         lvlSummary,
         userContext,
+        languagePolicy,
         firstTurnRule,
         tone,
         turns,
@@ -537,7 +569,6 @@ export async function buildSystemPrompt(
         skillResources,
         levelGuidance,
         schema,
-        languagePolicy,
         sawaedFocus,
         assessmentFlow,
       ]);

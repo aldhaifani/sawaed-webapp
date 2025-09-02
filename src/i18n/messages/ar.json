@@ -793,7 +793,10 @@
     "moduleContentPlaceholder": "سيظهر محتوى الوحدة هنا.",
     "noModules": "لا توجد وحدات في مسار التعلم بعد.",
     "objectivesLabel": "الأهداف",
-    "outlineLabel": "المخطط"
+    "outlineLabel": "المخطط",
+    "searchKeywordsLabel": "عبارات البحث",
+    "resourceLabel": "المصدر",
+    "searchKeywordsHint": "استخدم هذه العبارات للعثور على مواد تعليمية إضافية"
   },
 
   "chat": {

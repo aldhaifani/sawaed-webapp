@@ -121,8 +121,8 @@ async function generateWithRetry(
 }
 import { detectAssessmentFromText } from "@/shared/ai/detect-assessment";
 import {
-  AssessmentResultSchema,
   type AssessmentResultParsed,
+  validateAssessmentResult,
 } from "@/shared/ai/assessment-result.schema";
 import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { api } from "@/../convex/_generated/api";
@@ -198,29 +198,58 @@ export async function persistIfValidAssessment(params: {
         span?.setAttribute?.("detected.valid", detected.valid);
         if (!detected.valid || !detected.data) return;
 
-        const parsed = AssessmentResultSchema.safeParse(detected.data);
-        if (!parsed.success) return;
+        const validationResult = validateAssessmentResult(detected.data);
+        if (!validationResult.success) {
+          // Log validation errors for debugging
+          Sentry.addBreadcrumb({
+            category: "ai.validation",
+            level: "warning",
+            message: "Assessment validation failed",
+            data: {
+              sessionId,
+              errors: validationResult.errors,
+              rawData: detected.data,
+            },
+          });
+          return;
+        }
+
+        // Log quality warnings if any
+        if (validationResult.warnings && validationResult.warnings.length > 0) {
+          Sentry.addBreadcrumb({
+            category: "ai.validation",
+            level: "info",
+            message: "Assessment quality warnings",
+            data: {
+              sessionId,
+              warnings: validationResult.warnings,
+            },
+          });
+        }
 
         span?.setAttribute?.("detected.parsed", true);
+        span?.setAttribute?.(
+          "validation.warnings",
+          validationResult.warnings?.length ?? 0,
+        );
+
+        const assessment: AssessmentResultParsed = validationResult.data!;
+
+        const payload = {
+          level: assessment.level,
+          confidence: assessment.confidence,
+          reasoning: assessment.reasoning,
+          learningModules: Array.from(
+            sanitizeModules(assessment.learningModules, allowedUrls),
+          ),
+        };
+
         Sentry.addBreadcrumb({
           category: "ai.assessment",
           level: "info",
           message: "valid_assessment_detected_and_persisting",
-          data: {
-            level: parsed.data.level,
-            modules: parsed.data.learningModules.length,
-            hasReasoning: !!parsed.data.reasoning,
-          },
+          data: payload,
         });
-
-        const payload: AssessmentResultParsed = {
-          level: parsed.data.level,
-          confidence: parsed.data.confidence,
-          reasoning: parsed.data.reasoning,
-          learningModules: Array.from(
-            sanitizeModules(parsed.data.learningModules, allowedUrls),
-          ),
-        };
 
         await fetchMutation(
           api.aiAssessments.storeAssessment,
@@ -1112,13 +1141,36 @@ async function validateAndMaybeRepair(
                 const m = fencedRe.exec(text);
                 if (m?.[1]) {
                   const candidate = JSON.parse(m[1]) as unknown;
-                  const recheck = AssessmentResultSchema.safeParse(candidate);
-                  if (recheck.success) {
+                  const recheckResult = validateAssessmentResult(candidate);
+                  if (recheckResult.success) {
+                    // Log repair success with quality info
+                    Sentry.addBreadcrumb({
+                      category: "ai.repair",
+                      level: "info",
+                      message: "Assessment repaired successfully",
+                      data: {
+                        sessionId,
+                        warnings: recheckResult.warnings,
+                        model,
+                      },
+                    });
                     appendPartial(
                       sessionId,
-                      `\n\n\u200e\n\n\`\`\`json\n${JSON.stringify(recheck.data)}\n\`\`\``,
+                      `\n\n\u200e\n\n\`\`\`json\n${JSON.stringify(recheckResult.data)}\n\`\`\``,
                     );
                     return true;
+                  } else {
+                    // Log repair validation failure
+                    Sentry.addBreadcrumb({
+                      category: "ai.repair",
+                      level: "warning",
+                      message: "Repaired assessment still invalid",
+                      data: {
+                        sessionId,
+                        errors: recheckResult.errors,
+                        model,
+                      },
+                    });
                   }
                 }
               } catch {
@@ -1157,13 +1209,34 @@ async function validateAndMaybeRepair(
           // Validate quickly before appending
           try {
             const parsed = JSON.parse(closed) as unknown;
-            const recheck = AssessmentResultSchema.safeParse(parsed);
-            if (recheck.success) {
+            const recheckResult = validateAssessmentResult(parsed);
+            if (recheckResult.success) {
+              // Log auto-repair success
+              Sentry.addBreadcrumb({
+                category: "ai.auto_repair",
+                level: "info",
+                message: "Assessment auto-repaired by closing braces",
+                data: {
+                  sessionId,
+                  warnings: recheckResult.warnings,
+                },
+              });
               appendPartial(
                 sessionId,
-                `\n\n\u200e\n\n\`\`\`json\n${JSON.stringify(recheck.data)}\n\`\`\``,
+                `\n\n\u200e\n\n\`\`\`json\n${JSON.stringify(recheckResult.data)}\n\`\`\``,
               );
               return;
+            } else {
+              // Log auto-repair failure
+              Sentry.addBreadcrumb({
+                category: "ai.auto_repair",
+                level: "warning",
+                message: "Auto-repair failed validation",
+                data: {
+                  sessionId,
+                  errors: recheckResult.errors,
+                },
+              });
             }
           } catch {
             // ignore

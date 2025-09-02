@@ -41,6 +41,23 @@ import {
   Target,
   ListTree,
   CheckCircle2,
+  Search,
+  Code,
+  Database,
+  Globe,
+  Palette,
+  Shield,
+  TrendingUp,
+  Brain,
+  Lightbulb,
+  Settings,
+  Smartphone,
+  Camera,
+  Music,
+  Calculator,
+  PenTool,
+  MessageSquare,
+  Zap,
 } from "lucide-react";
 import moduleTemplates from "@/../data/learning_path/module_templates.json";
 
@@ -127,7 +144,180 @@ function LearningModulesTabs({
     }
   };
 
-  const iconFor = (type: "article" | "video" | "quiz" | "project") => {
+  // Content-aware icon selection based on module content and type
+  const getContentAwareIcon = (module: {
+    title?: string;
+    description?: string;
+    objectives?: readonly string[];
+    outline?: readonly string[];
+    searchKeywords?: readonly string[];
+    type: "article" | "video" | "quiz" | "project";
+  }) => {
+    const content = [
+      module.title?.toLowerCase() ?? "",
+      module.description?.toLowerCase() ?? "",
+      ...(module.objectives ?? []).map((obj: string) => obj.toLowerCase()),
+      ...(module.outline ?? []).map((item: string) => item.toLowerCase()),
+      ...(module.searchKeywords ?? []).map((kw: string) => kw.toLowerCase()),
+    ].join(" ");
+
+    // Programming & Development
+    if (
+      /\b(programming|code|coding|software|development|javascript|python|html|css|react|web development|app development|برمجة|تطوير|كود|جافا سكريبت|بايثون|تطوير المواقع|تطوير التطبيقات)\b/.test(
+        content,
+      )
+    ) {
+      return module.type === "video" ? (
+        <Film className="shrink-0" aria-hidden />
+      ) : (
+        <Code className="shrink-0" aria-hidden />
+      );
+    }
+
+    // Database & Data
+    if (
+      /\b(database|data|sql|analytics|big data|data science|قاعدة البيانات|البيانات|تحليل البيانات|علم البيانات)\b/.test(
+        content,
+      )
+    ) {
+      return <Database className="shrink-0" aria-hidden />;
+    }
+
+    // Web & Internet
+    if (
+      /\b(web|internet|website|online|digital|cyber|الويب|الإنترنت|موقع|رقمي|إلكتروني)\b/.test(
+        content,
+      )
+    ) {
+      return <Globe className="shrink-0" aria-hidden />;
+    }
+
+    // Design & Creative
+    if (
+      /\b(design|creative|art|graphic|ui|ux|photoshop|illustrator|تصميم|إبداعي|فن|جرافيك|تصميم واجهات)\b/.test(
+        content,
+      )
+    ) {
+      return <Palette className="shrink-0" aria-hidden />;
+    }
+
+    // Security & Privacy
+    if (
+      /\b(security|privacy|cybersecurity|encryption|safety|protection|أمان|خصوصية|أمن سيبراني|حماية|تشفير)\b/.test(
+        content,
+      )
+    ) {
+      return <Shield className="shrink-0" aria-hidden />;
+    }
+
+    // Communication & Social
+    if (
+      /\b(communication|social|media|networking|teamwork|collaboration|تواصل|اجتماعي|وسائل التواصل|شبكات|عمل جماعي|تعاون)\b/.test(
+        content,
+      )
+    ) {
+      return module.type === "video" ? (
+        <Film className="shrink-0" aria-hidden />
+      ) : (
+        <MessageSquare className="shrink-0" aria-hidden />
+      );
+    }
+
+    // Business & Management
+    if (
+      /\b(business|management|leadership|entrepreneurship|marketing|finance|أعمال|إدارة|قيادة|ريادة|تسويق|مالية)\b/.test(
+        content,
+      )
+    ) {
+      return <TrendingUp className="shrink-0" aria-hidden />;
+    }
+
+    // AI & Machine Learning
+    if (
+      /\b(artificial intelligence|machine learning|ai|ml|neural|algorithm|ذكاء اصطناعي|تعلم آلي|خوارزمية)\b/.test(
+        content,
+      )
+    ) {
+      return <Brain className="shrink-0" aria-hidden />;
+    }
+
+    // Critical Thinking & Problem Solving
+    if (
+      /\b(critical thinking|problem solving|logic|analysis|reasoning|تفكير نقدي|حل المشكلات|منطق|تحليل|استدلال)\b/.test(
+        content,
+      )
+    ) {
+      return <Lightbulb className="shrink-0" aria-hidden />;
+    }
+
+    // Technical Skills & Tools
+    if (
+      /\b(technical|tools|software|system|configuration|تقني|أدوات|برامج|نظام|إعدادات)\b/.test(
+        content,
+      )
+    ) {
+      return <Settings className="shrink-0" aria-hidden />;
+    }
+
+    // Mobile & Apps
+    if (
+      /\b(mobile|app|smartphone|android|ios|تطبيق|جوال|هاتف ذكي|أندرويد)\b/.test(
+        content,
+      )
+    ) {
+      return <Smartphone className="shrink-0" aria-hidden />;
+    }
+
+    // Media & Content Creation
+    if (
+      /\b(media|content|photography|video editing|audio|podcast|وسائط|محتوى|تصوير|تحرير فيديو|صوت|بودكاست)\b/.test(
+        content,
+      )
+    ) {
+      return module.type === "video" ? (
+        <Film className="shrink-0" aria-hidden />
+      ) : (
+        <Camera className="shrink-0" aria-hidden />
+      );
+    }
+
+    // Music & Audio
+    if (/\b(music|audio|sound|recording|موسيقى|صوت|تسجيل)\b/.test(content)) {
+      return <Music className="shrink-0" aria-hidden />;
+    }
+
+    // Math & Science
+    if (
+      /\b(math|mathematics|science|physics|chemistry|calculation|رياضيات|علوم|فيزياء|كيمياء|حساب)\b/.test(
+        content,
+      )
+    ) {
+      return <Calculator className="shrink-0" aria-hidden />;
+    }
+
+    // Writing & Content
+    if (
+      /\b(writing|content|blog|article|documentation|كتابة|محتوى|مقال|توثيق)\b/.test(
+        content,
+      )
+    ) {
+      return <PenTool className="shrink-0" aria-hidden />;
+    }
+
+    // Innovation & Technology
+    if (
+      /\b(innovation|technology|tech|startup|digital transformation|ابتكار|تكنولوجيا|تقنية|شركة ناشئة|تحول رقمي)\b/.test(
+        content,
+      )
+    ) {
+      return <Zap className="shrink-0" aria-hidden />;
+    }
+
+    // Fallback to type-based icons
+    return getTypeBasedIcon(module.type);
+  };
+
+  const getTypeBasedIcon = (type: "article" | "video" | "quiz" | "project") => {
     switch (type) {
       case "article":
         return <BookOpen className="shrink-0" aria-hidden />;
@@ -154,7 +344,7 @@ function LearningModulesTabs({
             className="data-[state=active]:bg-primary/10 gap-2 whitespace-nowrap"
             aria-label={t("moduleLabel", { num: idx + 1 })}
           >
-            {iconFor(m.type)}
+            {getContentAwareIcon(m)}
             <span className="text-xs font-medium sm:text-sm">
               {t("moduleLabel", { num: idx + 1 })}
             </span>
@@ -177,7 +367,7 @@ function LearningModulesTabs({
                   </Badge>
                   <Badge variant="outline" className="px-2 py-0.5">
                     <span className="me-1" aria-hidden>
-                      {iconFor(m.type)}
+                      {getContentAwareIcon(m)}
                     </span>
                     <span className="text-[11px] sm:text-xs">{m.type}</span>
                   </Badge>
@@ -246,7 +436,7 @@ function LearningModulesTabs({
                       <div>
                         <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold">
                           <BookOpen className="h-4 w-4" aria-hidden />
-                          Resource
+                          {t("resourceLabel")}
                         </h4>
                         <a
                           href={m.resourceUrl}
@@ -256,6 +446,30 @@ function LearningModulesTabs({
                         >
                           {m.resourceUrl}
                         </a>
+                      </div>
+                    )}
+                    {m.searchKeywords && m.searchKeywords.length > 0 && (
+                      <div>
+                        <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                          <Search className="h-4 w-4" aria-hidden />
+                          {t("searchKeywordsLabel")}
+                        </h4>
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap gap-1.5">
+                            {m.searchKeywords.map((keyword, i) => (
+                              <Badge
+                                key={`${m.id}-keyword-${i}`}
+                                variant="outline"
+                                className="px-2 py-1 text-xs font-medium"
+                              >
+                                {keyword}
+                              </Badge>
+                            ))}
+                          </div>
+                          <p className="text-muted-foreground text-xs leading-relaxed">
+                            {t("searchKeywordsHint")}
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>
