@@ -1,38 +1,4 @@
-@font-face {
-  font-family: "DIN Next LT Arabic";
-  src: url("../assets/DIN Next LT Arabic Light.ttf") format("truetype");
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "DIN Next LT Arabic";
-  src: url("../assets/DIN Next LT Arabic Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "DIN Next LT Arabic";
-  src: url("../assets/DIN Next LT Arabic Medium.ttf") format("truetype");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "DIN Next LT Arabic";
-  src: url("../assets/DIN Next LT Arabic Bold.ttf") format("truetype");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "DIN Next LT Arabic";
-  src: url("../assets/DIN Next LT Arabic Heavy.ttf") format("truetype");
-  font-weight: 900;
-  font-style: normal;
-  font-display: swap;
-}
+/* Global font is managed via next/font in layout.tsx (IBM Plex Sans Arabic). */
 
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -42,7 +8,7 @@
 
 @theme {
   --font-sans:
-    "DIN Next LT Arabic", ui-sans-serif, system-ui, sans-serif,
+    "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
@@ -79,7 +45,9 @@
   --sidebar-accent-foreground: #2a2a4a;
   --sidebar-border: #e0e0f0;
   --sidebar-ring: #4a4a92;
-  --font-sans: Inter, sans-serif;
+  --font-sans:
+    "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-serif: Georgia, serif;
   --font-mono: JetBrains Mono, monospace;
   --radius: 0.5rem;
@@ -138,7 +106,9 @@
   --sidebar-accent-foreground: #e2e2f5;
   --sidebar-border: #303052;
   --sidebar-ring: #4a4a92;
-  --font-sans: Inter, sans-serif;
+  --font-sans:
+    "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-serif: Georgia, serif;
   --font-mono: JetBrains Mono, monospace;
   --radius: 0.5rem;

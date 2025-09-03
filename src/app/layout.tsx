@@ -5,7 +5,7 @@ import { ConvexClientProvider } from "./ConvexClientProvider";
 import { PostHogProvider } from "@/components/PostHogProvider";
 
 import { type Metadata } from "next";
-import { Geist } from "next/font/google";
+import { IBM_Plex_Sans_Arabic } from "next/font/google";
 import { cookies } from "next/headers";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -16,9 +16,10 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-const geist = Geist({
-  subsets: ["latin"],
-  variable: "--font-geist-sans",
+const plexSansArabic = IBM_Plex_Sans_Arabic({
+  subsets: ["arabic", "latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700"],
+  variable: "--font-sans",
 });
 
 export default async function RootLayout({
@@ -34,7 +35,7 @@ export default async function RootLayout({
       <html
         lang={locale}
         dir={dir}
-        className={`${geist.variable}`}
+        className={`${plexSansArabic.variable}`}
         suppressHydrationWarning
       >
         <body>
