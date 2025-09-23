@@ -27,19 +27,26 @@ import {
 import { useTranslations } from "next-intl";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
 
-type Step = "email" | { email: string };
+type Step =
+  | "credentials"
+  | { verify: { email: string } }
+  | "resetRequest"
+  | { reset: { email: string } };
 
 export default function LoginPage(): ReactElement {
   const { signIn, signOut } = useAuthActions();
   const router = useRouter();
   const pathname = usePathname();
-  const [step, setStep] = useState<Step>("email");
+  const [step, setStep] = useState<Step>("credentials");
+  const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [code, setCode] = useState<string>("");
   const [resending, setResending] = useState<boolean>(false);
   const [cooldown, setCooldown] = useState<number>(0);
   const [info, setInfo] = useState<string>("");
+  const [lastEmail, setLastEmail] = useState<string>("");
+  const [newPassword, setNewPassword] = useState<string>("");
   const codeFormRef = useRef<HTMLFormElement | null>(null);
   const lastAutoSubmittedCodeRef = useRef<string | null>(null);
   const me = useQuery(api.rbac.currentUser);
@@ -106,7 +113,8 @@ export default function LoginPage(): ReactElement {
 
   // Auto-submit when the 6th digit is entered (using ASCII-normalized value)
   useEffect(() => {
-    if (step === "email") return;
+    // Only auto-submit for email verification step (not for password reset)
+    if (typeof step !== "object" || !("verify" in step)) return;
     const ascii = toAsciiDigits(code);
     // Clear tracker while user is still typing (<6 digits)
     if (ascii.length < 6) {
@@ -123,7 +131,7 @@ export default function LoginPage(): ReactElement {
     }
   }, [code, loading, step]);
 
-  async function onSubmitEmail(
+  async function onSubmitCredentials(
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault();
@@ -133,26 +141,44 @@ export default function LoginPage(): ReactElement {
     try {
       const rawForm = new FormData(event.currentTarget);
       const emailValue = rawForm.get("email");
+      const passwordValue = rawForm.get("password");
+      const confirmValue = rawForm.get("passwordConfirm");
       const email = (typeof emailValue === "string" ? emailValue : "")
         .trim()
         .toLowerCase();
-      if (!email) {
-        setError(tAuth("email"));
+      const password = (
+        typeof passwordValue === "string" ? passwordValue : ""
+      ).trim();
+      const confirm = (
+        typeof confirmValue === "string" ? confirmValue : ""
+      ).trim();
+      setLastEmail(email);
+      if (!email || !password) {
+        setError(tAuth("incorrectCredentials"));
+        return;
+      }
+      if (flow === "signUp" && password !== confirm) {
+        setError(tAuth("passwordsDoNotMatch"));
         return;
       }
       const form = new FormData();
       form.set("email", email);
-      await signIn("resend-otp", form);
-      setStep({ email });
-    } catch (err: unknown) {
-      // Surface raw error message (e.g., "Method Not Allowed") if available
-      const message =
-        err instanceof Error
-          ? err.message
-          : typeof err === "string"
-            ? err
-            : "Failed to send code. Please try again.";
-      setError(message);
+      form.set("password", password);
+      form.set("flow", flow);
+      await signIn("password", form);
+      // For sign up, immediately guide the user to verify email and send code.
+      if (flow === "signUp") {
+        setStep({ verify: { email } });
+        // Send verification code
+        const sendForm = new FormData();
+        sendForm.set("email", email);
+        await signIn("resend-otp", sendForm);
+        setInfo(tAuth("resentCode"));
+      }
+      // On successful sign-in, redirect is handled by the me effect.
+    } catch {
+      // If sign-in failed, show incorrect credentials and allow verification as an option
+      setError(`${tAuth("incorrectCredentials")} — ${tAuth("forgotPassword")}`);
     } finally {
       setLoading(false);
     }
@@ -162,7 +188,7 @@ export default function LoginPage(): ReactElement {
     event: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     event.preventDefault();
-    if (loading || step === "email") return;
+    if (loading || step === "credentials") return;
     if (code.length !== 6) {
       setError(tAuth("otp"));
       return;
@@ -173,8 +199,13 @@ export default function LoginPage(): ReactElement {
     // a brief flicker back to "Continue" that allows a second click.
     let success = false;
     try {
+      // Ensure we're on the email verification step, not reset
+      if (typeof step !== "object" || !("verify" in step)) {
+        setLoading(false);
+        return;
+      }
       const form = new FormData(event.currentTarget);
-      form.set("email", step.email.trim().toLowerCase());
+      form.set("email", step.verify.email.trim().toLowerCase());
       form.set("code", toAsciiDigits(code));
       await signIn("resend-otp", form);
       success = true;
@@ -195,7 +226,7 @@ export default function LoginPage(): ReactElement {
   }
 
   async function onResendCode(): Promise<void> {
-    if (resending || step === "email" || cooldown > 0) return;
+    if (resending || step === "credentials" || cooldown > 0) return;
     setResending(true);
     setError("");
     setInfo("");
@@ -203,9 +234,11 @@ export default function LoginPage(): ReactElement {
     setCooldown(90);
     try {
       const form = new FormData();
-      form.set("email", step.email.trim().toLowerCase());
+      // Safe guard: only execute for verify step
+      if (typeof step !== "object" || !("verify" in step)) return;
+      form.set("email", step.verify.email.trim().toLowerCase());
       await signIn("resend-otp", form);
-      setInfo("A new code has been sent.");
+      setInfo(tAuth("resentCode"));
       // Allow a fresh auto-submit on the next complete entry
       lastAutoSubmittedCodeRef.current = null;
     } catch {
@@ -215,6 +248,59 @@ export default function LoginPage(): ReactElement {
       setCooldown(0);
     } finally {
       setResending(false);
+    }
+  }
+
+  async function onResendResetCode(email: string): Promise<void> {
+    if (resending || cooldown > 0) return;
+    setResending(true);
+    setError("");
+    setInfo("");
+    setCooldown(90);
+    try {
+      const sendForm = new FormData();
+      sendForm.set("email", email.trim().toLowerCase());
+      sendForm.set("flow", "reset");
+      await signIn("password", sendForm);
+      setInfo(tAuth("resetSent"));
+    } catch {
+      setError(tAuth("resetFailed"));
+      setCooldown(0);
+    } finally {
+      setResending(false);
+    }
+  }
+
+  async function onSubmitResetVerification(
+    event: FormEvent<HTMLFormElement>,
+    email: string,
+  ): Promise<void> {
+    event.preventDefault();
+    if (loading) return;
+    const ascii = toAsciiDigits(code);
+    const npw = newPassword.trim();
+    if (ascii.length !== 6 || npw.length === 0) {
+      setError(tAuth("invalidCode"));
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const form = new FormData();
+      form.set("email", email.trim().toLowerCase());
+      form.set("code", ascii);
+      form.set("newPassword", npw);
+      form.set("flow", "reset-verification");
+      await signIn("password", form);
+      setInfo(tAuth("resetSuccess"));
+      // Return to credentials for sign-in
+      setStep("credentials");
+      setCode("");
+      setNewPassword("");
+    } catch {
+      setError(tAuth("invalidCode"));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -236,8 +322,8 @@ export default function LoginPage(): ReactElement {
             </h1>
           </div>
 
-          {step === "email" ? (
-            <form onSubmit={onSubmitEmail} className="mt-6 space-y-6">
+          {step === "credentials" ? (
+            <form onSubmit={onSubmitCredentials} className="mt-6 space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email" className="block text-sm">
                   {tAuth("email")}
@@ -250,6 +336,118 @@ export default function LoginPage(): ReactElement {
                   inputMode="email"
                   placeholder="you@example.com"
                   className="ring-foreground/15 border-transparent ring-1"
+                  defaultValue={lastEmail}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password" className="block text-sm">
+                  {tAuth("password")}
+                </Label>
+                <Input
+                  type="password"
+                  required
+                  name="password"
+                  id="password"
+                  placeholder="••••••••"
+                  className="ring-foreground/15 border-transparent ring-1"
+                />
+              </div>
+              {flow === "signUp" && (
+                <div className="space-y-2">
+                  <Label htmlFor="passwordConfirm" className="block text-sm">
+                    {tAuth("confirmPassword")}
+                  </Label>
+                  <Input
+                    type="password"
+                    required
+                    name="passwordConfirm"
+                    id="passwordConfirm"
+                    placeholder="••••••••"
+                    className="ring-foreground/15 border-transparent ring-1"
+                  />
+                </div>
+              )}
+              {error && (
+                <p className="text-destructive text-sm" role="alert">
+                  {error}
+                </p>
+              )}
+              <div className="flex items-center justify-between">
+                <button
+                  className="text-muted-foreground text-sm"
+                  type="button"
+                  onClick={() => {
+                    setStep("resetRequest");
+                  }}
+                >
+                  {tAuth("forgotPassword")}
+                </button>
+                <div className="flex items-center gap-2 text-sm">
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() =>
+                      setFlow(flow === "signIn" ? "signUp" : "signIn")
+                    }
+                  >
+                    {flow === "signIn"
+                      ? tAuth("signUpInstead")
+                      : tAuth("signInInstead")}
+                  </button>
+                </div>
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {flow === "signIn" ? tAuth("signIn") : tAuth("createAccount")}
+              </Button>
+            </form>
+          ) : step === "resetRequest" ? (
+            <form
+              onSubmit={async (event) => {
+                event.preventDefault();
+                if (loading) return;
+                setLoading(true);
+                setError("");
+                try {
+                  const formEl = event.currentTarget as HTMLFormElement;
+                  const formData = new FormData(formEl);
+                  const emailValue = formData.get("email");
+                  const email = (
+                    typeof emailValue === "string" ? emailValue : ""
+                  )
+                    .trim()
+                    .toLowerCase();
+                  if (!email) {
+                    setError(tAuth("email"));
+                    return;
+                  }
+                  setLastEmail(email);
+                  const sendForm = new FormData();
+                  sendForm.set("email", email);
+                  sendForm.set("flow", "reset");
+                  await signIn("password", sendForm);
+                  setInfo(tAuth("resetSent"));
+                  setStep({ reset: { email } });
+                } catch {
+                  setError(tAuth("resetFailed"));
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              className="mt-6 space-y-6"
+            >
+              <div className="space-y-2">
+                <Label htmlFor="resetEmail" className="block text-sm">
+                  {tAuth("email")}
+                </Label>
+                <Input
+                  type="email"
+                  required
+                  name="email"
+                  id="resetEmail"
+                  inputMode="email"
+                  placeholder="you@example.com"
+                  className="ring-foreground/15 border-transparent ring-1"
+                  defaultValue={lastEmail}
                 />
               </div>
               {error && (
@@ -257,9 +455,119 @@ export default function LoginPage(): ReactElement {
                   {error}
                 </p>
               )}
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? tAuth("sendingCode") : tAuth("continue")}
-              </Button>
+              {info && (
+                <p className="text-sm text-emerald-600" role="status">
+                  {info}
+                </p>
+              )}
+              <div className="flex items-center justify-between">
+                <Button type="submit" className="" disabled={loading}>
+                  {tAuth("sendResetCode")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setStep("credentials")}
+                  disabled={loading}
+                >
+                  {tCommon("cancel")}
+                </Button>
+              </div>
+            </form>
+          ) : typeof step === "object" && "reset" in step ? (
+            <form
+              onSubmit={(e) => onSubmitResetVerification(e, step.reset.email)}
+              className="mt-6 space-y-6"
+            >
+              <div>
+                <p className="text-muted-foreground text-sm">
+                  {tAuth("resetPasswordDesc")}
+                </p>
+                <p className="font-medium">{step.reset.email}</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="resetCode" className="block text-sm">
+                  {tAuth("otp")}
+                </Label>
+                <div className="flex justify-center">
+                  <InputOTP
+                    maxLength={6}
+                    containerClassName="justify-center"
+                    onChange={(value) => setCode(toAsciiDigits(value))}
+                    value={toAsciiDigits(code)}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                    </InputOTPGroup>
+                    <InputOTPSeparator className="mx-2" />
+                    <InputOTPGroup>
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newPassword" className="block text-sm">
+                  {tAuth("newPassword")}
+                </Label>
+                <Input
+                  type="password"
+                  name="newPassword"
+                  id="newPassword"
+                  placeholder="••••••••"
+                  className="ring-foreground/15 border-transparent ring-1"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+              {error && (
+                <p className="text-destructive text-sm" role="alert">
+                  {error}
+                </p>
+              )}
+              {info && (
+                <p className="text-sm text-emerald-600" role="status">
+                  {info}
+                </p>
+              )}
+              <div className="flex flex-col gap-2">
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={
+                    loading ||
+                    code.length !== 6 ||
+                    newPassword.trim().length === 0
+                  }
+                >
+                  {loading ? tCommon("loading") : tAuth("resetPassword")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onResendResetCode(step.reset.email)}
+                  disabled={resending || loading || cooldown > 0}
+                >
+                  {resending
+                    ? tAuth("sendingCode")
+                    : `${tAuth("resendCode")}${cooldown > 0 ? ` (${Math.floor(cooldown / 60)}:${String(cooldown % 60).padStart(2, "0")})` : ""}`}
+                </Button>
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setStep("credentials")}
+                  disabled={loading}
+                  className="px-5 text-sm"
+                >
+                  {tCommon("cancel")}
+                </Button>
+              </div>
             </form>
           ) : (
             <form
@@ -269,9 +577,11 @@ export default function LoginPage(): ReactElement {
             >
               <div>
                 <p className="text-muted-foreground text-sm">
-                  {tAuth("codeDigits")}
+                  {tAuth("verifyEmailDesc")}
                 </p>
-                <p className="font-medium">{step.email}</p>
+                <p className="font-medium">
+                  {(step as { verify: { email: string } }).verify.email}
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="code" className="block text-sm">
@@ -297,15 +607,7 @@ export default function LoginPage(): ReactElement {
                     </InputOTPGroup>
                   </InputOTP>
                 </div>
-                {/* Hidden inputs consumed by Convex Auth */}
-                <input type="hidden" name="email" value={step.email} />
-                <input type="hidden" name="code" value={code} />
               </div>
-              {error && (
-                <p className="text-destructive text-sm" role="alert">
-                  {error}
-                </p>
-              )}
               <div className="flex flex-col gap-2">
                 <Button
                   type="submit"
@@ -329,7 +631,7 @@ export default function LoginPage(): ReactElement {
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={() => setStep("email")}
+                  onClick={() => setStep("credentials")}
                   disabled={loading}
                   className="px-5 text-sm"
                 >

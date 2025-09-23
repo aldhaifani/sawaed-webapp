@@ -81,6 +81,7 @@ Sawaed is a sophisticated, bilingual (Arabic/English) web platform that serves a
 ### Core Functionalities
 
 #### 1. User Authentication & Onboarding
+
 **Status: MVP ✅ | Completeness: 100%**
 
 - **Passwordless Authentication**: Email OTP verification system with secure session management
@@ -91,6 +92,7 @@ Sawaed is a sophisticated, bilingual (Arabic/English) web platform that serves a
 - **Progress Persistence**: Draft saving to prevent data loss during onboarding
 
 #### 2. AI-Powered Skill Assessment
+
 **Status: MVP ✅ | Completeness: 95%**
 
 - **Real-Time Chat Interface**: Streaming AI responses with session persistence
@@ -100,6 +102,7 @@ Sawaed is a sophisticated, bilingual (Arabic/English) web platform that serves a
 - **Session Recovery**: Resume conversations after page refresh or network interruption
 
 #### 3. Personalized Learning Path Generation
+
 **Status: MVP ✅ | Completeness: 90%**
 
 - **AI-Generated Modules**: Dynamic content creation based on assessment results
@@ -108,6 +111,7 @@ Sawaed is a sophisticated, bilingual (Arabic/English) web platform that serves a
 - **Adaptive Difficulty**: Level-based content adjustment from assessment results
 
 #### 4. Ministry Analytics Dashboard
+
 **Status: MVP ✅ | Completeness: 85%**
 
 - **Anonymous Insights**: Aggregated youth data without PII exposure
@@ -117,6 +121,7 @@ Sawaed is a sophisticated, bilingual (Arabic/English) web platform that serves a
 - **Export Capabilities**: Data export for policy and strategy planning
 
 #### 5. Admin Portal & Content Management
+
 **Status: MVP ✅ | Completeness: 80%**
 
 - **Role-Based Access**: Youth, Admin, SuperAdmin permission levels
@@ -126,6 +131,7 @@ Sawaed is a sophisticated, bilingual (Arabic/English) web platform that serves a
 - **System Configuration**: Platform settings and taxonomy management
 
 #### 6. Profile & Portfolio System
+
 **Status: Post-MVP 🔄 | Completeness: 70%**
 
 - **Skills Taxonomy**: Standardized skill selection and validation
@@ -209,15 +215,18 @@ graph TB
 The platform is architected with a flexible, API-first approach that enables seamless integration with local Omani systems:
 
 **Database Migration Strategy:**
+
 - Modular data layer with standardized schemas
 - Database-agnostic query patterns using Convex's abstraction layer
 
 **API Integration Points:**
+
 - RESTful API endpoints for external system integration
 - Webhook support for real-time data synchronization
 - Standardized data formats (JSON) for interoperability
 
 **Planned Local System Integrations:**
+
 - **ODP (Oman Data Platform)**: User data residency compliance
 - **National ID Integration**: Seamless citizen verification
 - **Ministry Systems**: Direct data pipeline for policy insights
@@ -243,18 +252,18 @@ flowchart TD
     A[User Visits Platform] --> B{Authenticated?}
     B -->|No| C[Login Page]
     B -->|Yes| D[Dashboard]
-    
+
     C --> E[Enter Email]
     E --> F[Send OTP via Resend]
     F --> G[Enter OTP Code]
     G --> H{Valid OTP?}
     H -->|No| I[Show Error]
     H -->|Yes| J{Profile Complete?}
-    
+
     I --> G
     J -->|No| K[Onboarding Step 1: Welcome]
     J -->|Yes| D
-    
+
     K --> L[Onboarding Step 2: Personal Details]
     L --> M[Bilingual Names + Gender + Location]
     M --> N[Save Draft to Convex]
@@ -263,7 +272,7 @@ flowchart TD
     P --> Q[Complete Onboarding]
     Q --> R[Create User Profile]
     R --> D
-    
+
     style C fill:#fff3cd
     style K fill:#fff3cd
     style L fill:#fff3cd
@@ -279,31 +288,31 @@ flowchart TD
     B --> C[Initialize AI Chat Session]
     C --> D[Load System Prompt with Skill Context]
     D --> E[Send Welcome Message]
-    
+
     E --> F[User Responds]
     F --> G[Process with LLM API]
     G --> H[Stream Response Back]
     H --> I{Question Count < 5?}
-    
+
     I -->|Yes| J[Continue Conversation]
     I -->|No| K[Generate Assessment JSON]
-    
+
     J --> F
     K --> L[Validate Assessment Structure]
     L --> M{Valid JSON?}
     M -->|No| N[Repair & Retry]
     M -->|Yes| O[Store Assessment Results]
-    
+
     N --> L
     O --> P[Generate Learning Path]
     P --> Q[Create Modules with Content-Aware Icons]
     Q --> R[Save to Database]
     R --> S[Display Learning Path]
-    
+
     S --> T[User Tracks Progress]
     T --> U[Mark Modules Complete]
     U --> V[Update Progress in DB]
-    
+
     style C fill:#fff3cd
     style G fill:#fff3cd
     style K fill:#fff3cd
@@ -319,27 +328,27 @@ flowchart TD
     B -->|Admin| C[Admin Dashboard]
     B -->|SuperAdmin| D[Super Admin Dashboard]
     B -->|Youth| E[Access Denied]
-    
+
     C --> F[View User Statistics]
     C --> G[Manage Opportunities]
-    
+
     D --> K[Ministry Analytics]
-    
+
     F --> L[Query Convex Database]
     G --> M[CRUD Operations]
     H --> N[Review User Content]
-    
+
     K --> O[Aggregate Anonymous Data]
     O --> P[Geographic Distribution]
     O --> Q[Skills Trending]
     O --> R[Interest Analytics]
-    
+
     P --> S[Charts & Visualizations]
     Q --> S
     R --> S
-    
+
     S --> T[Export for Policy Planning]
-    
+
     style C fill:#fff3cd
     style D fill:#fff3cd
     style K fill:#fff3cd
@@ -355,20 +364,20 @@ flowchart LR
         B[Local Storage]
         C[Session Storage]
     end
-    
+
     subgraph "Convex Backend"
         D[Real-time Database]
         E[Serverless Functions]
         F[Authentication]
     end
-    
+
     subgraph "External APIs"
         G[LLM Provider]
         H[Sentry Monitoring]
         I[PostHog Analytics]
         J[Resend Email]
     end
-    
+
     A <--> D
     B --> A
     C --> A
@@ -376,11 +385,11 @@ flowchart LR
     E --> H
     A --> I
     F --> J
-    
+
     D --> K[Data Persistence]
     E --> L[Business Logic]
     F --> M[Session Management]
-    
+
     style D fill:#d4edda
     style E fill:#fff3cd
     style F fill:#d4edda
@@ -391,19 +400,19 @@ flowchart LR
 
 ## 📋 Profile Management Scope
 
-| **Profile Section** | **MVP (Phase 1)**                       | **Phase 2 (Enhancements)**              |
-| ------------------- | --------------------------------------- | --------------------------------------- |
-| **Bio**             | ✅ Short bio/intro                      | —                                       |
-| **Photo**           | ✅ Profile picture                      | —                                       |
-| **Contact Info**    | ✅ Basic contact (email/phone optional) | —                                       |
-| **Skills**          | ✅ Select from standardized taxonomy    | —                                       |
-| **Interests**       | ✅ Select from standardized taxonomy    | —                                       |
-| **Education**       | ✅ Institution, degree, start/end dates | —                                       |
-| **Certificates**    | ✅ Title, issuer, date awarded          | —                                       |
-| **Projects**        | ✅ Title, description, media/link       | —                                       |
-| **Awards**          | ✅ Title, issuer, date awarded          | —                                       |
-| **Gamification**    | ✅ Profile completion tracker,                                       |   badges   |
-| **Public Profile**  | —                                       |  Shareable link to showcase portfolio |
+| **Profile Section** | **MVP (Phase 1)**                       | **Phase 2 (Enhancements)**           |
+| ------------------- | --------------------------------------- | ------------------------------------ |
+| **Bio**             | ✅ Short bio/intro                      | —                                    |
+| **Photo**           | ✅ Profile picture                      | —                                    |
+| **Contact Info**    | ✅ Basic contact (email/phone optional) | —                                    |
+| **Skills**          | ✅ Select from standardized taxonomy    | —                                    |
+| **Interests**       | ✅ Select from standardized taxonomy    | —                                    |
+| **Education**       | ✅ Institution, degree, start/end dates | —                                    |
+| **Certificates**    | ✅ Title, issuer, date awarded          | —                                    |
+| **Projects**        | ✅ Title, description, media/link       | —                                    |
+| **Awards**          | ✅ Title, issuer, date awarded          | —                                    |
+| **Gamification**    | ✅ Profile completion tracker,          | badges                               |
+| **Public Profile**  | —                                       | Shareable link to showcase portfolio |
 
 ---
 
@@ -435,13 +444,13 @@ flowchart TD
     F --> G[Government Data Integration]
     G --> H[Local Deployment]
     H --> I[Full Data Sovereignty]
-    
+
     J[Benefits of Custom Model:] --> K[Complete Data Control]
     J --> L[Cultural & Linguistic Accuracy]
     J --> M[Cost Optimization at Scale]
     J --> N[Offline Capability]
     J --> O[Government Compliance]
-    
+
     style A fill:#fff3cd
     style I fill:#d4edda
     style K fill:#d4edda

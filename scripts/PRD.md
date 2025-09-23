@@ -29,9 +29,9 @@ It solves two key problems:
 
 ### 1. Authentication & Internationalization (MVP)
 
-- **What it does**: Provides secure, passwordless login (email OTP) and full bilingual support.
-- **Why it’s important**: Ensures accessibility, inclusivity, and security.
-- **How it works**: Convex Auth handles OTP login; UI supports Arabic (RTL) and English (LTR).
+- **What it does**: Provides secure email + password authentication with OTP email verification on first signup, and full bilingual support.
+- **Why it’s important**: Balances usability (familiar credentials) with security (verified email) and inclusivity (bilingual UI).
+- **How it works**: Convex Auth handles email + password; on first signup, users verify their email via a one-time passcode (OTP). UI supports Arabic (RTL) and English (LTR).
 
 ### 2. Dynamic Profile Management (MVP → Expanded in Phases)
 
@@ -80,7 +80,7 @@ It solves two key problems:
 
 ### Key User Flows
 
-1. **Youth Onboarding** → Sign up (OTP) → Select language → Create profile (bio, skills, interests) → Browse opportunities → Register.
+1. **Youth Onboarding** → Sign up (email + password) → Verify email (OTP) → Select language → Create profile (bio, skills, interests) → Browse opportunities → Register.
 2. **Admin Posting** → Log in → Create bilingual event → Publish → Track registrations.
 3. **Ministry Strategist** → Log in → View dashboard → Explore aggregated charts (skills, interests, distribution).
 
@@ -127,7 +127,7 @@ It solves two key problems:
 
 ### APIs & Integrations
 
-- Convex Auth (email OTP)
+- Convex Auth (email + password with OTP email verification)
 - Convex Functions (queries/mutations)
 - Sentry SDK (frontend + backend)
 - PostHog SDK (frontend + backend)
@@ -230,7 +230,7 @@ It solves two key problems:
 
 ### Technical Specifications
 
-- Convex Auth for OTP login.
+- Convex Auth for email + password authentication with OTP email verification.
 - Convex DB schema with indexes for performance.
 - Sentry for error monitoring (scrub PII).
 - PostHog for analytics (auth, profile, opportunities, dashboard).
