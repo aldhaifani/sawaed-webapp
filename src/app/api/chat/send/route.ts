@@ -126,7 +126,7 @@ import {
 } from "@/shared/ai/assessment-result.schema";
 import { fetchMutation, fetchQuery } from "convex/nextjs";
 import { api } from "@/../convex/_generated/api";
-import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
+import { resolveConvexToken } from "@/app/api/mobile/_utils/with-convex-token";
 import type { Id } from "@/../convex/_generated/dataModel";
 import { buildSystemPrompt } from "../prompt-builder";
 import { sanitizeModules } from "@/shared/ai/sanitize-modules";
@@ -1298,7 +1298,7 @@ export async function POST(req: Request): Promise<Response> {
       let systemPrompt: string | null = null;
       let allowedUrls: readonly string[] | null = null;
       try {
-        token = (await convexAuthNextjsToken()) ?? null;
+        token = await resolveConvexToken(req);
         Sentry.addBreadcrumb({
           category: "chat.send",
           level: "info",

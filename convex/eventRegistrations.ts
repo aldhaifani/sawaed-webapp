@@ -63,6 +63,11 @@ export const applyToEvent = mutation({
       throw new Error("REGISTRATION_CLOSED");
     }
 
+    // If the event has ended, disallow new registrations regardless of window
+    if (typeof ev.endingDate === "number" && now > ev.endingDate) {
+      throw new Error("EVENT_PAST");
+    }
+
     // Policy check
     if (ev.registrationPolicy === "inviteOnly") throw new Error("INVITE_ONLY");
 
@@ -94,9 +99,15 @@ export const applyToEvent = mutation({
       typeof quantity === "number" && !Number.isNaN(quantity) ? quantity : 1;
     if (qty < 1) throw new Error("INVALID_QUANTITY");
 
-    // Enforce max registrations per user (interpreted as max seats per user)
+    // Enforce per-user max seats cumulatively across active registrations
     if (typeof ev.maxRegistrationsPerUser === "number") {
-      if (qty > ev.maxRegistrationsPerUser) {
+      const currentUserActiveSeats = existingRows
+        .filter((r) => ["pending", "accepted", "waitlisted"].includes(r.status))
+        .reduce(
+          (acc, r) => acc + (typeof r.quantity === "number" ? r.quantity : 1),
+          0,
+        );
+      if (currentUserActiveSeats + qty > ev.maxRegistrationsPerUser) {
         throw new Error("MAX_PER_USER_EXCEEDED");
       }
     }
