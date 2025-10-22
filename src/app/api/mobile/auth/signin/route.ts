@@ -3,6 +3,7 @@ import { z } from "zod";
 import { NextResponse } from "next/server";
 import { parseJsonBody } from "@/app/api/mobile/_utils/parse-json-body";
 import { respondError } from "@/app/api/mobile/_utils/respond-error";
+import { ERROR_CODES } from "@/app/api/mobile/_utils/error-codes";
 import { fetchAction } from "convex/nextjs";
 import { isCorsRequest } from "@/app/api/mobile/_utils/is-cors-request";
 
@@ -64,19 +65,33 @@ export async function POST(req: Request): Promise<Response> {
         const result = await callAction("auth:signIn", args);
         const tokens = extractTokens(result);
         if (!tokens) {
-          return respondError(
-            "invalid_credentials_or_unverified",
-            "Invalid credentials or email not verified",
-            401,
-          );
+          const span = Sentry.getActiveSpan();
+          span?.setAttribute("branch", "no_tokens");
+          // Best-effort check if user exists but is unverified by attempting OTP resend
+          try {
+            const resendArgs = {
+              provider: "resend-otp",
+              params: { email: body.email },
+            } as const;
+            await callAction("auth:signIn", resendArgs);
+            span?.setAttribute("result", "unverified");
+            return respondError(ERROR_CODES.unverified, "Email not verified", 403);
+          } catch {
+            span?.setAttribute("result", "invalid_credentials");
+            return respondError(
+              ERROR_CODES.invalidCredentials,
+              "Invalid email or password",
+              401,
+            );
+          }
         }
         return NextResponse.json(tokens);
       } catch (err) {
         Sentry.captureException(err);
         // Do not leak provider/internal errors to clients
         return respondError(
-          "invalid_credentials_or_unverified",
-          "Invalid credentials or email not verified",
+          ERROR_CODES.invalidCredentials,
+          "Invalid email or password",
           401,
         );
       }

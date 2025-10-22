@@ -3,6 +3,7 @@ import { z } from "zod";
 import { NextResponse } from "next/server";
 import { parseJsonBody } from "@/app/api/mobile/_utils/parse-json-body";
 import { respondError } from "@/app/api/mobile/_utils/respond-error";
+import { ERROR_CODES } from "@/app/api/mobile/_utils/error-codes";
 import { fetchAction } from "convex/nextjs";
 import { isCorsRequest } from "@/app/api/mobile/_utils/is-cors-request";
 
@@ -36,15 +37,29 @@ export async function POST(req: Request): Promise<Response> {
             flow: "signUp",
           },
         } as const;
+        const span = Sentry.getActiveSpan();
+        span?.setAttribute("branch", "signup_attempt");
         await callAction("auth:signIn", args);
         // For sign-up we do not return tokens yet; user must verify email via OTP
         return NextResponse.json({ ok: true });
       } catch (err) {
         Sentry.captureException(err);
+        const span = Sentry.getActiveSpan();
+        const message = err instanceof Error ? err.message : String(err);
+        const duplicate = /exist|already|duplicate|taken/i.test(message ?? "");
+        if (duplicate) {
+          span?.setAttribute("result", "email_already_exists");
+          return respondError(
+            ERROR_CODES.emailAlreadyExists,
+            "Email already in use",
+            409,
+          );
+        }
+        span?.setAttribute("result", "signup_failed");
         // Normalize errors; do not leak provider/internal messages
         return respondError(
           "signup_failed",
-          "Unable to create account. If you already have an account, try signing in.",
+          "Unable to create account. Please try again later.",
           400,
         );
       }
