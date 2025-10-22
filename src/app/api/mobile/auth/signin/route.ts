@@ -73,8 +73,12 @@ export async function POST(req: Request): Promise<Response> {
         return NextResponse.json(tokens);
       } catch (err) {
         Sentry.captureException(err);
-        const message = err instanceof Error ? err.message : "signin_failed";
-        return respondError("signin_failed", message, 400);
+        // Do not leak provider/internal errors to clients
+        return respondError(
+          "invalid_credentials_or_unverified",
+          "Invalid credentials or email not verified",
+          401,
+        );
       }
     },
   );

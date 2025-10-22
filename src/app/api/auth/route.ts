@@ -203,13 +203,10 @@ export async function POST(request: NextRequest) {
       // Fallback passthrough
       return NextResponse.json((resultUnknown as SignInResult) ?? null);
     } catch (err: unknown) {
-      const message =
-        isObject(err) && hasString(err, "message")
-          ? err.message
-          : "Sign-in failed";
+      // Do not leak internal error details (e.g., provider stack traces)
       const res = NextResponse.json(
-        { error: String(message) },
-        { status: 400 },
+        { error: "Invalid email or password" },
+        { status: 401 },
       );
       // Clear tokens on error
       setResCookie(res, names.token, null);
