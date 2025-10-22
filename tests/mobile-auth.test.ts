@@ -40,7 +40,7 @@ describe("mobile auth routes", () => {
     const res = await RequestOtpPOST(req as unknown as Request);
     expect(res.status).toBe(200);
     const json = await res.json();
-    expect(json).toEqual({ ok: true });
+    expect(json).toEqual({ ok: true, code: "user_unverified" });
   });
 
   it("request-otp: blocks CORS with 403", async () => {
