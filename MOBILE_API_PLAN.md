@@ -59,11 +59,13 @@ References:
   - Optional: Provide thin versioned proxies (aliases) under `/api/mobile/v1/auth/*` and `/api/mobile/v1/chat/*` if strict URL consistency is desired in the future.
 - **Localization**: Mobile sends `Accept-Language: ar|en` and/or `?locale=ar|en`. Server uses this to select language fields and to set AI chat language defaults, aligning with `appUsers.languagePreference`.
 - **Error Model**: Standardize JSON errors:
+
   ```json
   { "error": { "code": "<machine_code>", "message": "Human-readable" } }
   ```
 
   - HTTP codes: 400 (validation), 401 (unauthenticated), 403 (forbidden), 404, 409 (conflict), 429 (rate limit), 500.
+
 - **Pagination**: Cursor or page-based with consistent keys:
   ```json
   { "items": [...], "nextCursor": "..." }

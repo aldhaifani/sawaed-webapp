@@ -22,10 +22,6 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function hasString(obj: unknown, key: string): obj is Record<string, string> {
-  return isObject(obj) && typeof obj[key] === "string";
-}
-
 function isTokensPayload(value: unknown): value is TokensPayload {
   return (
     isObject(value) &&
@@ -202,7 +198,7 @@ export async function POST(request: NextRequest) {
 
       // Fallback passthrough
       return NextResponse.json((resultUnknown as SignInResult) ?? null);
-    } catch (err: unknown) {
+    } catch {
       // Do not leak internal error details (e.g., provider stack traces)
       const res = NextResponse.json(
         { error: "Invalid email or password" },

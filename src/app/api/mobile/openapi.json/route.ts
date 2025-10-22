@@ -50,6 +50,43 @@ export async function GET(): Promise<Response> {
           security: [],
         },
       },
+      "/api/mobile/auth/signup": {
+        post: {
+          tags: ["Auth"],
+          summary: "Email/password sign-up",
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    email: { type: "string", format: "email" },
+                    password: { type: "string" },
+                  },
+                  required: ["email", "password"],
+                },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description: "Created (email verification required)",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: { ok: { type: "boolean" } },
+                    required: ["ok"],
+                  },
+                },
+              },
+            },
+            "400": { description: "Signup failed or account exists" },
+          },
+          security: [],
+        },
+      },
       schemas: {
         ErrorEnvelope: {
           type: "object",
