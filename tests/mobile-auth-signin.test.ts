@@ -53,7 +53,10 @@ describe("mobile auth signin route", () => {
     expect(res.status).toBe(401);
     const json = await res.json();
     expect(json).toEqual({
-      error: { code: "invalid_credentials", message: "Invalid email or password" },
+      error: {
+        code: "invalid_credentials",
+        message: "Invalid email or password",
+      },
     });
   });
 

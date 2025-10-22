@@ -30,11 +30,15 @@ export async function POST(req: Request): Promise<Response> {
         span?.setAttribute("branch", "request_otp_attempt");
         await callAction("auth:signIn", args);
         span?.setAttribute("result", "user_unverified_otp_sent");
-        return NextResponse.json({ ok: true, code: ERROR_CODES.userUnverified });
+        return NextResponse.json({
+          ok: true,
+          code: ERROR_CODES.userUnverified,
+        });
       } catch (err) {
         Sentry.captureException(err);
         const span = Sentry.getActiveSpan();
-        const message = err instanceof Error ? err.message : "request_otp_failed";
+        const message =
+          err instanceof Error ? err.message : "request_otp_failed";
         const lower = (message ?? "").toLowerCase();
         if (/verified|already\s*verified|exists/.test(lower)) {
           span?.setAttribute("result", "user_exists_verified");

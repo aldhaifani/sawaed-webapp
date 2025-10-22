@@ -6,4 +6,4 @@ export const ERROR_CODES = {
   userUnverified: "user_unverified",
 } as const;
 
-export type ErrorCode = typeof ERROR_CODES[keyof typeof ERROR_CODES];
+export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

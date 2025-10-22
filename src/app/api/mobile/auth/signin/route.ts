@@ -75,7 +75,11 @@ export async function POST(req: Request): Promise<Response> {
             } as const;
             await callAction("auth:signIn", resendArgs);
             span?.setAttribute("result", "unverified");
-            return respondError(ERROR_CODES.unverified, "Email not verified", 403);
+            return respondError(
+              ERROR_CODES.unverified,
+              "Email not verified",
+              403,
+            );
           } catch {
             span?.setAttribute("result", "invalid_credentials");
             return respondError(
